@@ -1,4 +1,4 @@
-var monsters_complete = [
+export const monsters_complete = [
     {
         "Description": "Abominable Snowman",
         "Class": "Dire Animal",
@@ -11713,3 +11713,4 @@ var monsters_complete = [
         "Page1": null
     }
 ];
+export default monsters_complete;
