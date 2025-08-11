@@ -1,11 +1,19 @@
 import { Dungeon, Monster, SystemModule, Trap, Treasure } from '../../core/types.js';
+import monstersData from './data/monsters-complete.js';
 
-const MONSTERS: Monster[] = [
-  { name: 'Goblin', sm: -1, cls: 'Humanoid', subclass: 'Goblinoid' },
-  { name: 'Orc', sm: 0, cls: 'Humanoid', subclass: 'Orc' },
-  { name: 'Giant Spider', sm: 0, cls: 'Animal', subclass: 'Vermin' },
-  { name: 'Fire Dragon', sm: 4, cls: 'Dragon', subclass: 'Fire' }
-];
+interface RawMonster {
+  Description: string;
+  Class?: string;
+  SM?: number | null;
+  Subclass?: string;
+}
+
+const MONSTERS: Monster[] = (monstersData as RawMonster[]).map((m) => ({
+  name: m.Description,
+  sm: m.SM ?? null,
+  cls: m.Class,
+  subclass: m.Subclass
+}));
 
 const TRAPS: Trap[] = [
   { name: 'Pit Trap', level: 1 },
