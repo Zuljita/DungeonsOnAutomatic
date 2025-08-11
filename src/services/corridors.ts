@@ -16,9 +16,11 @@ export function connectRooms(rooms: Room[]): Corridor[] {
   edges.sort((e1, e2) => e1.d - e2.d);
 
   // Kruskal
-  const parent = Array.from({length: rooms.length}, (_, i) => i);
-  const find = (x:number)=> parent[x] === x ? x : (parent[x] = find(parent[x]));
-  const unite = (a:number,b:number)=> parent[find(a)] = find(b);
+  const parent = Array.from({ length: rooms.length }, (_, i) => i);
+  const find = (x: number): number => (parent[x] === x ? x : (parent[x] = find(parent[x])));
+  const unite = (a: number, b: number): void => {
+    parent[find(a)] = find(b);
+  };
   const corridors: Corridor[] = [];
   for (const e of edges) {
     if (find(e.a) !== find(e.b)) {
