@@ -2,6 +2,7 @@
 import { Command } from 'commander';
 import { buildDungeon } from '../services/assembler.js';
 import { loadSystemModule } from '../services/system-loader.js';
+import { renderAscii } from '../services/render.js';
 
 const program = new Command();
 program
@@ -11,14 +12,19 @@ program
 
 program.command('generate')
   .description('Generate a dungeon')
-  .option('--rooms <n>', 'number of rooms', (v)=>parseInt(v,10))
+  .option('--rooms <n>', 'number of rooms', (v) => parseInt(v, 10))
   .option('--seed <seed>', 'random seed')
   .option('--system <name>', 'system module to use (generic|dfrpg)', 'generic')
+  .option('--ascii', 'render an ASCII map instead of JSON output')
   .action(async (opts) => {
     const d = buildDungeon({ rooms: opts.rooms, seed: opts.seed });
     const sys = await loadSystemModule(opts.system);
     const enriched = await sys.enrich(d);
-    process.stdout.write(JSON.stringify(enriched, null, 2) + '\n');
+    if (opts.ascii) {
+      process.stdout.write(renderAscii(enriched) + '\n');
+    } else {
+      process.stdout.write(JSON.stringify(enriched, null, 2) + '\n');
+    }
   });
 
 program.parseAsync(process.argv);
