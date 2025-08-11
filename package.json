@@ -9,10 +9,10 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "dev": "tsx src/cli/index.ts",
-    "lint": "eslint . --ext .ts",
+    "doa": "tsx src/cli/index.ts",
     "format": "prettier --write .",
-    "test": "vitest run",
-    "doa": "tsx src/cli/index.ts"
+    "lint": "eslint . --ext .ts",
+    "test": "vitest run"
   },
   "dependencies": {
     "commander": "^12.1.0",
