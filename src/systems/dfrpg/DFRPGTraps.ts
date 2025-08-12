@@ -1,6 +1,6 @@
 import { TrapSystem } from '../../services/trap-generator';
 
-interface TrapStatBlock {
+interface TrapStatBlock extends Record<string, unknown> {
   name: string;
   detect: { skill: string; modifier?: number };
   disarm: { skill: string; modifier?: number };
