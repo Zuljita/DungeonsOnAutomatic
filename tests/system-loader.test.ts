@@ -4,10 +4,10 @@ import { buildDungeon } from '../src/services/assembler.js';
 
 describe('system-loader', () => {
   it('loads dfrpg module and enriches rooms', async () => {
-    const sys = await loadSystemModule('dfrpg');
+    const dungeon = buildDungeon({ rooms: 2, seed: 'test' });
+    const sys = await loadSystemModule('dfrpg', dungeon.rng);
     expect(sys.id).toBe('dfrpg');
 
-    const dungeon = buildDungeon({ rooms: 2, seed: 'test' });
     expect(dungeon.doors.length).toBe(dungeon.corridors.length * 2);
     const enriched = await sys.enrich(dungeon);
 

@@ -19,7 +19,7 @@ async function generate(): Promise<void> {
   const opts = { rooms, seed };
   inputEl.textContent = JSON.stringify({ ...opts, system }, null, 2);
   const base = buildDungeon(opts);
-  const sys = await loadSystemModule(system);
+  const sys = await loadSystemModule(system, base.rng);
   const enriched = await sys.enrich(base);
   const svg = renderSvg(enriched);
   mapEl.innerHTML = svg;

@@ -20,5 +20,5 @@ export function buildDungeon(opts: { rooms?: number; seed?: string; width?: numb
   const rooms = generateRooms(n, width, height, R);
   const corridors = connectRooms(rooms, R);
   const doors = corridors.flatMap(() => [generateDoor(R), generateDoor(R)]);
-  return { seed, rooms, corridors, doors, encounters: {} };
+  return { seed, rooms, corridors, doors, encounters: {}, rng: R };
 }
