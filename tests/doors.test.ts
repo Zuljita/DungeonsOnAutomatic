@@ -15,4 +15,12 @@ describe('doors', () => {
     expect([...types].sort()).toEqual([...DOOR_TYPES].sort());
     expect([...statuses].sort()).toEqual([...DOOR_STATUSES].sort());
   });
+
+  it('generateDoor produces consistent ids with same RNG', () => {
+    const r1 = rng('doorIds');
+    const r2 = rng('doorIds');
+    const ids1 = Array.from({ length: 10 }, () => generateDoor(r1).id);
+    const ids2 = Array.from({ length: 10 }, () => generateDoor(r2).id);
+    expect(ids1).toEqual(ids2);
+  });
 });

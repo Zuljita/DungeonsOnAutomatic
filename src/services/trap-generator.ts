@@ -18,10 +18,10 @@ export class TrapGeneratorService {
 
   constructor(private readonly system: TrapSystem) {}
 
-  generateTrap(type: string, difficulty: string, location: string): Trap {
+  generateTrap(type: string, difficulty: string, location: string, r: () => number = Math.random): Trap {
     const stats = this.system.getTrapStats(type, difficulty);
     const trap: Trap = {
-      id: id('trap'),
+      id: id('trap', r),
       name: stats.name ?? `${difficulty} ${type} trap`,
       type,
       location,

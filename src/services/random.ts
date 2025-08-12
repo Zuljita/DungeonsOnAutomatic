@@ -13,6 +13,6 @@ export function pick<T>(r: () => number, arr: T[]): T {
   return arr[Math.floor(r() * arr.length)];
 }
 
-export function id(prefix = 'id'): string {
-  return `${prefix}-${Math.random().toString(36).slice(2, 10)}`;
+export function id(prefix = 'id', r: () => number = Math.random): string {
+  return `${prefix}-${r().toString(36).slice(2, 10)}`;
 }
