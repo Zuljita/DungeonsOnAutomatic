@@ -22,7 +22,10 @@ pnpm doa generate --rooms=10 --system=dfrpg
 pnpm doa generate --rooms=20 --svg > map.svg
 pnpm doa generate --rooms=15 --foundry > foundry.json
 pnpm doa generate --rooms=8 --ascii
+pnpm doa generate --rooms=5 --width=40 --height=30
 ```
+
+Use `--width` and `--height` to control the overall map dimensions.
 
 4. GUI:
 
