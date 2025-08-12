@@ -3,7 +3,10 @@ import { id, pick } from './random';
 
 const KINDS: Room['kind'][] = ['chamber', 'hall', 'cavern', 'lair', 'special'];
 
-/** Generate N non-overlapping rooms within a rectangular grid. */
+/** Generate N non-overlapping rooms within a rectangular grid.
+ * Rooms will have at least one tile of padding between them to leave space
+ * for corridors so they never touch or overlap.
+ */
 export function generateRooms(n: number, width = 80, height = 60, r: () => number): Room[] {
   const rooms: Room[] = [];
   let attempts = 0;
@@ -22,6 +25,15 @@ export function generateRooms(n: number, width = 80, height = 60, r: () => numbe
   return rooms;
 }
 
+/**
+ * Determine whether two rooms overlap or touch.  The extra +/-1 padding
+ * ensures there is always at least one tile gap between any two rooms.
+ */
 function overlaps(a: Room, b: Room): boolean {
-  return !(a.x + a.w <= b.x || b.x + b.w <= a.x || a.y + a.h <= b.y || b.y + b.h <= a.y);
+  return !(
+    a.x + a.w + 1 <= b.x ||
+    b.x + b.w + 1 <= a.x ||
+    a.y + a.h + 1 <= b.y ||
+    b.y + b.h + 1 <= a.y
+  );
 }
