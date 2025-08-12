@@ -23,4 +23,12 @@ describe('rooms', () => {
       }
     }
   });
+
+  it('generateRooms produces consistent ids with same RNG', () => {
+    const r1 = rng('roomTest');
+    const r2 = rng('roomTest');
+    const rooms1 = generateRooms(10, 80, 60, r1);
+    const rooms2 = generateRooms(10, 80, 60, r2);
+    expect(rooms1.map((r) => r.id)).toEqual(rooms2.map((r) => r.id));
+  });
 });

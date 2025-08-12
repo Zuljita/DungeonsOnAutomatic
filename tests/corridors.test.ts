@@ -36,6 +36,16 @@ describe('corridors', () => {
     expect(visited.size).toBe(rooms.length);
   });
 
+  it('connectRooms generates consistent ids with same RNG', () => {
+    const r1 = rng('corridorIds');
+    const r2 = rng('corridorIds');
+    const rooms1 = generateRooms(10, 80, 60, r1);
+    const rooms2 = generateRooms(10, 80, 60, r2);
+    const corridors1 = connectRooms(rooms1, r1);
+    const corridors2 = connectRooms(rooms2, r2);
+    expect(corridors1.map((c) => c.id)).toEqual(corridors2.map((c) => c.id));
+  });
+
   it('randomizes corridor orientation using the RNG', () => {
     const rooms = [
       { id: 'a', kind: 'chamber', x: 0, y: 0, w: 1, h: 1 },

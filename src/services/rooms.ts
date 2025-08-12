@@ -17,7 +17,7 @@ export function generateRooms(n: number, width = 80, height = 60, r: () => numbe
     const x = 1 + Math.floor(r() * Math.max(1, width - w - 1));
     const y = 1 + Math.floor(r() * Math.max(1, height - h - 1));
     const kind = pick(r, KINDS);
-    const candidate: Room = { id: id('room'), kind, x, y, w, h };
+    const candidate: Room = { id: id('room', r), kind, x, y, w, h };
     if (!rooms.some(a => overlaps(a, candidate))) {
       rooms.push(candidate);
     }

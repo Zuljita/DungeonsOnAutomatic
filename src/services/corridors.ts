@@ -27,7 +27,7 @@ export function connectRooms(rooms: Room[], r: () => number): Corridor[] {
       unite(e.a, e.b);
       const from = rooms[e.a].id, to = rooms[e.b].id;
       const path = manhattanPath(centers[e.a], centers[e.b], r);
-      corridors.push({ id: id('cor'), from, to, path });
+      corridors.push({ id: id('cor', r), from, to, path });
     }
   }
   return corridors;
