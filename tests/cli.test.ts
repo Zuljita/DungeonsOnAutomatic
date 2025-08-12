@@ -15,4 +15,13 @@ describe('cli', () => {
     expect(maxX).toBeLessThanOrEqual(30);
     expect(maxY).toBeLessThanOrEqual(20);
   });
+
+  it('falls back to generic system when unknown system specified', () => {
+    const result = spawnSync(process.execPath, ['--import', 'tsx', cliPath, 'generate', '--rooms', '1', '--system', 'bogus'], { encoding: 'utf-8' });
+    expect(result.status).toBe(0);
+    expect(result.stderr).toContain('Unknown system');
+    const d = JSON.parse(result.stdout) as Dungeon;
+    // generic system does not add encounters
+    expect(Object.keys(d.encounters || {}).length).toBe(0);
+  });
 });
