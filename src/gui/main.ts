@@ -1,6 +1,6 @@
-import { buildDungeon } from '../services/assembler.js';
-import { renderAscii } from '../services/render.js';
-import { loadSystemModule } from '../services/system-loader.js';
+import { buildDungeon } from '../services/assembler';
+import { renderAscii } from '../services/render';
+import { loadSystemModule } from '../services/system-loader';
 
 async function generate(): Promise<void> {
   const roomsInput = document.getElementById('rooms') as HTMLInputElement;

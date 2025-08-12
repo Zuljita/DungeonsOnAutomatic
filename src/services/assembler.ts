@@ -1,7 +1,7 @@
-import { Dungeon } from '../core/types.js';
-import { rng } from './random.js';
-import { generateRooms } from './rooms.js';
-import { connectRooms } from './corridors.js';
+import { Dungeon } from '../core/types';
+import { rng } from './random';
+import { generateRooms } from './rooms';
+import { connectRooms } from './corridors';
 
 export function buildDungeon(opts: { rooms?: number; seed?: string }) : Dungeon {
   const seed = opts.seed ?? Math.random().toString(36).slice(2,10);

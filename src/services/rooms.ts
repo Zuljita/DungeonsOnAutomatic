@@ -1,5 +1,5 @@
-import { Room } from '../core/types.js';
-import { id, pick } from './random.js';
+import { Room } from '../core/types';
+import { id, pick } from './random';
 
 const KINDS: Room['kind'][] = ['chamber', 'hall', 'cavern', 'lair', 'special'];
 

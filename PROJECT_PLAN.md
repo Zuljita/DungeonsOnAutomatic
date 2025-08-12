@@ -116,6 +116,9 @@ Uses canvas or svg.js to produce maps.
 
 Supports labels (room numbers, entrances, exits).
 
+Web GUI
+Allows users to set generator parameters and view ASCII maps and JSON output in the browser.
+
 Phase 5 – Extensibility & Polish
 Objective: Make it maintainable and easy to extend.
 
@@ -136,8 +139,6 @@ Examples
 Sample dungeons with screenshots.
 
 Stretch Goals
-Web UI for parameter selection.
-
 Procedural name generator for rooms and NPCs.
 
 AI-assisted description generation.

@@ -1,4 +1,4 @@
-import { Dungeon } from '../core/types.js';
+import { Dungeon } from '../core/types';
 
 /**
  * Render a simple ASCII map of the dungeon. Rooms are drawn with '#' borders
