@@ -7,7 +7,7 @@ describe('corridors', () => {
   it('connectRooms returns a fully connected graph', () => {
     const r = rng('corridorTest');
     const rooms = generateRooms(15, 80, 60, r);
-    const corridors = connectRooms(rooms);
+    const corridors = connectRooms(rooms, r);
     expect(corridors.length).toBe(rooms.length - 1);
 
     // Each corridor should traverse at least one tile between rooms
@@ -34,5 +34,18 @@ describe('corridors', () => {
       }
     }
     expect(visited.size).toBe(rooms.length);
+  });
+
+  it('randomizes corridor orientation using the RNG', () => {
+    const rooms = [
+      { id: 'a', kind: 'chamber', x: 0, y: 0, w: 1, h: 1 },
+      { id: 'b', kind: 'chamber', x: 3, y: 4, w: 1, h: 1 },
+    ];
+
+    const horizFirst = connectRooms(rooms, () => 0)[0].path;
+    const vertFirst = connectRooms(rooms, () => 0.9)[0].path;
+
+    expect(horizFirst[1].y).toBe(horizFirst[0].y); // moved horizontally first
+    expect(vertFirst[1].x).toBe(vertFirst[0].x);   // moved vertically first
   });
 });
