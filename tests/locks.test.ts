@@ -23,6 +23,7 @@ const baseDungeon: Dungeon = {
   seed: 's',
   rooms: [],
   corridors: [],
+  doors: [lockedDoor, unlockedDoor],
   keyItems: [key],
 };
 
@@ -35,21 +36,21 @@ describe('canKeyOpenDoor', () => {
 
 describe('checkDoorLock', () => {
   it('returns matching key when door is locked', () => {
-    const result = checkDoorLock(baseDungeon, lockedDoor.id, [lockedDoor]);
+    const result = checkDoorLock(baseDungeon, lockedDoor.id);
     expect(result.locked).toBe(true);
     expect(result.requiredKey).toBe(key);
   });
 
   it('reports unlocked when door not locked or missing', () => {
-    const result1 = checkDoorLock(baseDungeon, unlockedDoor.id, [unlockedDoor]);
+    const result1 = checkDoorLock(baseDungeon, unlockedDoor.id);
     expect(result1.locked).toBe(false);
-    const result2 = checkDoorLock(baseDungeon, 'missing', [lockedDoor]);
+    const result2 = checkDoorLock(baseDungeon, 'missing');
     expect(result2.locked).toBe(false);
   });
 
   it('omits requiredKey when no key is present', () => {
     const dungeon: Dungeon = { ...baseDungeon, keyItems: [] };
-    const result = checkDoorLock(dungeon, lockedDoor.id, [lockedDoor]);
+    const result = checkDoorLock(dungeon, lockedDoor.id);
     expect(result.locked).toBe(true);
     expect(result.requiredKey).toBeUndefined();
   });

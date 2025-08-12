@@ -15,15 +15,11 @@ export function canKeyOpenDoor(door: Door, key: KeyItem): boolean {
 
 /**
  * Report whether a door is locked and which key unlocks it.
- *
- * The core {@link Dungeon} type does not currently track doors directly, so
- * callers supply any door collection (e.g., from the corridor builder or a
- * `PathGraph` edge list).
  */
 export function checkDoorLock(
   dungeon: Dungeon,
   doorId: ID,
-  doors: Door[] = [],
+  doors: Door[] = dungeon.doors,
 ): LockCheckResult {
   const door = doors.find((d) => d.id === doorId);
   if (!door || door.status !== 'locked') {
