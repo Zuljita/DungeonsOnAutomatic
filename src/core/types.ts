@@ -17,6 +17,12 @@ export interface Corridor {
   path: { x: number; y: number; }[]; // polyline grid path
 }
 
+export interface Door {
+  id: ID;
+  type: 'normal' | 'arch' | 'portcullis' | 'hole';
+  status: 'locked' | 'trapped' | 'barred' | 'jammed' | 'warded' | 'secret';
+}
+
 export interface Monster {
   name: string;
   sm?: number | null;
