@@ -2,6 +2,7 @@ import { buildDungeon } from '@src/services/assembler';
 import { renderSvg } from '@src/services/render';
 import { exportFoundry } from '@src/services/foundry';
 import { loadSystemModule } from '@src/services/system-loader';
+import { rng as createRng } from '@src/services/random';
 
 async function generate(): Promise<void> {
   const roomsInput = document.getElementById('rooms') as HTMLInputElement;
@@ -13,13 +14,14 @@ async function generate(): Promise<void> {
   const foundryLink = document.getElementById('download-foundry') as HTMLAnchorElement;
 
   const rooms = parseInt(roomsInput.value, 10) || 8;
-  const seed = seedInput.value || undefined;
+  const seed = seedInput.value || Math.random().toString(36).slice(2, 10);
   const system = systemInput.value || 'generic';
 
+  const R = createRng(seed);
   const opts = { rooms, seed };
   inputEl.textContent = JSON.stringify({ ...opts, system }, null, 2);
-  const base = buildDungeon(opts);
-  const sys = await loadSystemModule(system);
+  const base = buildDungeon({ ...opts, rng: R });
+  const sys = await loadSystemModule(system, R);
   const enriched = await sys.enrich(base);
   const svg = renderSvg(enriched);
   mapEl.innerHTML = svg;

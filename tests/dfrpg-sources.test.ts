@@ -1,11 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import { loadSystemModule } from '../src/services/system-loader.js';
 import { buildDungeon } from '../src/services/assembler.js';
+import { rng } from '../src/services/random.js';
 
 describe('dfrpg source filtering', () => {
   it('only includes monsters from selected sources', async () => {
-    const sys = await loadSystemModule('dfrpg');
-    const dungeon = buildDungeon({ rooms: 20, seed: 'test' });
+    const R = rng('test');
+    const sys = await loadSystemModule('dfrpg', R);
+    const dungeon = buildDungeon({ rooms: 20, seed: 'test', rng: R });
     const enriched = await sys.enrich(dungeon, { sources: ['DF16'] });
 
     const entries = Object.values(enriched.encounters || {});

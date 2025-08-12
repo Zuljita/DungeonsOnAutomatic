@@ -4,6 +4,7 @@ import { buildDungeon } from "../services/assembler";
 import { loadSystemModule } from "../services/system-loader";
 import { renderAscii, renderSvg } from "../services/render";
 import { exportFoundry } from "../services/foundry";
+import { rng as createRng } from "../services/random";
 
 const program = new Command();
 program.name("doa").description("DungeonsOnAutomatic – modular dungeon generator").version("0.1.0");
@@ -19,8 +20,10 @@ program
   .option("--svg", "render an SVG map instead of JSON output")
   .option("--foundry", "output FoundryVTT-compatible JSON")
     .action(async (opts) => {
-      const d = buildDungeon({ rooms: opts.rooms, seed: opts.seed });
-      const sys = await loadSystemModule(opts.system);
+      const seed = opts.seed ?? Math.random().toString(36).slice(2, 10);
+      const R = createRng(seed);
+      const d = buildDungeon({ rooms: opts.rooms, seed, rng: R });
+      const sys = await loadSystemModule(opts.system, R);
       const enriched = await sys.enrich(d, { sources: opts.source });
       if (opts.svg) {
         process.stdout.write(renderSvg(enriched) + "\n");
