@@ -69,5 +69,3 @@ Build a sleek, extensible dungeon generation toolkit. The first release will sho
 - Advanced map styles (hex, gridless, hand-drawn).
 
 ---
-
-This roadmap starts with DFRPG as the showcase system while keeping the core clean enough to swap to any game system in the future.

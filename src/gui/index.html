@@ -1,49 +1,34 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>DOA Quick GUI</title>
-    <style>
-      body {
-        font-family: monospace;
-        padding: 1rem;
-      }
-      label {
-        margin-right: 0.5rem;
-      }
-      pre {
-        white-space: pre;
-        border: 1px solid #ccc;
-        padding: 0.5rem;
-        margin-top: 1rem;
-      }
-      #map {
-        border: 1px solid #ccc;
-        padding: 0.5rem;
-        margin-top: 1rem;
-        display: inline-block;
-      }
-    </style>
-  </head>
-  <body>
-    <h1>Dungeon Generator</h1>
-    <div>
-      <label>Rooms: <input id="rooms" type="number" value="8" min="1" /></label>
-      <label>Seed: <input id="seed" type="text" /></label>
-      <label>System:
-        <select id="system">
-          <option value="generic">generic</option>
-          <option value="dfrpg">dfrpg</option>
-        </select>
-      </label>
-      <button id="generate">Generate</button>
-      <a id="download-foundry" download="dungeon.json" style="margin-left: 1rem">Download Foundry JSON</a>
-    </div>
-    <div id="map"></div>
-    <h2>Input</h2>
-    <pre id="inputs"></pre>
-    <h2>Output</h2>
-    <pre id="outputs"></pre>
-    <script type="module" src="./main.js"></script>
-  </body>
+<head>
+  <meta charset="UTF-8" />
+  <title>DOA Quick GUI</title>
+  <style>
+    body { font-family: monospace; padding: 1rem; }
+    label { margin-right: 0.5rem; }
+    pre { white-space: pre; border: 1px solid #ccc; padding: 0.5rem; margin-top: 1rem; }
+    #map { border: 1px solid #ccc; padding: 0.5rem; margin-top: 1rem; display: inline-block; }
+  </style>
+</head>
+<body>
+  <h1>Dungeon Generator</h1>
+  <div>
+    <label>Rooms: <input id="rooms" type="number" value="8" min="1" /></label>
+    <label>Seed: <input id="seed" type="text" /></label>
+    <label>System:
+      <select id="system">
+        <option value="generic">generic</option>
+        <option value="dfrpg">dfrpg</option>
+      </select>
+    </label>
+    <button id="generate">Generate</button>
+    <a id="download-foundry" download="dungeon.json" style="margin-left: 1rem">Download Foundry JSON</a>
+  </div>
+  <div id="map"></div>
+  <h2>Input</h2>
+  <pre id="inputs"></pre>
+  <h2>Output</h2>
+  <pre id="outputs"></pre>
+  <script type="module" src="./main.js"></script>
+</body>
 </html>

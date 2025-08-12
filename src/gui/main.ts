@@ -4,17 +4,18 @@ import { exportFoundry } from "../services/foundry";
 import { loadSystemModule } from "../services/system-loader";
 
 async function generate(): Promise<void> {
-  const roomsInput = document.getElementById("rooms") as HTMLInputElement;
-  const seedInput = document.getElementById("seed") as HTMLInputElement;
-  const systemInput = document.getElementById("system") as HTMLSelectElement;
-  const mapEl = document.getElementById("map") as HTMLElement;
-  const inputEl = document.getElementById("inputs") as HTMLElement;
-  const outputEl = document.getElementById("outputs") as HTMLElement;
-  const foundryLink = document.getElementById("download-foundry") as HTMLAnchorElement;
+const roomsInput = document.getElementById("rooms") as HTMLInputElement;
+const seedInput = document.getElementById("seed") as HTMLInputElement;
+const systemInput = document.getElementById("system") as HTMLSelectElement;
+const mapEl = document.getElementById("map") as HTMLElement;
+const inputEl = document.getElementById("inputs") as HTMLElement;
+const outputEl = document.getElementById("outputs") as HTMLElement;
+const foundryLink = document.getElementById("download-foundry") as HTMLAnchorElement;
 
-  const rooms = parseInt(roomsInput.value, 10) || 8;
-  const seed = seedInput.value || undefined;
-  const system = systemInput.value || "generic";
+const rooms = parseInt(roomsInput.value, 10) || 8;
+const seed = seedInput.value || undefined;
+const system = systemInput.value || "generic";
+
 
   const opts = { rooms, seed };
   inputEl.textContent = JSON.stringify({ ...opts, system }, null, 2);
