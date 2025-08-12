@@ -11,6 +11,7 @@
     "dev": "tsx src/cli/index.ts",
     "doa": "tsx src/cli/index.ts",
     "format": "prettier --write .",
+    "gui": "pnpm build && node scripts/serve-gui.js",
     "lint": "eslint . --ext .ts",
     "test": "vitest run"
   },

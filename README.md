@@ -16,7 +16,11 @@ pnpm install
 pnpm doa generate --rooms=10 --system=dfrpg
 pnpm doa generate --rooms=20
 ```
-4) Run tests:
+4) Start the GUI:
+```bash
+pnpm run gui
+```
+5) Run tests:
 ```bash
 pnpm test
 ```
