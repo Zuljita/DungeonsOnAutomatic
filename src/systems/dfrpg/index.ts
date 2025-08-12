@@ -77,4 +77,4 @@ export const dfrpg: SystemModule = {
 export default dfrpg;
 
 export { dfrpgLockService } from "./locks";
-export { dfrpgTrapService } from "./traps";
+export { DFRPGTraps } from "./DFRPGTraps";
