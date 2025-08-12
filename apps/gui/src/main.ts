@@ -9,7 +9,6 @@ async function generate(): Promise<void> {
   const systemInput = document.getElementById('system') as HTMLSelectElement;
   const mapEl = document.getElementById('map') as HTMLElement;
   const inputEl = document.getElementById('inputs') as HTMLElement;
-  const outputEl = document.getElementById('outputs') as HTMLElement;
   const svgLink = document.getElementById('download-svg') as HTMLAnchorElement;
   const foundryLink = document.getElementById('download-foundry') as HTMLAnchorElement;
 
@@ -24,7 +23,6 @@ async function generate(): Promise<void> {
   const enriched = await sys.enrich(base);
   const svg = renderSvg(enriched);
   mapEl.innerHTML = svg;
-  outputEl.textContent = JSON.stringify(enriched, null, 2);
   const svgBlob = new Blob([svg], { type: 'image/svg+xml' });
   svgLink.href = URL.createObjectURL(svgBlob);
   const foundry = exportFoundry(enriched);
