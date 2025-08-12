@@ -3,9 +3,9 @@ import { id } from './random';
 
 type Edge = { a: number; b: number; d: number };
 
-export function connectRooms(rooms: Room[]): Corridor[] {
+export function connectRooms(rooms: Room[], r: () => number): Corridor[] {
   if (rooms.length < 2) return [];
-  const centers = rooms.map(r => ({ x: r.x + Math.floor(r.w/2), y: r.y + Math.floor(r.h/2) }));
+  const centers = rooms.map(rm => ({ x: rm.x + Math.floor(rm.w/2), y: rm.y + Math.floor(rm.h/2) }));
   const edges: Edge[] = [];
   for (let i=0;i<rooms.length;i++) {
     for (let j=i+1;j<rooms.length;j++) {
@@ -26,19 +26,25 @@ export function connectRooms(rooms: Room[]): Corridor[] {
     if (find(e.a) !== find(e.b)) {
       unite(e.a, e.b);
       const from = rooms[e.a].id, to = rooms[e.b].id;
-      const path = manhattanPath(centers[e.a], centers[e.b]);
+      const path = manhattanPath(centers[e.a], centers[e.b], r);
       corridors.push({ id: id('cor'), from, to, path });
     }
   }
   return corridors;
 }
 
-function manhattanPath(a:{x:number;y:number}, b:{x:number;y:number}) {
-  const path = [];
+function manhattanPath(a:{x:number;y:number}, b:{x:number;y:number}, r: () => number) {
+  const path = [] as {x:number;y:number}[];
   const xStep = a.x < b.x ? 1 : -1;
-  for (let x=a.x; x!==b.x; x+=xStep) path.push({x, y:a.y});
   const yStep = a.y < b.y ? 1 : -1;
-  for (let y=a.y; y!==b.y; y+=yStep) path.push({x:b.x, y});
+  // Randomize whether to move horizontally or vertically first
+  if (r() < 0.5) {
+    for (let x=a.x; x!==b.x; x+=xStep) path.push({x, y:a.y});
+    for (let y=a.y; y!==b.y; y+=yStep) path.push({x:b.x, y});
+  } else {
+    for (let y=a.y; y!==b.y; y+=yStep) path.push({x:a.x, y});
+    for (let x=a.x; x!==b.x; x+=xStep) path.push({x, y:b.y});
+  }
   path.push({x:b.x, y:b.y});
   return path;
 }
