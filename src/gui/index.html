@@ -30,10 +30,14 @@
     <div>
       <label>Rooms: <input id="rooms" type="number" value="8" min="1" /></label>
       <label>Seed: <input id="seed" type="text" /></label>
+      <label>System:
+        <select id="system">
+          <option value="generic">generic</option>
+          <option value="dfrpg">dfrpg</option>
+        </select>
+      </label>
       <button id="generate">Generate</button>
-      <a id="download-foundry" download="dungeon.json" style="margin-left: 1rem"
-        >Download Foundry JSON</a
-      >
+      <a id="download-foundry" download="dungeon.json" style="margin-left: 1rem">Download Foundry JSON</a>
     </div>
     <div id="map"></div>
     <h2>Input</h2>
