@@ -5,6 +5,7 @@ import { renderSvg } from "../src/services/render.js";
 describe("renderSvg", () => {
   it("produces svg markup", () => {
     const d = buildDungeon({ rooms: 2, seed: "svg" });
+    expect(d.doors.length).toBe(d.corridors.length * 2);
     const svg = renderSvg(d);
     expect(svg.startsWith("<svg")).toBe(true);
     expect(svg).toMatch(/<rect/);

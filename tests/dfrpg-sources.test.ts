@@ -6,6 +6,7 @@ describe('dfrpg source filtering', () => {
   it('only includes monsters from selected sources', async () => {
     const sys = await loadSystemModule('dfrpg');
     const dungeon = buildDungeon({ rooms: 20, seed: 'test' });
+    expect(dungeon.doors.length).toBe(dungeon.corridors.length * 2);
     const enriched = await sys.enrich(dungeon, { sources: ['DF16'] });
 
     const entries = Object.values(enriched.encounters || {});

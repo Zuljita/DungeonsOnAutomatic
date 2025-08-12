@@ -5,5 +5,6 @@ describe('assembler', () => {
   it('builds a dungeon with the requested number of rooms', () => {
     const d = buildDungeon({ rooms: 10, seed: 'test' });
     expect(d.rooms.length).toBeGreaterThan(0);
+    expect(d.doors.length).toBe(d.corridors.length * 2);
   });
 });

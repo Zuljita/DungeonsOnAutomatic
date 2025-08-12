@@ -71,6 +71,7 @@ export interface Dungeon {
   seed: string;
   rooms: Room[];
   corridors: Corridor[];
+  doors: Door[];
   encounters?: Record<ID, { monsters?: Monster[]; traps?: Trap[]; treasure?: Treasure[] }>;
   keyItems?: KeyItem[];
 }
