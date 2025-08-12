@@ -1,9 +1,11 @@
 # DungeonsOnAutomatic (DOA)
 
-Modular dungeon generation tool with a simple web GUI for configuring runs and viewing results. System-agnostic core with pluggable system modules (e.g., GURPS DFRPG).
+Modular dungeon generation tool with a simple web GUI for configuring runs and viewing results. System-agnostic core with an included DFRPG module; other system modules are stretch goals.
 
 The included `dfrpg` system module adds random monsters, traps, and treasure to each room when enriching a dungeon.
 
+Support for additional RPG systems is currently a stretch goal.
+ 
 ## Quick Start
 
 1) Install Node.js LTS and pnpm (or npm).

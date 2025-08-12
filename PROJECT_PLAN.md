@@ -1,6 +1,6 @@
 Project Plan: DungeonsOnAutomatic
 Goal:
-Create a modular dungeon generation tool that can be run locally with minimal prerequisites, producing maps and associated game content in a system-agnostic way, with optional system modules (DFRPG, D&D, etc.). Make sure we leave room for modules that impact genre (eg. Fantasy, Sci-Fi, Horror), System (e.g. D&D 5e, GURPS, Savage Worlds), and map styles (hexes, squares, gridless, hatch).
+Create a modular dungeon generation tool that can be run locally with minimal prerequisites, producing maps and associated game content in a system-agnostic way, with an initial focus on a DFRPG system module. Support for other systems (e.g. D&D 5e, GURPS, Savage Worlds) is a stretch goal. Make sure we leave room for modules that impact genre (eg. Fantasy, Sci-Fi, Horror) and map styles (hexes, squares, gridless, hatch).
 
 Phase 1 – Foundation
 Objective: Set up a clean, minimal Node.js TypeScript project and get the core structure right.
@@ -80,7 +80,7 @@ Validate no overlapping rooms.
 Validate all rooms are connected.
 
 Phase 3 – System Modules
-Objective: Plug in rules/content for specific systems.
+Objective: Implement DFRPG rules/content and design for future systems.
 
 System Module Loader
 
@@ -97,6 +97,10 @@ Formats statblocks.
 Generic/Fallback Module
 
 Always available if no specific system is chosen.
+
+Other System Modules
+
+Support for additional game systems (e.g. D&D 5e, Savage Worlds) is deferred to stretch goals.
 
 Phase 4 – Output & Export
 Objective: Give users useful outputs beyond JSON.
@@ -139,6 +143,7 @@ Examples
 Sample dungeons with screenshots.
 
 Stretch Goals
+Support for additional system modules beyond DFRPG (e.g., D&D 5e, GURPS, Savage Worlds).
 Procedural name generator for rooms and NPCs.
 
 AI-assisted description generation.
