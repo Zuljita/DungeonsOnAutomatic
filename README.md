@@ -41,3 +41,13 @@ This repo follows a layered structure:
 ```
 
 See `PROJECT_PLAN.md` for the roadmap.
+
+## Contributing
+
+Contributions are welcome! Please make sure to run the lint and test
+scripts before submitting a pull request:
+
+```bash
+pnpm lint
+pnpm test
+```
