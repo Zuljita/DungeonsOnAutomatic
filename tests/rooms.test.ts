@@ -3,7 +3,13 @@ import { generateRooms } from '../src/services/rooms.js';
 import { rng } from '../src/services/random.js';
 
 function overlaps(a: {x:number;y:number;w:number;h:number}, b: {x:number;y:number;w:number;h:number}): boolean {
-  return !(a.x + a.w <= b.x || b.x + b.w <= a.x || a.y + a.h <= b.y || b.y + b.h <= a.y);
+  // Treat touching rooms as overlapping by adding a one-tile padding
+  return !(
+    a.x + a.w + 1 <= b.x ||
+    b.x + b.w + 1 <= a.x ||
+    a.y + a.h + 1 <= b.y ||
+    b.y + b.h + 1 <= a.y
+  );
 }
 
 describe('rooms', () => {

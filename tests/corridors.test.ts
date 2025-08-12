@@ -10,6 +10,11 @@ describe('corridors', () => {
     const corridors = connectRooms(rooms);
     expect(corridors.length).toBe(rooms.length - 1);
 
+    // Each corridor should traverse at least one tile between rooms
+    for (const c of corridors) {
+      expect(c.path.length).toBeGreaterThan(1);
+    }
+
     const adj = new Map<string, string[]>();
     for (const c of corridors) {
       if (!adj.has(c.from)) adj.set(c.from, []);
