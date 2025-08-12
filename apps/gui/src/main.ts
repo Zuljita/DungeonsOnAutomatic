@@ -1,5 +1,6 @@
 import { buildDungeon } from '@src/services/assembler';
-import { renderAscii } from '@src/services/render';
+import { renderSvg } from '@src/services/render';
+import { exportFoundry } from '@src/services/foundry';
 import { loadSystemModule } from '@src/services/system-loader';
 
 async function generate(): Promise<void> {
@@ -9,6 +10,8 @@ async function generate(): Promise<void> {
   const mapEl = document.getElementById('map') as HTMLElement;
   const inputEl = document.getElementById('inputs') as HTMLElement;
   const outputEl = document.getElementById('outputs') as HTMLElement;
+  const svgLink = document.getElementById('download-svg') as HTMLAnchorElement;
+  const foundryLink = document.getElementById('download-foundry') as HTMLAnchorElement;
 
   const rooms = parseInt(roomsInput.value, 10) || 8;
   const seed = seedInput.value || undefined;
@@ -19,8 +22,14 @@ async function generate(): Promise<void> {
   const base = buildDungeon(opts);
   const sys = await loadSystemModule(system);
   const enriched = await sys.enrich(base);
-  mapEl.textContent = renderAscii(enriched);
+  const svg = renderSvg(enriched);
+  mapEl.innerHTML = svg;
   outputEl.textContent = JSON.stringify(enriched, null, 2);
+  const svgBlob = new Blob([svg], { type: 'image/svg+xml' });
+  svgLink.href = URL.createObjectURL(svgBlob);
+  const foundry = exportFoundry(enriched);
+  const foundryBlob = new Blob([JSON.stringify(foundry, null, 2)], { type: 'application/json' });
+  foundryLink.href = URL.createObjectURL(foundryBlob);
 }
 
 document.getElementById('generate')?.addEventListener('click', () => {
