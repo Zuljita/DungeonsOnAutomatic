@@ -7,7 +7,8 @@ describe('system-loader', () => {
     const sys = await loadSystemModule('dfrpg');
     expect(sys.id).toBe('dfrpg');
 
-    const dungeon = buildDungeon({ rooms: 2, width: 40, height: 30, seed: 'test' });
+    const dungeon = buildDungeon({ rooms: 2, seed: 'test' });
+    expect(dungeon.doors.length).toBe(dungeon.corridors.length * 2);
     const enriched = await sys.enrich(dungeon);
 
     dungeon.rooms.forEach((room) => {

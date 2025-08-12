@@ -14,8 +14,8 @@ export interface FoundryScene {
 
 /**
  * Convert a dungeon into a simple FoundryVTT Scene JSON. Each room and
- * corridor tile becomes floor space with surrounding walls. The scene uses a
- * fixed grid size.
+ * corridor tile becomes floor space with surrounding walls. Doors are not
+ * currently exported. The scene uses a fixed grid size.
  */
 export function exportFoundry(d: Dungeon, grid = 100): FoundryScene {
   const cells: { x: number; y: number }[] = [];

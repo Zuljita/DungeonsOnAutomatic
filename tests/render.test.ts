@@ -4,7 +4,8 @@ import { renderAscii } from '../src/services/render.js';
 
 describe('renderAscii', () => {
   it('draws rooms and corridors', () => {
-    const d = buildDungeon({ rooms: 2, width: 40, height: 30, seed: 'test' });
+    const d = buildDungeon({ rooms: 2, seed: 'test' });
+    expect(d.doors.length).toBe(d.corridors.length * 2);
     const ascii = renderAscii(d);
     expect(ascii).toMatch(/#/); // room borders
     expect(ascii).toMatch(/[.+#]/); // some map characters

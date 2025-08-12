@@ -11,5 +11,6 @@ describe('assembler', () => {
     const maxY = Math.max(...d.rooms.map(r => r.y + r.h));
     expect(maxX).toBeLessThanOrEqual(width);
     expect(maxY).toBeLessThanOrEqual(height);
+    expect(d.doors.length).toBe(d.corridors.length * 2);
   });
 });
