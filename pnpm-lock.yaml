@@ -40,6 +40,15 @@ importers:
         specifier: ^2.0.5
         version: 2.1.9(@types/node@22.17.1)
 
+  apps/gui:
+    devDependencies:
+      typescript:
+        specifier: ^5.4.0
+        version: 5.9.2
+      vite:
+        specifier: ^5.0.0
+        version: 5.4.19(@types/node@22.17.1)
+
 packages:
 
   '@esbuild/aix-ppc64@0.21.5':

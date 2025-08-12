@@ -11,9 +11,11 @@
     "dev": "tsx src/cli/index.ts",
     "doa": "tsx src/cli/index.ts",
     "format": "prettier --write .",
-    "gui": "pnpm build && node scripts/serve-gui.js",
+    "gui": "pnpm --filter @doa/gui dev",
     "lint": "eslint . --ext .ts",
-    "test": "vitest run"
+    "test": "vitest run",
+    "gui:build": "pnpm --filter @doa/gui build",
+    "gui:preview": "pnpm --filter @doa/gui preview --port 3000"
   },
   "dependencies": {
     "commander": "^12.1.0",
@@ -28,5 +30,8 @@
     "tsx": "^4.19.1",
     "typescript": "^5.5.4",
     "vitest": "^2.0.5"
-  }
+  },
+  "workspaces": [
+    "apps/*"
+  ]
 }
