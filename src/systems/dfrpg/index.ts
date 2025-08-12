@@ -28,7 +28,8 @@ const TREASURE: Treasure[] = [
 export const dfrpg: SystemModule = {
   id: 'dfrpg',
   label: 'GURPS Dungeon Fantasy',
-  enrich(d: Dungeon, opts?: { sources?: string[] }): Dungeon {
+  enrich(d: Dungeon, opts?: { sources?: string[]; rng?: () => number }): Dungeon {
+    const R = opts?.rng ?? Math.random;
     const encounters = { ...d.encounters };
 
     let pool = RAW_MONSTERS;
@@ -51,19 +52,19 @@ export const dfrpg: SystemModule = {
       const traps: Trap[] = [];
       const treasure: Treasure[] = [];
 
-      const monsterCount = Math.floor(Math.random() * 3);
+      const monsterCount = Math.floor(R() * 3);
       for (let i = 0; i < monsterCount; i++) {
-        const m = MONSTERS[Math.floor(Math.random() * MONSTERS.length)];
+        const m = MONSTERS[Math.floor(R() * MONSTERS.length)];
         if (m) monsters.push({ ...m });
       }
 
-      if (Math.random() < 0.3) {
-        const t = TRAPS[Math.floor(Math.random() * TRAPS.length)];
+      if (R() < 0.3) {
+        const t = TRAPS[Math.floor(R() * TRAPS.length)];
         traps.push({ ...t });
       }
 
-      if (Math.random() < 0.5) {
-        const t = TREASURE[Math.floor(Math.random() * TREASURE.length)];
+      if (R() < 0.5) {
+        const t = TREASURE[Math.floor(R() * TREASURE.length)];
         treasure.push({ ...t });
       }
 

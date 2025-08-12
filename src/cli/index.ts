@@ -22,7 +22,7 @@ program
   .option("--foundry", "output FoundryVTT-compatible JSON")
     .action(async (opts) => {
       const d = buildDungeon({ rooms: opts.rooms, seed: opts.seed, width: opts.width, height: opts.height });
-      const sys = await loadSystemModule(opts.system);
+      const sys = await loadSystemModule(opts.system, d.rng);
       const enriched = await sys.enrich(d, { sources: opts.source });
       if (opts.svg) {
         process.stdout.write(renderSvg(enriched) + "\n");
