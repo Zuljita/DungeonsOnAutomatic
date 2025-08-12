@@ -35,6 +35,12 @@ class KeyItemService {
     }
   }
 
+  get_keys_in_location(locationId: string): KeyItem[] {
+    return Array.from(this.items.values()).filter(
+      (i) => i.locationId === locationId,
+    );
+  }
+
   reset(): void {
     this.items.clear();
     this.seq = 0;
