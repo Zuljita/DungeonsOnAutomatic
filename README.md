@@ -16,9 +16,11 @@ pnpm install
 pnpm doa generate --rooms=10 --system=dfrpg
 pnpm doa generate --rooms=20
 ```
-4) Start the GUI:
+4) GUI:
 ```bash
-pnpm run gui
+pnpm gui         # dev server with HMR
+pnpm gui:build   # production build
+pnpm gui:preview # then open http://localhost:3000/
 ```
 5) Run tests:
 ```bash
