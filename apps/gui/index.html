@@ -8,6 +8,7 @@
     body { font-family: monospace; padding: 1rem; }
     label { margin-right: 0.5rem; }
     pre { white-space: pre; border: 1px solid #ccc; padding: 0.5rem; margin-top: 1rem; }
+    #map { border: 1px solid #ccc; padding: 0.5rem; margin-top: 1rem; display: inline-block; }
   </style>
 </head>
 <body>
@@ -22,8 +23,10 @@
       </select>
     </label>
     <button id="generate">Generate</button>
+    <a id="download-svg" download="dungeon.svg" style="margin-left: 1rem">Download SVG</a>
+    <a id="download-foundry" download="dungeon.json" style="margin-left: 1rem">Download Foundry JSON</a>
   </div>
-  <pre id="map"></pre>
+  <div id="map"></div>
   <h2>Input</h2>
   <pre id="inputs"></pre>
   <h2>Output</h2>
