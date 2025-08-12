@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
-import { buildDungeon } from '../services/assembler.js';
-import { loadSystemModule } from '../services/system-loader.js';
-import { renderAscii } from '../services/render.js';
+import { buildDungeon } from '../services/assembler';
+import { loadSystemModule } from '../services/system-loader';
+import { renderAscii } from '../services/render';
 
 const program = new Command();
 program

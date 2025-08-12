@@ -1,5 +1,5 @@
-import { Corridor, Room } from '../core/types.js';
-import { id } from './random.js';
+import { Corridor, Room } from '../core/types';
+import { id } from './random';
 
 type Edge = { a: number; b: number; d: number };
 

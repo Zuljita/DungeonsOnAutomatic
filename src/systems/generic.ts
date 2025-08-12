@@ -1,4 +1,4 @@
-import { Dungeon, SystemModule } from '../core/types.js';
+import { Dungeon, SystemModule } from '../core/types';
 
 export const generic: SystemModule = {
   id: 'generic',

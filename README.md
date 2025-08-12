@@ -1,6 +1,6 @@
 # DungeonsOnAutomatic (DOA)
 
-Modular dungeon generation tool. System-agnostic core with pluggable system modules (e.g., GURPS DFRPG).
+Modular dungeon generation tool with a simple web GUI for configuring runs and viewing results. System-agnostic core with pluggable system modules (e.g., GURPS DFRPG).
 
 The included `dfrpg` system module adds random monsters, traps, and treasure to each room when enriching a dungeon.
 

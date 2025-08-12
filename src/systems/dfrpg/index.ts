@@ -1,4 +1,4 @@
-import { Dungeon, Monster, SystemModule, Trap, Treasure } from '../../core/types.js';
+import { Dungeon, Monster, SystemModule, Trap, Treasure } from '../../core/types';
 import monstersData from './data/monsters-complete.js';
 
 interface RawMonster {
