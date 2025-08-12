@@ -43,11 +43,36 @@ export interface Treasure {
   valueHint?: string; // system-agnostic, e.g., 'minor', 'standard', 'major'
 }
 
+export enum PlacementRule {
+  REQUIRED = 'REQUIRED',
+  OPTIONAL = 'OPTIONAL',
+  HIDDEN = 'HIDDEN',
+  LOST = 'LOST',
+}
+
+export enum PlacementTarget {
+  MONSTER_LOOT = 'MONSTER_LOOT',
+  TREASURE_CHEST = 'TREASURE_CHEST',
+  ROOM_FEATURE = 'ROOM_FEATURE',
+  NPC_POSSESSION = 'NPC_POSSESSION',
+}
+
+export interface KeyItem {
+  id: ID;
+  doorId: ID;
+  name: string;
+  type: string;
+  placementRule: PlacementRule;
+  placementTarget: PlacementTarget;
+  locationId?: ID;
+}
+
 export interface Dungeon {
   seed: string;
   rooms: Room[];
   corridors: Corridor[];
   encounters?: Record<ID, { monsters?: Monster[]; traps?: Trap[]; treasure?: Treasure[] }>;
+  keyItems?: KeyItem[];
 }
 
 export interface SystemModule {
