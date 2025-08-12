@@ -3,7 +3,7 @@ import { id } from './random';
 
 type Edge = { a: number; b: number; d: number };
 
-export function connectRooms(rooms: Room[]): Corridor[] {
+export function connectRooms(rooms: Room[], r: () => number): Corridor[] {
   if (rooms.length < 2) return [];
   const centers = rooms.map(r => ({ x: r.x + Math.floor(r.w/2), y: r.y + Math.floor(r.h/2) }));
   const edges: Edge[] = [];
@@ -27,7 +27,7 @@ export function connectRooms(rooms: Room[]): Corridor[] {
       unite(e.a, e.b);
       const from = rooms[e.a].id, to = rooms[e.b].id;
       const path = manhattanPath(centers[e.a], centers[e.b]);
-      corridors.push({ id: id('cor'), from, to, path });
+      corridors.push({ id: id('cor', r), from, to, path });
     }
   }
   return corridors;

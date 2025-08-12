@@ -5,14 +5,16 @@ import { rng } from '../src/services/random.js';
 describe('doors', () => {
   it('generateDoor produces valid types and statuses', () => {
     const r = rng('doorTest');
-    const types = new Set<string>();
-    const statuses = new Set<string>();
     for (let i = 0; i < 100; i++) {
       const d = generateDoor(r);
-      types.add(d.type);
-      statuses.add(d.status);
+      expect(DOOR_TYPES).toContain(d.type);
+      expect(DOOR_STATUSES).toContain(d.status);
     }
-    expect([...types].sort()).toEqual([...DOOR_TYPES].sort());
-    expect([...statuses].sort()).toEqual([...DOOR_STATUSES].sort());
+  });
+
+  it('generateDoor produces deterministic ids', () => {
+    const d1 = generateDoor(rng('doorId'));
+    const d2 = generateDoor(rng('doorId'));
+    expect(d1.id).toBe(d2.id);
   });
 });

@@ -22,5 +22,9 @@ describe('rooms', () => {
         expect(overlaps(rooms[i], rooms[j])).toBe(false);
       }
     }
+
+    const r2 = rng('roomTest');
+    const rooms2 = generateRooms(20, 80, 60, r2);
+    expect(rooms.map(r => r.id)).toEqual(rooms2.map(r => r.id));
   });
 });

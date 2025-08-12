@@ -7,7 +7,7 @@ describe('corridors', () => {
   it('connectRooms returns a fully connected graph', () => {
     const r = rng('corridorTest');
     const rooms = generateRooms(15, 80, 60, r);
-    const corridors = connectRooms(rooms);
+    const corridors = connectRooms(rooms, r);
     expect(corridors.length).toBe(rooms.length - 1);
 
     // Each corridor should traverse at least one tile between rooms
@@ -34,5 +34,15 @@ describe('corridors', () => {
       }
     }
     expect(visited.size).toBe(rooms.length);
+  });
+
+  it('connectRooms generates deterministic ids', () => {
+    const r1 = rng('corridorId');
+    const rooms1 = generateRooms(15, 80, 60, r1);
+    const corridors1 = connectRooms(rooms1, r1);
+    const r2 = rng('corridorId');
+    const rooms2 = generateRooms(15, 80, 60, r2);
+    const corridors2 = connectRooms(rooms2, r2);
+    expect(corridors1.map(c => c.id)).toEqual(corridors2.map(c => c.id));
   });
 });

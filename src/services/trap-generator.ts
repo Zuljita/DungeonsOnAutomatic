@@ -16,12 +16,12 @@ export interface TrapSystem {
 export class TrapGeneratorService {
   private traps: Trap[] = [];
 
-  constructor(private readonly system: TrapSystem) {}
+  constructor(private readonly system: TrapSystem, private readonly r: () => number = Math.random) {}
 
   generateTrap(type: string, difficulty: string, location: string): Trap {
     const stats = this.system.getTrapStats(type, difficulty);
     const trap: Trap = {
-      id: id('trap'),
+      id: id('trap', this.r),
       name: stats.name ?? `${difficulty} ${type} trap`,
       type,
       location,

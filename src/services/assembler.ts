@@ -8,6 +8,6 @@ export function buildDungeon(opts: { rooms?: number; seed?: string }) : Dungeon 
   const R = rng(seed);
   const n = Math.max(1, Math.floor(opts.rooms ?? 8));
   const rooms = generateRooms(n, 80, 60, R);
-  const corridors = connectRooms(rooms);
+  const corridors = connectRooms(rooms, R);
   return { seed, rooms, corridors, encounters: {} };
 }
