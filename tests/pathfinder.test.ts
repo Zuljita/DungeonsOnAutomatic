@@ -28,12 +28,12 @@ describe('pathfinder', () => {
       C: [{ to: 'A' }],
     };
 
-    const key = keyItemService.generate_key(
+    const key = keyItemService.generateKey(
       'door1',
       PlacementRule.REQUIRED,
       PlacementTarget.ROOM_FEATURE,
     );
-    keyItemService.mark_as_placed(key.id, 'C');
+    keyItemService.markAsPlaced(key.id, 'C');
 
     expect(isPathPossible(graph, 'A', 'B')).toBe(false);
     expect(isPathPossibleWithLockpicking(graph, 'A', 'B')).toBe(true);
