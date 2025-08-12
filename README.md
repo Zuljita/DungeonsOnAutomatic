@@ -8,23 +8,32 @@ Support for additional RPG systems is currently a stretch goal.
  
 ## Quick Start
 
-1) Install Node.js LTS and pnpm (or npm).
-2) Install deps:
+1. Install Node.js LTS and pnpm (or npm).
+2. Install deps:
+
 ```bash
 pnpm install
 ```
-3) Run the CLI (examples):
+
+3. Run the CLI (examples):
+
 ```bash
 pnpm doa generate --rooms=10 --system=dfrpg
-pnpm doa generate --rooms=20
+pnpm doa generate --rooms=20 --svg > map.svg
+pnpm doa generate --rooms=15 --foundry > foundry.json
+pnpm doa generate --rooms=8 --ascii
 ```
-4) GUI:
+
+4. GUI:
+
 ```bash
 pnpm gui         # dev server with HMR
 pnpm gui:build   # production build
 pnpm gui:preview # then open http://localhost:3000/
 ```
-5) Run tests:
+
+5. Run tests:
+
 ```bash
 pnpm test
 ```
