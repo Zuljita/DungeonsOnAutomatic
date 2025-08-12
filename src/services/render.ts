@@ -2,7 +2,8 @@ import { Dungeon } from "../core/types";
 
 /**
  * Render a simple ASCII map of the dungeon. Rooms are drawn with '#' borders
- * and '.' interiors; corridor tiles are marked with '+'.
+ * and '.' interiors; corridor tiles are marked with '+'. Doors are currently
+ * not depicted but the dungeon's door list is accepted for completeness.
  * The map is tightly cropped to the extents of the dungeon geometry.
  */
 export function renderAscii(d: Dungeon): string {
@@ -35,8 +36,9 @@ export function renderAscii(d: Dungeon): string {
 
 /**
  * Render a very simple SVG representation of the dungeon. Rooms are drawn as
- * stroked rectangles and corridor tiles are filled squares. The output is a
- * standalone SVG string sized to the dungeon's extents.
+ * stroked rectangles and corridor tiles are filled squares. Doors are not
+ * currently visualized. The output is a standalone SVG string sized to the
+ * dungeon's extents.
  */
 export function renderSvg(d: Dungeon): string {
   const cell = 20; // pixel size of a single grid square
