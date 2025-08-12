@@ -1,6 +1,6 @@
 Project Plan: DungeonsOnAutomatic
 Goal:
-Create a modular dungeon generation tool that can be run locally with minimal prerequisites, producing maps and associated game content in a system-agnostic way, with an initial focus on a DFRPG system module. Support for other systems (e.g. D&D 5e, GURPS, Savage Worlds) is a stretch goal. Make sure we leave room for modules that impact genre (eg. Fantasy, Sci-Fi, Horror) and map styles (hexes, squares, gridless, hatch).
+Create a modular dungeon generation tool that can be run locally with minimal prerequisites, producing maps and associated game content in a system-agnostic way, with an initial focus on a DFRPG system module. Support for other systems (e.g. D&D 5e, GURPS, Savage Worlds) is a stretch goal. Make sure we leave room for modules that impact genre (eg. Fantasy, Sci-Fi, Horror), system (e.g. D&D 5e, GURPS, Savage Worlds), and map styles (hexes, squares, gridless, hatch).
 
 Phase 1 – Foundation
 Objective: Set up a clean, minimal Node.js TypeScript project and get the core structure right.
@@ -100,7 +100,7 @@ Always available if no specific system is chosen.
 
 Other System Modules
 
-Support for additional game systems (e.g. D&D 5e, Savage Worlds) is deferred to stretch goals.
+Support for additional game systems (e.g. D&D 5e, GURPS, Savage Worlds) is deferred to stretch goals.
 
 Phase 4 – Output & Export
 Objective: Give users useful outputs beyond JSON.
