@@ -63,11 +63,16 @@ export function renderSvg(d: Dungeon): string {
     }
   }
 
-  for (const r of d.rooms) {
+  d.rooms.forEach((r, i) => {
     parts.push(
       `<rect x="${r.x * cell}" y="${r.y * cell}" width="${r.w * cell}" height="${r.h * cell}" fill="white" stroke="black"/>`,
     );
-  }
+    const cx = (r.x + r.w / 2) * cell;
+    const cy = (r.y + r.h / 2) * cell;
+    parts.push(
+      `<text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" font-size="${cell * 0.6}">${i + 1}</text>`,
+    );
+  });
 
   parts.push("</svg>");
   return parts.join("");
