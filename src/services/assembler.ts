@@ -8,6 +8,7 @@ export function buildDungeon(opts: { rooms?: number; seed?: string; width?: numb
   const seed = opts.seed ?? Math.random().toString(36).slice(2, 10);
   const R = rng(seed);
   const n = Math.max(1, Math.floor(opts.rooms ?? 8));
+  // fall back to safe defaults when width/height are missing or invalid
   const width = Math.max(
     1,
     Math.floor(typeof opts.width === 'number' && !Number.isNaN(opts.width) ? opts.width : 80),
