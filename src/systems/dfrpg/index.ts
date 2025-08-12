@@ -6,14 +6,10 @@ interface RawMonster {
   Class?: string;
   SM?: number | null;
   Subclass?: string;
+  Source1?: string;
 }
 
-const MONSTERS: Monster[] = (monstersData as RawMonster[]).map((m) => ({
-  name: m.Description,
-  sm: m.SM ?? null,
-  cls: m.Class,
-  subclass: m.Subclass
-}));
+const RAW_MONSTERS: RawMonster[] = monstersData as RawMonster[];
 
 const TRAPS: Trap[] = [
   { name: 'Pit Trap', level: 1 },
@@ -32,8 +28,23 @@ const TREASURE: Treasure[] = [
 export const dfrpg: SystemModule = {
   id: 'dfrpg',
   label: 'GURPS Dungeon Fantasy',
-  enrich(d: Dungeon): Dungeon {
+  enrich(d: Dungeon, opts?: { sources?: string[] }): Dungeon {
     const encounters = { ...d.encounters };
+
+    let pool = RAW_MONSTERS;
+    if (opts?.sources?.length) {
+      const allowed = opts.sources.map((s) => s.toLowerCase());
+      pool = pool.filter((m) =>
+        m.Source1 && allowed.some((src) => m.Source1!.toLowerCase().includes(src))
+      );
+    }
+    const MONSTERS: Monster[] = pool.map((m) => ({
+      name: m.Description,
+      sm: m.SM ?? null,
+      cls: m.Class,
+      subclass: m.Subclass,
+      source: m.Source1
+    }));
 
     d.rooms.forEach((r) => {
       const monsters: Monster[] = [];

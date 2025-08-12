@@ -15,11 +15,12 @@ program.command('generate')
   .option('--rooms <n>', 'number of rooms', (v) => parseInt(v, 10))
   .option('--seed <seed>', 'random seed')
   .option('--system <name>', 'system module to use (generic|dfrpg)', 'generic')
+  .option('--source <src...>', 'sources to include (system-specific)')
   .option('--ascii', 'render an ASCII map instead of JSON output')
   .action(async (opts) => {
     const d = buildDungeon({ rooms: opts.rooms, seed: opts.seed });
     const sys = await loadSystemModule(opts.system);
-    const enriched = await sys.enrich(d);
+    const enriched = await sys.enrich(d, { sources: opts.source });
     if (opts.ascii) {
       process.stdout.write(renderAscii(enriched) + '\n');
     } else {
