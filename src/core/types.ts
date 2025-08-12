@@ -23,6 +23,7 @@ export interface Monster {
   cls?: string;
   subclass?: string;
   notes?: string;
+  source?: string;
 }
 
 export interface Trap {
@@ -46,5 +47,5 @@ export interface Dungeon {
 export interface SystemModule {
   id: string;
   label: string;
-  enrich(d: Dungeon): Promise<Dungeon> | Dungeon;
+  enrich(d: Dungeon, opts?: Record<string, unknown>): Promise<Dungeon> | Dungeon;
 }
