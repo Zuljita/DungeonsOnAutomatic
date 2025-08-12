@@ -8,5 +8,6 @@ describe("renderSvg", () => {
     const svg = renderSvg(d);
     expect(svg.startsWith("<svg")).toBe(true);
     expect(svg).toMatch(/<rect/);
+    expect(svg).toMatch(/<text[^>]*>1<\/text>/);
   });
 });
