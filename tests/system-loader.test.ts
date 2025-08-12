@@ -19,4 +19,8 @@ describe('system-loader', () => {
       expect(enc?.treasure).toBeDefined();
     });
   });
+
+  it('throws on invalid system name', async () => {
+    await expect(loadSystemModule('bogus')).rejects.toThrow('Unknown system');
+  });
 });

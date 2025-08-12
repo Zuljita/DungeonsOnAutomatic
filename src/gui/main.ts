@@ -2,6 +2,7 @@ import { buildDungeon } from "../services/assembler";
 import { renderSvg } from "../services/render";
 import { exportFoundry } from "../services/foundry";
 import { loadSystemModule } from "../services/system-loader";
+import type { SystemModule } from "../core/types";
 
 async function generate(): Promise<void> {
 const roomsInput = document.getElementById("rooms") as HTMLInputElement;
@@ -20,7 +21,14 @@ const system = systemInput.value || "generic";
   const opts = { rooms, seed };
   inputEl.textContent = JSON.stringify({ ...opts, system }, null, 2);
   const base = buildDungeon(opts);
-  const sys = await loadSystemModule(system, base.rng);
+  let sys: SystemModule;
+  try {
+    sys = await loadSystemModule(system, base.rng);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    alert(msg);
+    sys = await loadSystemModule('generic', base.rng);
+  }
   const enriched = await sys.enrich(base);
   mapEl.innerHTML = renderSvg(enriched);
   outputEl.textContent = JSON.stringify(enriched, null, 2);

@@ -10,12 +10,12 @@ export async function loadSystemModule(name?: string, rng?: () => number): Promi
       return {
         ...base,
         enrich(d: Dungeon, opts?: Record<string, unknown>) {
-          return base.enrich(d, { ...(opts as any), rng });
+          const options = { ...(opts ?? {}), rng } as { sources?: string[]; rng?: () => number };
+          return base.enrich(d, options);
         }
       };
     }
     return mod.default;
   }
-  // fallback
-  return generic;
+  throw new Error(`Unknown system: ${name}`);
 }

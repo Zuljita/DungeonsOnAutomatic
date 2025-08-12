@@ -2,6 +2,7 @@
 import { Command } from "commander";
 import { buildDungeon } from "../services/assembler";
 import { loadSystemModule } from "../services/system-loader";
+import type { SystemModule } from "../core/types";
 import { renderAscii, renderSvg } from "../services/render";
 import { exportFoundry } from "../services/foundry";
 
@@ -22,7 +23,14 @@ program
   .option("--foundry", "output FoundryVTT-compatible JSON")
     .action(async (opts) => {
       const d = buildDungeon({ rooms: opts.rooms, seed: opts.seed, width: opts.width, height: opts.height });
-      const sys = await loadSystemModule(opts.system, d.rng);
+      let sys: SystemModule;
+      try {
+        sys = await loadSystemModule(opts.system, d.rng);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error(msg);
+        sys = await loadSystemModule('generic', d.rng);
+      }
       const enriched = await sys.enrich(d, { sources: opts.source });
       if (opts.svg) {
         process.stdout.write(renderSvg(enriched) + "\n");
