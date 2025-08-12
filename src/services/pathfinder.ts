@@ -66,7 +66,7 @@ export function isPathPossibleWithBacktracking(
     if (room === goal) return true;
 
     const newKeys = new Set(keys);
-    for (const item of keyItemService.get_keys_in_location(room)) {
+    for (const item of keyItemService.getKeysInLocation(room)) {
       newKeys.add(item.doorId);
     }
 

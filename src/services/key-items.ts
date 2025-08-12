@@ -4,7 +4,7 @@ class KeyItemService {
   private items = new Map<string, KeyItem>();
   private seq = 0;
 
-  generate_key(
+  generateKey(
     doorId: string,
     placementRule: PlacementRule,
     placementTarget: PlacementTarget,
@@ -22,20 +22,20 @@ class KeyItemService {
     return item;
   }
 
-  get_unplaced_keys(): KeyItem[] {
+  getUnplacedKeys(): KeyItem[] {
     return Array.from(this.items.values()).filter(
       (i) => !i.locationId && i.placementRule !== PlacementRule.LOST,
     );
   }
 
-  mark_as_placed(keyId: string, locationId: string): void {
+  markAsPlaced(keyId: string, locationId: string): void {
     const item = this.items.get(keyId);
     if (item) {
       item.locationId = locationId;
     }
   }
 
-  get_keys_in_location(locationId: string): KeyItem[] {
+  getKeysInLocation(locationId: string): KeyItem[] {
     return Array.from(this.items.values()).filter(
       (i) => i.locationId === locationId,
     );
