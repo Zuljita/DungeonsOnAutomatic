@@ -12,20 +12,21 @@ The `locks` service will centralize logic for evaluating door locks within a dun
 * **Outputs:**
   * `boolean` – `true` if the `door.id` matches `key.doorId`.
 
-### `checkDoorLock(dungeon, doorId)`
+### `checkDoorLock(dungeon, doorId, doors?)`
 * **Purpose:** report whether a door is locked and which key unlocks it.
 * **Inputs:**
-  * `dungeon: Dungeon` – the dungeon to inspect. May optionally contain `doors?: Door[]`.
-  * `doorId: string` – identifier of the door.
+  * `dungeon: Dungeon` – the dungeon to inspect for key items.
+  * `doorId: ID` – identifier of the door.
+  * `doors?: Door[]` – optional collection of doors available in the dungeon.
 * **Outputs:**
-  * `{ doorId: string; locked: boolean; requiredKey?: KeyItem }` – lock status and any matching key.
+  * `{ doorId: ID; locked: boolean; requiredKey?: KeyItem }` – lock status and any matching key.
 
 ## 3. locks.ts Implementation
 ```ts
-import { Dungeon, Door, KeyItem } from '../core/types';
+import { Dungeon, Door, ID, KeyItem } from '../core/types';
 
 export interface LockCheckResult {
-  doorId: string;
+  doorId: ID;
   locked: boolean;
   requiredKey?: KeyItem;
 }
@@ -35,14 +36,12 @@ export function canKeyOpenDoor(door: Door, key: KeyItem): boolean {
 }
 
 export function checkDoorLock(
-  dungeon: Dungeon & { doors?: Door[] },
-  doorId: string,
+  dungeon: Dungeon,
+  doorId: ID,
+  doors: Door[] = [],
 ): LockCheckResult {
-  const door = dungeon.doors?.find((d) => d.id === doorId);
-  if (!door) {
-    return { doorId, locked: false };
-  }
-  if (door.status !== 'locked') {
+  const door = doors.find((d) => d.id === doorId);
+  if (!door || door.status !== 'locked') {
     return { doorId, locked: false };
   }
   const requiredKey = dungeon.keyItems?.find((k) => canKeyOpenDoor(door, k));
@@ -50,7 +49,19 @@ export function checkDoorLock(
 }
 ```
 
-## 4. Example Usage in a System Module
+## 4. Integration with `corridors` and `pathfinder`
+The core `Dungeon` type lacks a canonical list of doors. Corridors and the
+`pathfinder` service currently track door information through their own data
+structures (e.g., `PathGraph` edges). The `locks` service therefore accepts an
+explicit list of `Door` objects rather than assuming a `dungeon.doors` field.
+
+* **`corridors.ts`:** corridor generation can attach `Door` instances to the
+  connections it creates and expose them as a door list for the lock service.
+* **`pathfinder.ts`:** pathfinding algorithms may consult `checkDoorLock` to
+  determine if an edge's door is traversable or requires a key, keeping lock
+  evaluation in one place.
+
+## 5. Example Usage in a System Module
 ```ts
 import { checkDoorLock } from '../services/locks';
 
@@ -58,7 +69,8 @@ export const dfrpg: SystemModule = {
   id: 'dfrpg',
   label: 'Dungeon Fantasy RPG',
   enrich(dungeon) {
-    const lockInfo = checkDoorLock(dungeon, 'door-1');
+    const dungeonDoors = [];
+    const lockInfo = checkDoorLock(dungeon, 'door-1', dungeonDoors);
     if (lockInfo.locked && lockInfo.requiredKey) {
       // annotate the dungeon or add narrative about the locked door
     }
@@ -67,7 +79,7 @@ export const dfrpg: SystemModule = {
 };
 ```
 
-## 5. Future Improvements
+## 6. Future Improvements
 * Support varying lock qualities (easy, average, superior) affecting difficulty or alternate solutions.
 * Introduce key types (master keys, skeleton keys) beyond simple `doorId` matching.
 * Allow multiple keys for a single door or multi-lock mechanisms.
