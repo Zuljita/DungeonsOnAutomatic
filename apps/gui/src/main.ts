@@ -4,6 +4,7 @@ import { exportFoundry } from '@src/services/foundry';
 import { loadSystemModule } from '@src/services/system-loader';
 import { populateRooms, htmlRoomDetails } from '@src/services/room-key';
 import { ImportWizardComponent } from './import-wizard';
+main
 import type { SystemModule } from '@src/core/types';
 
 async function generate(): Promise<void> {
