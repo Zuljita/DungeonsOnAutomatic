@@ -25,8 +25,10 @@ export function connectRooms(rooms: Room[], r: () => number): Corridor[] {
   for (const e of edges) {
     if (find(e.a) !== find(e.b)) {
       unite(e.a, e.b);
-      const from = rooms[e.a].id, to = rooms[e.b].id;
-      const path = manhattanPath(centers[e.a], centers[e.b], r);
+      const from = rooms[e.a].id,
+        to = rooms[e.b].id;
+      let path = manhattanPath(centers[e.a], centers[e.b], r);
+      path = trimPath(path, rooms[e.a], rooms[e.b]);
       corridors.push({ id: id('cor', r), from, to, path });
     }
   }
@@ -46,5 +48,17 @@ function manhattanPath(a:{x:number;y:number}, b:{x:number;y:number}, r: () => nu
     for (let x=a.x; x!==b.x; x+=xStep) path.push({x, y:b.y});
   }
   path.push({x:b.x, y:b.y});
+  return path;
+}
+
+function trimPath(
+  path: { x: number; y: number }[],
+  a: Room,
+  b: Room,
+): { x: number; y: number }[] {
+  const inside = (p: { x: number; y: number }, r: Room): boolean =>
+    p.x >= r.x && p.x < r.x + r.w && p.y >= r.y && p.y < r.y + r.h;
+  while (path.length && inside(path[0], a)) path.shift();
+  while (path.length && inside(path[path.length - 1], b)) path.pop();
   return path;
 }
