@@ -12,7 +12,17 @@ describe('corridors', () => {
 
     // Each corridor should traverse at least one tile between rooms
     for (const c of corridors) {
-      expect(c.path.length).toBeGreaterThan(1);
+      expect(c.path.length).toBeGreaterThan(0);
+    }
+
+    const byId = new Map(rooms.map((r) => [r.id, r] as const));
+    const inside = (p: { x: number; y: number }, r: (typeof rooms)[number]) =>
+      p.x >= r.x && p.x < r.x + r.w && p.y >= r.y && p.y < r.y + r.h;
+    for (const c of corridors) {
+      const start = c.path[0];
+      const end = c.path[c.path.length - 1];
+      expect(inside(start, byId.get(c.from)!)).toBe(false);
+      expect(inside(end, byId.get(c.to)!)).toBe(false);
     }
 
     const adj = new Map<string, string[]>();
