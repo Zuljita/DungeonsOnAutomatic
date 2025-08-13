@@ -1,4 +1,5 @@
 import { Dungeon, Monster, Treasure, ID } from '../core/types';
+import { customDataLoader } from './custom-data-loader';
 
 interface Weighted<T> {
   item: T;
@@ -42,12 +43,31 @@ export interface RoomDetail {
   treasure: Treasure[];
 }
 
-export function featureRoom(r: () => number): string[] {
+export function featureRoom(r: () => number, moduleId: string = 'generic'): string[] {
   const features: string[] = [];
-  if (r() < 0.7) {
-    features.push(weightedPick(r, FEATURE_TABLE));
-    if (r() < 0.3) features.push(weightedPick(r, FEATURE_TABLE));
+  
+  // Check for custom decorations first
+  const customDecorations = customDataLoader.getDecorations(moduleId);
+  
+  if (customDecorations.length > 0) {
+    // Use custom decorations
+    const weightedCustom: Weighted<string>[] = customDecorations.map(d => ({
+      item: d.name,
+      weight: d.weight
+    }));
+    
+    if (r() < 0.7) {
+      features.push(weightedPick(r, weightedCustom));
+      if (r() < 0.3) features.push(weightedPick(r, weightedCustom));
+    }
+  } else {
+    // Use default features
+    if (r() < 0.7) {
+      features.push(weightedPick(r, FEATURE_TABLE));
+      if (r() < 0.3) features.push(weightedPick(r, FEATURE_TABLE));
+    }
   }
+  
   return features;
 }
 
@@ -67,12 +87,12 @@ export function treasureRoom(r: () => number, hasMonsters = false): Treasure[] {
   return treasure;
 }
 
-export function populateRooms(d: Dungeon, r: () => number = Math.random): Record<ID, RoomDetail> {
+export function populateRooms(d: Dungeon, r: () => number = Math.random, moduleId: string = 'generic'): Record<ID, RoomDetail> {
   const details: Record<ID, RoomDetail> = {};
   for (const room of d.rooms) {
     const monsters = d.encounters?.[room.id]?.monsters ?? monsterRoom(r);
     const treasure = d.encounters?.[room.id]?.treasure ?? treasureRoom(r, monsters.length > 0);
-    const features = featureRoom(r);
+    const features = featureRoom(r, moduleId);
     details[room.id] = { features, monsters, treasure };
   }
   return details;

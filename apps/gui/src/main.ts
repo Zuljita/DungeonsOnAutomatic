@@ -2,6 +2,8 @@ import { buildDungeon } from '@src/services/assembler';
 import { renderSvg } from '@src/services/render';
 import { exportFoundry } from '@src/services/foundry';
 import { loadSystemModule } from '@src/services/system-loader';
+import { populateRooms, htmlRoomDetails } from '@src/services/room-key';
+import { ImportWizardComponent } from './import-wizard';
 import type { SystemModule } from '@src/core/types';
 
 async function generate(): Promise<void> {
@@ -9,6 +11,7 @@ async function generate(): Promise<void> {
   const seedInput = document.getElementById('seed') as HTMLInputElement;
   const systemInput = document.getElementById('system') as HTMLSelectElement;
   const mapEl = document.getElementById('map') as HTMLElement;
+  const keyEl = document.getElementById('room-key') as HTMLElement;
   const inputEl = document.getElementById('inputs') as HTMLElement;
   const svgLink = document.getElementById('download-svg') as HTMLAnchorElement;
   const foundryLink = document.getElementById('download-foundry') as HTMLAnchorElement;
@@ -31,12 +34,42 @@ async function generate(): Promise<void> {
   const enriched = await sys.enrich(base);
   const svg = renderSvg(enriched);
   mapEl.innerHTML = svg;
+  const details = populateRooms(enriched, enriched.rng ?? Math.random, system);
+  keyEl.innerHTML = htmlRoomDetails(enriched, details);
   const svgBlob = new Blob([svg], { type: 'image/svg+xml' });
   svgLink.href = URL.createObjectURL(svgBlob);
   const foundry = exportFoundry(enriched);
   const foundryBlob = new Blob([JSON.stringify(foundry, null, 2)], { type: 'application/json' });
   foundryLink.href = URL.createObjectURL(foundryBlob);
 }
+
+// Initialize tab navigation
+function initializeTabs() {
+  const tabButtons = document.querySelectorAll('.nav-tab');
+  const tabContents = document.querySelectorAll('.tab-content');
+
+  tabButtons.forEach(button => {
+    button.addEventListener('click', (e) => {
+      e.preventDefault();
+      const target = (button as HTMLElement).dataset.tab;
+      if (!target) return;
+
+      // Remove active class from all tabs and contents
+      tabButtons.forEach(b => b.classList.remove('active'));
+      tabContents.forEach(c => c.classList.remove('active'));
+
+      // Add active class to clicked tab and corresponding content
+      button.classList.add('active');
+      const content = document.getElementById(`${target}-tab`);
+      if (content) {
+        content.classList.add('active');
+      }
+    });
+  });
+}
+
+// Initialize the import wizard
+let importWizard: ImportWizardComponent;
 
 document.getElementById('generate')?.addEventListener('click', () => {
   generate().catch(err => {
@@ -46,4 +79,20 @@ document.getElementById('generate')?.addEventListener('click', () => {
   });
 });
 
+// Initialize everything when the page loads
+document.addEventListener('DOMContentLoaded', () => {
+  initializeTabs();
+  importWizard = new ImportWizardComponent();
+  
+  // Make import wizard available globally for delete buttons
+  window.importWizard = importWizard;
+  
+  // Generate initial dungeon
+  generate().catch(console.error);
+});
+
+// Also run on module load for development
+initializeTabs();
+importWizard = new ImportWizardComponent();
+window.importWizard = importWizard;
 generate().catch(console.error);
