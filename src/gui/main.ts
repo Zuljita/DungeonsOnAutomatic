@@ -5,18 +5,45 @@ import { loadSystemModule } from "../services/system-loader";
 import type { SystemModule } from "../core/types";
 
 async function generate(): Promise<void> {
-const roomsInput = document.getElementById("rooms") as HTMLInputElement;
-const seedInput = document.getElementById("seed") as HTMLInputElement;
-const systemInput = document.getElementById("system") as HTMLSelectElement;
-const mapEl = document.getElementById("map") as HTMLElement;
-const inputEl = document.getElementById("inputs") as HTMLElement;
-const outputEl = document.getElementById("outputs") as HTMLElement;
-const foundryLink = document.getElementById("download-foundry") as HTMLAnchorElement;
+  const roomsInput = document.getElementById("rooms");
+  if (!(roomsInput instanceof HTMLInputElement)) {
+    alert("Missing rooms input");
+    return;
+  }
+  const seedInput = document.getElementById("seed");
+  if (!(seedInput instanceof HTMLInputElement)) {
+    alert("Missing seed input");
+    return;
+  }
+  const systemInput = document.getElementById("system");
+  if (!(systemInput instanceof HTMLSelectElement)) {
+    alert("Missing system selector");
+    return;
+  }
+  const mapEl = document.getElementById("map");
+  if (!(mapEl instanceof HTMLElement)) {
+    alert("Missing map element");
+    return;
+  }
+  const inputEl = document.getElementById("inputs");
+  if (!(inputEl instanceof HTMLElement)) {
+    alert("Missing inputs element");
+    return;
+  }
+  const outputEl = document.getElementById("outputs");
+  if (!(outputEl instanceof HTMLElement)) {
+    alert("Missing outputs element");
+    return;
+  }
+  const foundryLink = document.getElementById("download-foundry");
+  if (!(foundryLink instanceof HTMLAnchorElement)) {
+    alert("Missing Foundry download link");
+    return;
+  }
 
-const rooms = parseInt(roomsInput.value, 10) || 8;
-const seed = seedInput.value || undefined;
-const system = systemInput.value || "generic";
-
+  const rooms = parseInt(roomsInput.value, 10) || 8;
+  const seed = seedInput.value || undefined;
+  const system = systemInput.value || "generic";
 
   const opts = { rooms, seed };
   inputEl.textContent = JSON.stringify({ ...opts, system }, null, 2);
@@ -27,7 +54,7 @@ const system = systemInput.value || "generic";
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     alert(msg);
-    sys = await loadSystemModule('generic', base.rng);
+    sys = await loadSystemModule("generic", base.rng);
   }
   const enriched = await sys.enrich(base);
   mapEl.innerHTML = renderSvg(enriched);
@@ -41,8 +68,10 @@ document.getElementById("generate")?.addEventListener("click", () => {
   generate().catch((err) => {
     // log error to console and show message in UI
     console.error(err);
-    const mapEl = document.getElementById("map") as HTMLElement;
-    mapEl.textContent = "Error generating dungeon";
+    const mapEl = document.getElementById("map");
+    if (mapEl instanceof HTMLElement) {
+      mapEl.textContent = "Error generating dungeon";
+    }
   });
 });
 
