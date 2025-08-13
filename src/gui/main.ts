@@ -2,6 +2,7 @@ import { buildDungeon } from "../services/assembler";
 import { renderSvg } from "../services/render";
 import { exportFoundry } from "../services/foundry";
 import { loadSystemModule } from "../services/system-loader";
+import { populateRooms, htmlRoomDetails } from "../services/room-key";
 import type { SystemModule } from "../core/types";
 
 async function generate(): Promise<void> {
@@ -25,14 +26,9 @@ async function generate(): Promise<void> {
     alert("Missing map element");
     return;
   }
-  const inputEl = document.getElementById("inputs");
-  if (!(inputEl instanceof HTMLElement)) {
-    alert("Missing inputs element");
-    return;
-  }
-  const outputEl = document.getElementById("outputs");
-  if (!(outputEl instanceof HTMLElement)) {
-    alert("Missing outputs element");
+  const keyEl = document.getElementById("room-key");
+  if (!(keyEl instanceof HTMLElement)) {
+    alert("Missing room key element");
     return;
   }
   const foundryLink = document.getElementById("download-foundry");
@@ -46,7 +42,6 @@ async function generate(): Promise<void> {
   const system = systemInput.value || "generic";
 
   const opts = { rooms, seed };
-  inputEl.textContent = JSON.stringify({ ...opts, system }, null, 2);
   const base = buildDungeon(opts);
   let sys: SystemModule;
   try {
@@ -58,7 +53,8 @@ async function generate(): Promise<void> {
   }
   const enriched = await sys.enrich(base);
   mapEl.innerHTML = renderSvg(enriched);
-  outputEl.textContent = JSON.stringify(enriched, null, 2);
+  const details = populateRooms(enriched, enriched.rng ?? Math.random);
+  keyEl.innerHTML = htmlRoomDetails(enriched, details);
   const foundry = exportFoundry(enriched);
   const blob = new Blob([JSON.stringify(foundry, null, 2)], { type: "application/json" });
   foundryLink.href = URL.createObjectURL(blob);
