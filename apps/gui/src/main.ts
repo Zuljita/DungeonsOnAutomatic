@@ -2,6 +2,7 @@ import { buildDungeon } from '@src/services/assembler';
 import { renderSvg } from '@src/services/render';
 import { exportFoundry } from '@src/services/foundry';
 import { loadSystemModule } from '@src/services/system-loader';
+import { populateRooms, htmlRoomDetails } from '@src/services/room-key';
 import type { SystemModule } from '@src/core/types';
 
 async function generate(): Promise<void> {
@@ -9,6 +10,7 @@ async function generate(): Promise<void> {
   const seedInput = document.getElementById('seed') as HTMLInputElement;
   const systemInput = document.getElementById('system') as HTMLSelectElement;
   const mapEl = document.getElementById('map') as HTMLElement;
+  const keyEl = document.getElementById('room-key') as HTMLElement;
   const inputEl = document.getElementById('inputs') as HTMLElement;
   const svgLink = document.getElementById('download-svg') as HTMLAnchorElement;
   const foundryLink = document.getElementById('download-foundry') as HTMLAnchorElement;
@@ -31,6 +33,8 @@ async function generate(): Promise<void> {
   const enriched = await sys.enrich(base);
   const svg = renderSvg(enriched);
   mapEl.innerHTML = svg;
+  const details = populateRooms(enriched, enriched.rng ?? Math.random);
+  keyEl.innerHTML = htmlRoomDetails(enriched, details);
   const svgBlob = new Blob([svg], { type: 'image/svg+xml' });
   svgLink.href = URL.createObjectURL(svgBlob);
   const foundry = exportFoundry(enriched);
