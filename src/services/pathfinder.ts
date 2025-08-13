@@ -15,8 +15,9 @@ function isLocked(door?: Door): boolean {
 export function isPathPossible(graph: PathGraph, start: ID, goal: ID): boolean {
   const visited = new Set<ID>();
   const queue: ID[] = [start];
-  while (queue.length) {
-    const room = queue.shift()!;
+  let i = 0;
+  while (i < queue.length) {
+    const room = queue[i++]!;
     if (room === goal) return true;
     if (visited.has(room)) continue;
     visited.add(room);
@@ -35,8 +36,9 @@ export function isPathPossibleWithLockpicking(
 ): boolean {
   const visited = new Set<ID>();
   const queue: ID[] = [start];
-  while (queue.length) {
-    const room = queue.shift()!;
+  let i = 0;
+  while (i < queue.length) {
+    const room = queue[i++]!;
     if (room === goal) return true;
     if (visited.has(room)) continue;
     visited.add(room);
@@ -56,8 +58,9 @@ export function isPathPossibleWithBacktracking(
   const queue: State[] = [{ room: start, keys: new Set() }];
   const seen = new Set<string>();
 
-  while (queue.length) {
-    const { room, keys } = queue.shift()!;
+  let i = 0;
+  while (i < queue.length) {
+    const { room, keys } = queue[i++]!;
     const keyString = Array.from(keys).sort().join(',');
     const stateKey = `${room}|${keyString}`;
     if (seen.has(stateKey)) continue;
