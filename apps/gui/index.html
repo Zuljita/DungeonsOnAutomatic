@@ -10,22 +10,182 @@
     pre { white-space: pre; border: 1px solid #ccc; padding: 0.5rem; margin-top: 1rem; }
     #map { border: 1px solid #ccc; padding: 0.5rem; margin-top: 1rem; display: inline-block; }
     #room-key { margin-top: 1rem; }
+    /* Navigation tabs */
+    .nav-tabs { margin: 1rem 0; border-bottom: 1px solid #ccc; }
+    .nav-tab { 
+      display: inline-block; 
+      padding: 0.5rem 1rem; 
+      margin-right: 0.25rem; 
+      background: #f0f0f0; 
+      border: 1px solid #ccc; 
+      border-bottom: none; 
+      cursor: pointer; 
+      text-decoration: none; 
+      color: #333;
+    }
+    .nav-tab.active { background: white; border-bottom: 1px solid white; margin-bottom: -1px; }
+    .nav-tab:hover { background: #e0e0e0; }
+    
+    /* Tab content */
+    .tab-content { display: none; margin-top: 1rem; }
+    .tab-content.active { display: block; }
+    
+    /* Import wizard styles */
+    .wizard-step { margin: 1rem 0; padding: 1rem; border: 1px solid #ddd; background: #f9f9f9; }
+    .wizard-step h3 { margin-top: 0; }
+    .form-group { margin: 0.5rem 0; }
+    .form-group label { display: inline-block; width: 150px; }
+    .form-group select, .form-group input { padding: 0.25rem; }
+    .btn { 
+      padding: 0.5rem 1rem; 
+      margin: 0.25rem; 
+      background: #007acc; 
+      color: white; 
+      border: none; 
+      cursor: pointer; 
+    }
+    .btn:hover { background: #005999; }
+    .btn:disabled { background: #ccc; cursor: not-allowed; }
+    .btn-secondary { background: #6c757d; }
+    .btn-secondary:hover { background: #545b62; }
+    .btn-danger { background: #dc3545; }
+    .btn-danger:hover { background: #c82333; }
+    
+    /* Status messages */
+    .status-message { 
+      padding: 0.75rem; 
+      margin: 0.5rem 0; 
+      border-radius: 0.25rem; 
+    }
+    .status-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+    .status-error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+    .status-info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+    
+    /* File upload area */
+    .file-upload { 
+      border: 2px dashed #ccc; 
+      padding: 2rem; 
+      text-align: center; 
+      margin: 1rem 0; 
+      cursor: pointer;
+    }
+    .file-upload:hover { border-color: #007acc; }
+    .file-upload.dragover { border-color: #007acc; background: #f0f8ff; }
+    
+    /* Data management */
+    .data-list { margin: 1rem 0; }
+    .data-item { 
+      padding: 0.5rem; 
+      margin: 0.25rem 0; 
+      border: 1px solid #ddd; 
+      background: white; 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+    }
+    .data-item-info { flex-grow: 1; }
+    .data-item-actions { flex-shrink: 0; }
   </style>
 </head>
 <body>
   <h1>Dungeon Generator</h1>
-  <div>
-    <label>Rooms: <input id="rooms" type="number" value="8" min="1" /></label>
-    <label>Seed: <input id="seed" type="text" /></label>
-    <label>System:
-      <select id="system">
-        <option value="generic">generic</option>
-        <option value="dfrpg">dfrpg</option>
-      </select>
-    </label>
-    <button id="generate">Generate</button>
-    <a id="download-svg" download="dungeon.svg" style="margin-left: 1rem">Download SVG</a>
-    <a id="download-foundry" download="dungeon.json" style="margin-left: 1rem">Download Foundry JSON</a>
+  
+  <!-- Navigation tabs -->
+  <div class="nav-tabs">
+    <a href="#" class="nav-tab active" data-tab="generator">Generator</a>
+    <a href="#" class="nav-tab" data-tab="import-wizard">Data Import Wizard</a>
+    <a href="#" class="nav-tab" data-tab="data-manager">Manage Custom Data</a>
+  </div>
+
+  <!-- Generator Tab -->
+  <div id="generator-tab" class="tab-content active">
+    <div>
+      <label>Rooms: <input id="rooms" type="number" value="8" min="1" /></label>
+      <label>Seed: <input id="seed" type="text" /></label>
+      <label>System:
+        <select id="system">
+          <option value="generic">generic</option>
+          <option value="dfrpg">dfrpg</option>
+        </select>
+      </label>
+      <button id="generate">Generate</button>
+      <a id="download-svg" download="dungeon.svg" style="margin-left: 1rem">Download SVG</a>
+      <a id="download-foundry" download="dungeon.json" style="margin-left: 1rem">Download Foundry JSON</a>
+    </div>
+    <div id="map"></div>
+    <h2>Room Key</h2>
+    <div id="room-key"></div>
+    <h2>Input</h2>
+    <pre id="inputs"></pre>
+  </div>
+
+  <!-- Import Wizard Tab -->
+  <div id="import-wizard-tab" class="tab-content">
+    <h2>Data Import Wizard</h2>
+    <p>Create custom data for your dungeons by generating templates, editing them, and uploading them back.</p>
+    
+    <!-- Step 1: Select Module and Data Type -->
+    <div class="wizard-step">
+      <h3>Step 1: Select Module and Data Type</h3>
+      <div class="form-group">
+        <label for="wizard-module">Module:</label>
+        <select id="wizard-module">
+          <option value="">Select a module...</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="wizard-datatype">Data Type:</label>
+        <select id="wizard-datatype" disabled>
+          <option value="">Select module first...</option>
+        </select>
+      </div>
+      <div id="datatype-description"></div>
+    </div>
+
+    <!-- Step 2: Generate Template -->
+    <div class="wizard-step">
+      <h3>Step 2: Generate Template</h3>
+      <p>Download a CSV template with example data to get started.</p>
+      <button id="generate-template" class="btn" disabled>Generate Template</button>
+      <a id="download-template" style="display: none;">Download Template</a>
+      <div id="template-status"></div>
+    </div>
+
+    <!-- Step 3: Upload Completed File -->
+    <div class="wizard-step">
+      <h3>Step 3: Upload Your Data</h3>
+      <p>After editing the template, upload your completed CSV file here.</p>
+      
+      <div class="file-upload" id="file-upload-area">
+        <p>Click here or drag and drop your CSV file</p>
+        <input type="file" id="file-input" accept=".csv" style="display: none;">
+      </div>
+      
+      <div id="upload-status"></div>
+      <div id="validation-results"></div>
+      
+      <div style="margin-top: 1rem;">
+        <input type="text" id="dataset-name" placeholder="Enter a name for this dataset (optional)" style="width: 300px;">
+        <button id="save-data" class="btn" disabled>Save Imported Data</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Data Manager Tab -->
+  <div id="data-manager-tab" class="tab-content">
+    <h2>Manage Custom Data</h2>
+    <p>View, export, and delete your custom imported datasets.</p>
+    
+    <div style="margin: 1rem 0;">
+      <button id="export-all-data" class="btn btn-secondary">Export All Data</button>
+      <button id="import-backup" class="btn btn-secondary">Import Backup</button>
+      <button id="clear-all-data" class="btn btn-danger">Clear All Data</button>
+      <input type="file" id="backup-file" accept=".json" style="display: none;">
+    </div>
+    
+    <div class="data-list" id="custom-data-list">
+      <!-- Custom data items will be populated here -->
+    </div>
   </div>
   <div id="map"></div>
   <h2>Room Key</h2>

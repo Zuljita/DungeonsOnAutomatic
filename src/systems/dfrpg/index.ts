@@ -1,5 +1,6 @@
 import { Dungeon, Monster, SystemModule, Trap, Treasure } from '../../core/types';
 import monstersData from './data/monsters-complete.js';
+import { customDataLoader } from '../../services/custom-data-loader';
 
 interface RawMonster {
   Description: string;
@@ -32,20 +33,37 @@ export const dfrpg: SystemModule = {
     const R = opts?.rng ?? Math.random;
     const encounters = { ...d.encounters };
 
-    let pool = RAW_MONSTERS;
-    if (opts?.sources?.length) {
-      const allowed = opts.sources.map((s) => s.toLowerCase());
-      pool = pool.filter((m) =>
-        m.Source1 && allowed.some((src) => m.Source1!.toLowerCase().includes(src))
-      );
+    // Use custom monsters if available, otherwise use default data
+    let MONSTERS: Monster[];
+    if (customDataLoader.hasCustomData('dfrpg', 'monsters')) {
+      MONSTERS = customDataLoader.getMonsters('dfrpg');
+      console.log(`Using ${MONSTERS.length} custom DFRPG monsters`);
+    } else {
+      // Original logic for default monsters
+      let pool = RAW_MONSTERS;
+      if (opts?.sources?.length) {
+        const allowed = opts.sources.map((s) => s.toLowerCase());
+        pool = pool.filter((m) =>
+          m.Source1 && allowed.some((src) => m.Source1!.toLowerCase().includes(src))
+        );
+      }
+      MONSTERS = pool.map((m) => ({
+        name: m.Description,
+        sm: m.SM ?? null,
+        cls: m.Class,
+        subclass: m.Subclass,
+        source: m.Source1
+      }));
     }
-    const MONSTERS: Monster[] = pool.map((m) => ({
-      name: m.Description,
-      sm: m.SM ?? null,
-      cls: m.Class,
-      subclass: m.Subclass,
-      source: m.Source1
-    }));
+
+    // Use custom traps if available, otherwise use default data
+    const CURRENT_TRAPS = customDataLoader.hasCustomData('dfrpg', 'traps') 
+      ? customDataLoader.getTraps('dfrpg')
+      : TRAPS;
+
+    if (customDataLoader.hasCustomData('dfrpg', 'traps')) {
+      console.log(`Using ${CURRENT_TRAPS.length} custom DFRPG traps`);
+    }
 
     d.rooms.forEach((r) => {
       const monsters: Monster[] = [];
@@ -59,7 +77,7 @@ export const dfrpg: SystemModule = {
       }
 
       if (R() < 0.3) {
-        const t = TRAPS[Math.floor(R() * TRAPS.length)];
+        const t = CURRENT_TRAPS[Math.floor(R() * CURRENT_TRAPS.length)];
         traps.push({ ...t });
       }
 
