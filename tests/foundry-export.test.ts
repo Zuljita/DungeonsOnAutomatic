@@ -11,4 +11,13 @@ describe("exportFoundry", () => {
     expect(scene.width).toBeGreaterThan(0);
     expect(scene.height).toBeGreaterThan(0);
   });
+
+  it("scales walls and scene size based on grid", () => {
+    const d = buildDungeon({ rooms: 1, seed: "foundry" });
+    const scene100 = exportFoundry(d, 100);
+    const scene50 = exportFoundry(d, 50);
+    expect(scene50.width).toBe(scene100.width / 2);
+    expect(scene50.height).toBe(scene100.height / 2);
+    expect(scene50.walls[0].c).toEqual(scene100.walls[0].c.map((n) => n / 2));
+  });
 });
