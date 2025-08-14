@@ -41,6 +41,11 @@ export interface Trap {
   name: string;
   level?: number;
   notes?: string;
+  category?: 'mechanical' | 'magical' | 'alchemical' | 'divine' | 'hybrid';
+  trigger?: string;
+  detection?: string;
+  disarm?: string;
+  effect?: string;
 }
 
 export interface Treasure {
