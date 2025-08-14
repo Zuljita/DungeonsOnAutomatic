@@ -30,6 +30,11 @@ export interface Monster {
   subclass?: string;
   notes?: string;
   source?: string;
+  reference?: string;
+  threat_rating?: 'fodder' | 'worthy' | 'boss';
+  group_size?: string;
+  tactics?: string;
+  frequency?: 'very_rare' | 'rare' | 'uncommon' | 'common' | 'very_common';
 }
 
 export interface Trap {

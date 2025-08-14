@@ -26,6 +26,25 @@ const TREASURE: Treasure[] = [
   { kind: 'art', valueHint: 'minor' }
 ];
 
+const ROOM_MODIFIERS = {
+  environmental: [
+    { tag: 'darkness', description: 'Dark (-5 to vision rolls)', weight: 3 },
+    { tag: 'dim_light', description: 'Dim lighting (-2 to vision rolls)', weight: 2 },
+    { tag: 'bad_footing', description: 'Slippery/rough floor (-2 to Move, attack, and defense)', weight: 2 },
+    { tag: 'cramped', description: 'Low ceiling/narrow space (no retreating, -2 to swinging weapons)', weight: 1 },
+    { tag: 'damp', description: 'Wet and moldy (+1 to disease resistance rolls needed)', weight: 2 },
+    { tag: 'cold', description: 'Freezing conditions (HT rolls vs cold)', weight: 1 },
+    { tag: 'hot', description: 'Sweltering heat (HT rolls vs heat)', weight: 1 }
+  ],
+  tactical: [
+    { tag: 'high_ground', description: 'Elevated position (+1 to attack from above)', weight: 1 },
+    { tag: 'cover', description: 'Pillars/debris provide cover (+2 to +4 defense)', weight: 2 },
+    { tag: 'choke_point', description: 'Narrow entrance (limits attackers to 1-2 at a time)', weight: 1 },
+    { tag: 'multiple_exits', description: 'Several escape routes available', weight: 2 },
+    { tag: 'echo_chamber', description: 'Sound carries (+3 to Hearing rolls, -2 to Stealth)', weight: 1 }
+  ]
+};
+
 export const dfrpg: SystemModule = {
   id: 'dfrpg',
   label: 'GURPS Dungeon Fantasy',
@@ -89,7 +108,44 @@ export const dfrpg: SystemModule = {
       encounters[r.id] = { monsters, traps, treasure };
     });
 
-    return { ...d, encounters };
+    // Add GURPS room modifiers
+    const modifiedRooms = d.rooms.map((room) => {
+      const newTags = [...(room.tags || [])];
+      
+      // 40% chance for environmental modifier
+      if (R() < 0.4) {
+        const envModifiers = ROOM_MODIFIERS.environmental;
+        const totalWeight = envModifiers.reduce((sum, mod) => sum + mod.weight, 0);
+        let random = R() * totalWeight;
+        
+        for (const modifier of envModifiers) {
+          random -= modifier.weight;
+          if (random <= 0) {
+            newTags.push(`gurps:${modifier.tag}`, `gurps:${modifier.description}`);
+            break;
+          }
+        }
+      }
+      
+      // 30% chance for tactical modifier  
+      if (R() < 0.3) {
+        const tacticalModifiers = ROOM_MODIFIERS.tactical;
+        const totalWeight = tacticalModifiers.reduce((sum, mod) => sum + mod.weight, 0);
+        let random = R() * totalWeight;
+        
+        for (const modifier of tacticalModifiers) {
+          random -= modifier.weight;
+          if (random <= 0) {
+            newTags.push(`gurps:${modifier.tag}`, `gurps:${modifier.description}`);
+            break;
+          }
+        }
+      }
+      
+      return newTags.length > (room.tags?.length || 0) ? { ...room, tags: newTags } : room;
+    });
+
+    return { ...d, rooms: modifiedRooms, encounters };
   }
 };
 

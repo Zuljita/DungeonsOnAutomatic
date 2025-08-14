@@ -15,17 +15,16 @@ export const dfrpgSchema: ModuleSchema = {
         { name: 'SM', type: 'number', required: false, description: 'Size Modifier' },
         { name: 'Subclass', type: 'string', required: false, description: 'Monster subclass' },
         { name: 'Source1', type: 'string', required: false, description: 'Primary source book' },
-        { name: 'hit_points', type: 'number', required: false, description: 'Hit Points' },
-        { name: 'armor_class', type: 'number', required: false, description: 'Damage Resistance' },
-        { name: 'attack_bonus', type: 'string', required: false, description: 'Attack skill level' },
-        { name: 'damage_dice', type: 'string', required: false, description: 'Damage dice (e.g., 2d6+1)' },
-        { name: 'frequency', type: 'enum', required: false, description: 'Encounter frequency', enumValues: ['very_rare', 'rare', 'uncommon', 'common', 'very_common'] },
-        { name: 'special_ability', type: 'string', required: false, description: 'Special abilities or traits' }
+        { name: 'reference', type: 'string', required: false, description: 'Book reference (e.g., "DFRPG Monsters p.XX")' },
+        { name: 'threat_rating', type: 'enum', required: false, description: 'Combat threat level', enumValues: ['fodder', 'worthy', 'boss'] },
+        { name: 'group_size', type: 'string', required: false, description: 'Typical group size (e.g., "small group (2-3)", "pack (4-8)")' },
+        { name: 'tactics', type: 'string', required: false, description: 'Tactical behavior and special combat notes' },
+        { name: 'frequency', type: 'enum', required: false, description: 'Encounter frequency', enumValues: ['very_rare', 'rare', 'uncommon', 'common', 'very_common'] }
       ],
       examples: [
-        ['Goblin Warrior', 'Mundane', '-2', 'Goblinoid', 'DFRPG', '8', '2', '12', '1d6-1', 'common', 'Sneaky, pack tactics'],
-        ['Skeleton Guardian', 'Undead', '0', 'Animated', 'DFRPG', '12', '4', '14', '1d6+1', 'uncommon', 'Immune to mind control, DR vs piercing'],
-        ['Fire Elemental', 'Elemental', '1', 'Fire', 'DFRPG', '20', '0', '16', '2d6 burn', 'rare', 'Burning touch, immune to fire']
+        ['Goblin Warrior', 'Mundane', '-2', 'Goblinoid', 'DFRPG', 'DFRPG Monsters p.34', 'fodder', 'pack (4-8)', 'Uses hit-and-run tactics, retreats when outnumbered', 'common'],
+        ['Skeleton Guardian', 'Undead', '0', 'Animated', 'DFRPG', 'DFRPG Monsters p.67', 'worthy', 'small group (2-3)', 'Guards specific locations, immune to mind control', 'uncommon'],
+        ['Fire Elemental', 'Elemental', '1', 'Fire', 'DFRPG', 'DFRPG Monsters p.89', 'boss', 'solitary', 'Burning aura, immune to fire and heat attacks', 'rare']
       ]
     },
     traps: {
@@ -37,15 +36,15 @@ export const dfrpgSchema: ModuleSchema = {
         { name: 'level', type: 'number', required: false, description: 'Trap complexity level (1-10)' },
         { name: 'trigger', type: 'string', required: false, description: 'How the trap is triggered' },
         { name: 'effect', type: 'string', required: false, description: 'Trap effect and damage' },
-        { name: 'detection_difficulty', type: 'number', required: false, description: 'Perception roll difficulty' },
-        { name: 'disarm_difficulty', type: 'number', required: false, description: 'Traps skill roll difficulty' },
+        { name: 'detection_skill', type: 'string', required: false, description: 'Detection skill and modifier (e.g., "Per-2", "Vision-4")' },
+        { name: 'disarm_skill', type: 'string', required: false, description: 'Disarm skill and modifier (e.g., "Traps+1", "DX-3")' },
         { name: 'reset_time', type: 'string', required: false, description: 'Time to reset (if applicable)' },
         { name: 'notes', type: 'string', required: false, description: 'Additional mechanics and flavor' }
       ],
       examples: [
-        ['Poisoned Needle', '2', 'Opening container', '1d-3 injury + HT-2 vs poison', '14', '12', 'Manual', 'Hidden in lock mechanism'],
-        ['Crushing Walls', '6', 'Pressure plate', '3d crushing per second', '12', '16', 'Never', 'Walls close over 3 seconds'],
-        ['Magical Glyph', '4', 'Touch or dispel', '2d+2 burning', '16', '15', 'Instant', 'Requires Thaumatology to understand']
+        ['Poisoned Needle', '2', 'Opening container', '1d-3 injury + HT-2 vs poison', 'Per-2', 'Traps', 'Manual', 'Hidden in lock mechanism'],
+        ['Crushing Walls', '6', 'Pressure plate', '3d crushing per second', 'Per+0', 'Traps-4', 'Never', 'Walls close over 3 seconds'],
+        ['Magical Glyph', '4', 'Touch or dispel', '2d+2 burning', 'Detect Magic-0', 'Thaumatology-3', 'Instant', 'Requires Thaumatology to understand']
       ]
     },
     doors: {
