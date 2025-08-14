@@ -2,6 +2,7 @@ import { Dungeon, Monster, SystemModule, Trap, Treasure } from '../../core/types
 import monstersData from './data/monsters-complete.js';
 import { customDataLoader } from '../../services/custom-data-loader';
 import { DFRPGTreasureGenerator } from './DFRPGTreasure.js';
+import { DFRPGEnhancedTrapSystem } from './DFRPGTrapsEnhanced.js';
 
 interface RawMonster {
   Description: string;
@@ -52,14 +53,16 @@ const ROOM_MODIFIERS = {
 export const dfrpg: SystemModule = {
   id: 'dfrpg',
   label: 'GURPS Dungeon Fantasy',
-  enrich(d: Dungeon, opts?: { sources?: string[]; rng?: () => number; level?: number; useDFRPGTreasure?: boolean }): Dungeon {
+  enrich(d: Dungeon, opts?: { sources?: string[]; rng?: () => number; level?: number; useDFRPGTreasure?: boolean; useEnhancedTraps?: boolean }): Dungeon {
     const R = opts?.rng ?? Math.random;
     const encounters = { ...d.encounters };
     const dungeonLevel = opts?.level ?? 1;
     const useDFRPGTreasure = opts?.useDFRPGTreasure ?? true;
+    const useEnhancedTraps = opts?.useEnhancedTraps ?? true;
     
-    // Initialize DFRPG treasure generator
+    // Initialize DFRPG systems
     const treasureGenerator = new DFRPGTreasureGenerator(R);
+    const enhancedTrapSystem = new DFRPGEnhancedTrapSystem(R);
 
     // Use custom monsters if available, otherwise use default data
     let MONSTERS: Monster[];
@@ -105,8 +108,21 @@ export const dfrpg: SystemModule = {
       }
 
       if (R() < 0.3) {
-        const t = CURRENT_TRAPS[Math.floor(R() * CURRENT_TRAPS.length)];
-        traps.push({ ...t });
+        if (useEnhancedTraps && !customDataLoader.hasCustomData('dfrpg', 'traps')) {
+          // Generate enhanced DFRPG trap
+          const complexity = monsterCount >= 2 ? 'complex' : monsterCount >= 1 ? 'standard' : 'simple';
+          const enhancedTrap = enhancedTrapSystem.generateTrap(dungeonLevel, complexity);
+          
+          traps.push({
+            name: enhancedTrap.name,
+            level: enhancedTrap.level,
+            notes: `${enhancedTrap.trigger.details} | Detection: ${enhancedTrap.detection.modifiers} | Disarm: ${enhancedTrap.disarm.modifiers} | ${enhancedTrap.effect.damage || enhancedTrap.effect.affliction || enhancedTrap.effect.special}`
+          });
+        } else {
+          // Use legacy or custom traps
+          const t = CURRENT_TRAPS[Math.floor(R() * CURRENT_TRAPS.length)];
+          traps.push({ ...t });
+        }
       }
 
       if (R() < 0.5) {
@@ -193,3 +209,4 @@ export default dfrpg;
 export { dfrpgLockService } from "./locks";
 export { DFRPGTraps } from "./DFRPGTraps";
 export { DFRPGTreasureGenerator } from "./DFRPGTreasure";
+export { DFRPGEnhancedTrapSystem } from "./DFRPGTrapsEnhanced";
