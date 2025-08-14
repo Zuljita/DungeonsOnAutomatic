@@ -103,14 +103,35 @@ export function htmlRoomDetails(d: Dungeon, details: Record<ID, RoomDetail>): st
     .map((room, index) => {
       const det = details[room.id] ?? { features: [], monsters: [], treasure: [] };
       const parts: string[] = [`<section class="room"><h3>Room ${index + 1} (${room.kind})</h3>`];
+      
+      // Display room tags if present
+      if (room.tags && room.tags.length > 0) {
+        const tagHtml = room.tags.map(tag => `<span class="tag">${tag}</span>`).join(' ');
+        parts.push(`<p><strong>Tags:</strong> ${tagHtml}</p>`);
+      }
+      
       if (det.features.length) {
         parts.push(`<p><strong>Features:</strong> ${det.features.join(', ')}</p>`);
       }
       if (det.monsters.length) {
-        parts.push(`<p><strong>Monsters:</strong> ${det.monsters.map(m => m.name).join(', ')}</p>`);
+        const monsterDetails = det.monsters.map(m => {
+          const monsterInfo = [m.name];
+          if (m.tags && m.tags.length > 0) {
+            monsterInfo.push(`[${m.tags.join(', ')}]`);
+          }
+          return monsterInfo.join(' ');
+        });
+        parts.push(`<p><strong>Monsters:</strong> ${monsterDetails.join(', ')}</p>`);
       }
       if (det.treasure.length) {
-        parts.push(`<p><strong>Treasure:</strong> ${det.treasure.map(t => t.kind + (t.valueHint ? ` (${t.valueHint})` : '')).join(', ')}</p>`);
+        const treasureDetails = det.treasure.map(t => {
+          const treasureInfo = [t.kind + (t.valueHint ? ` (${t.valueHint})` : '')];
+          if (t.tags && t.tags.length > 0) {
+            treasureInfo.push(`[${t.tags.join(', ')}]`);
+          }
+          return treasureInfo.join(' ');
+        });
+        parts.push(`<p><strong>Treasure:</strong> ${treasureDetails.join(', ')}</p>`);
       }
       parts.push('</section>');
       return parts.join('\n');

@@ -85,6 +85,26 @@
     }
     .data-item-info { flex-grow: 1; }
     .data-item-actions { flex-shrink: 0; }
+    
+    /* Tag styling */
+    .tag {
+      display: inline-block;
+      background: #007acc;
+      color: white;
+      padding: 0.2rem 0.5rem;
+      margin: 0.1rem;
+      border-radius: 0.25rem;
+      font-size: 0.8em;
+      font-weight: normal;
+    }
+    .tag.environment { background: #4CAF50; }
+    .tag.creature { background: #FF9800; }
+    .tag.magic { background: #9C27B0; }
+    .tag.culture { background: #2196F3; }
+    .tag.danger { background: #F44336; }
+    .tag.loot { background: #FFD700; color: #333; }
+    .tag.trap { background: #795548; }
+    .tag.mood { background: #607D8B; }
   </style>
 </head>
 <body>
@@ -106,6 +126,11 @@
         <select id="system">
           <option value="generic">generic</option>
           <option value="dfrpg">dfrpg</option>
+        </select>
+      </label>
+      <label>Theme:
+        <select id="theme">
+          <option value="">No Theme (Random)</option>
         </select>
       </label>
       <button id="generate">Generate</button>

@@ -4,12 +4,14 @@ import { exportFoundry } from '@src/services/foundry';
 import { loadSystemModule } from '@src/services/system-loader';
 import { populateRooms, htmlRoomDetails } from '@src/services/room-key';
 import { ImportWizardComponent } from './import-wizard';
+import { tagSystem } from '@src/services/tag-system';
 import type { SystemModule } from '@src/core/types';
 
 async function generate(): Promise<void> {
   const roomsInput = document.getElementById('rooms') as HTMLInputElement;
   const seedInput = document.getElementById('seed') as HTMLInputElement;
   const systemInput = document.getElementById('system') as HTMLSelectElement;
+  const themeInput = document.getElementById('theme') as HTMLSelectElement;
   const mapEl = document.getElementById('map') as HTMLElement;
   const keyEl = document.getElementById('room-key') as HTMLElement;
   const inputEl = document.getElementById('inputs') as HTMLElement;
@@ -19,9 +21,12 @@ async function generate(): Promise<void> {
   const rooms = parseInt(roomsInput.value, 10) || 8;
   const seed = seedInput.value || undefined;
   const system = systemInput.value || 'generic';
+  const theme = themeInput.value || undefined;
 
   const opts = { rooms, seed };
-  inputEl.textContent = JSON.stringify({ ...opts, system }, null, 2);
+  const tagOptions = theme ? { theme } : undefined;
+  
+  inputEl.textContent = JSON.stringify({ ...opts, system, theme }, null, 2);
   const base = buildDungeon(opts);
   let sys: SystemModule;
   try {
@@ -31,7 +36,7 @@ async function generate(): Promise<void> {
     alert(msg);
     sys = await loadSystemModule('generic', base.rng);
   }
-  const enriched = await sys.enrich(base);
+  const enriched = await sys.enrich(base, { tags: tagOptions });
   const svg = renderSvg(enriched);
   mapEl.innerHTML = svg;
   const details = populateRooms(enriched, enriched.rng ?? Math.random, system);
@@ -68,6 +73,34 @@ function initializeTabs() {
   });
 }
 
+// Initialize theme selector
+function initializeThemeSelector() {
+  const systemSelect = document.getElementById('system') as HTMLSelectElement;
+  const themeSelect = document.getElementById('theme') as HTMLSelectElement;
+  
+  function updateThemes() {
+    const selectedSystem = systemSelect.value;
+    const themes = tagSystem.getThemesForSystem(selectedSystem);
+    
+    // Clear existing options except the first one
+    themeSelect.innerHTML = '<option value="">No Theme (Random)</option>';
+    
+    // Add system-specific themes
+    themes.forEach(theme => {
+      const option = document.createElement('option');
+      option.value = theme.id;
+      option.textContent = theme.name;
+      themeSelect.appendChild(option);
+    });
+  }
+  
+  // Update themes when system changes
+  systemSelect.addEventListener('change', updateThemes);
+  
+  // Initialize themes for current system
+  updateThemes();
+}
+
 // Initialize the import wizard
 let importWizard: ImportWizardComponent;
 
@@ -82,6 +115,7 @@ document.getElementById('generate')?.addEventListener('click', () => {
 // Initialize everything when the page loads
 document.addEventListener('DOMContentLoaded', () => {
   initializeTabs();
+  initializeThemeSelector();
   importWizard = new ImportWizardComponent();
   
   // Make import wizard available globally for delete buttons
