@@ -3,6 +3,7 @@ import monstersData from './data/monsters-complete.js';
 import { customDataLoader } from '../../services/custom-data-loader';
 import { DFRPGTreasureGenerator } from './DFRPGTreasure.js';
 import { DFRPGEnhancedTrapSystem } from './DFRPGTrapsEnhanced.js';
+import { DFRPGEnvironmentalSystem } from './DFRPGEnvironment.js';
 
 interface RawMonster {
   Description: string;
@@ -31,38 +32,32 @@ const TREASURE: Treasure[] = [
 // Legacy treasure for backward compatibility
 const SIMPLE_TREASURE = TREASURE;
 
-const ROOM_MODIFIERS = {
+// Legacy room modifiers for backward compatibility
+const SIMPLE_ROOM_MODIFIERS = {
   environmental: [
     { tag: 'darkness', description: 'Dark (-5 to vision rolls)', weight: 3 },
     { tag: 'dim_light', description: 'Dim lighting (-2 to vision rolls)', weight: 2 },
     { tag: 'bad_footing', description: 'Slippery/rough floor (-2 to Move, attack, and defense)', weight: 2 },
-    { tag: 'cramped', description: 'Low ceiling/narrow space (no retreating, -2 to swinging weapons)', weight: 1 },
-    { tag: 'damp', description: 'Wet and moldy (+1 to disease resistance rolls needed)', weight: 2 },
-    { tag: 'cold', description: 'Freezing conditions (HT rolls vs cold)', weight: 1 },
-    { tag: 'hot', description: 'Sweltering heat (HT rolls vs heat)', weight: 1 }
-  ],
-  tactical: [
-    { tag: 'high_ground', description: 'Elevated position (+1 to attack from above)', weight: 1 },
-    { tag: 'cover', description: 'Pillars/debris provide cover (+2 to +4 defense)', weight: 2 },
-    { tag: 'choke_point', description: 'Narrow entrance (limits attackers to 1-2 at a time)', weight: 1 },
-    { tag: 'multiple_exits', description: 'Several escape routes available', weight: 2 },
-    { tag: 'echo_chamber', description: 'Sound carries (+3 to Hearing rolls, -2 to Stealth)', weight: 1 }
+    { tag: 'cramped', description: 'Low ceiling/narrow space (no retreating, -2 to swinging weapons)', weight: 1 }
   ]
 };
 
 export const dfrpg: SystemModule = {
   id: 'dfrpg',
   label: 'GURPS Dungeon Fantasy',
-  enrich(d: Dungeon, opts?: { sources?: string[]; rng?: () => number; level?: number; useDFRPGTreasure?: boolean; useEnhancedTraps?: boolean }): Dungeon {
+  enrich(d: Dungeon, opts?: { sources?: string[]; rng?: () => number; level?: number; useDFRPGTreasure?: boolean; useEnhancedTraps?: boolean; useEnvironmentalChallenges?: boolean; environmentComplexity?: 'minimal' | 'moderate' | 'challenging' | 'extreme' }): Dungeon {
     const R = opts?.rng ?? Math.random;
     const encounters = { ...d.encounters };
     const dungeonLevel = opts?.level ?? 1;
     const useDFRPGTreasure = opts?.useDFRPGTreasure ?? true;
     const useEnhancedTraps = opts?.useEnhancedTraps ?? true;
+    const useEnvironmentalChallenges = opts?.useEnvironmentalChallenges ?? true;
+    const environmentComplexity = opts?.environmentComplexity ?? 'moderate';
     
     // Initialize DFRPG systems
     const treasureGenerator = new DFRPGTreasureGenerator(R);
     const enhancedTrapSystem = new DFRPGEnhancedTrapSystem(R);
+    const environmentalSystem = new DFRPGEnvironmentalSystem(R);
 
     // Use custom monsters if available, otherwise use default data
     let MONSTERS: Monster[];
@@ -163,36 +158,39 @@ export const dfrpg: SystemModule = {
       encounters[r.id] = { monsters, traps, treasure };
     });
 
-    // Add GURPS room modifiers
+    // Add environmental challenges to rooms
     const modifiedRooms = d.rooms.map((room) => {
       const newTags = [...(room.tags || [])];
       
-      // 40% chance for environmental modifier
-      if (R() < 0.4) {
-        const envModifiers = ROOM_MODIFIERS.environmental;
-        const totalWeight = envModifiers.reduce((sum, mod) => sum + mod.weight, 0);
-        let random = R() * totalWeight;
+      if (useEnvironmentalChallenges) {
+        // Generate comprehensive environmental challenges
+        const environment = environmentalSystem.generateRoomEnvironment(
+          room.kind,
+          dungeonLevel,
+          environmentComplexity
+        );
         
-        for (const modifier of envModifiers) {
-          random -= modifier.weight;
-          if (random <= 0) {
-            newTags.push(`gurps:${modifier.tag}`, `gurps:${modifier.description}`);
-            break;
-          }
+        if (environment.modifiers.length > 0) {
+          // Add environmental tags
+          newTags.push(`gurps:environment:${environment.description}`);
+          environment.tacticalNotes.forEach(note => {
+            newTags.push(`gurps:tactical:${note}`);
+          });
+          newTags.push(`gurps:challenge_level:${environment.totalPenalty}`);
         }
-      }
-      
-      // 30% chance for tactical modifier  
-      if (R() < 0.3) {
-        const tacticalModifiers = ROOM_MODIFIERS.tactical;
-        const totalWeight = tacticalModifiers.reduce((sum, mod) => sum + mod.weight, 0);
-        let random = R() * totalWeight;
-        
-        for (const modifier of tacticalModifiers) {
-          random -= modifier.weight;
-          if (random <= 0) {
-            newTags.push(`gurps:${modifier.tag}`, `gurps:${modifier.description}`);
-            break;
+      } else {
+        // Fall back to simple room modifiers for backward compatibility
+        if (R() < 0.4) {
+          const envModifiers = SIMPLE_ROOM_MODIFIERS.environmental;
+          const totalWeight = envModifiers.reduce((sum, mod) => sum + mod.weight, 0);
+          let random = R() * totalWeight;
+          
+          for (const modifier of envModifiers) {
+            random -= modifier.weight;
+            if (random <= 0) {
+              newTags.push(`gurps:${modifier.tag}`, `gurps:${modifier.description}`);
+              break;
+            }
           }
         }
       }
@@ -210,3 +208,4 @@ export { dfrpgLockService } from "./locks";
 export { DFRPGTraps } from "./DFRPGTraps";
 export { DFRPGTreasureGenerator } from "./DFRPGTreasure";
 export { DFRPGEnhancedTrapSystem } from "./DFRPGTrapsEnhanced";
+export { DFRPGEnvironmentalSystem } from "./DFRPGEnvironment";
