@@ -368,10 +368,3 @@ export class ImportWizardComponent {
     element.innerHTML = '';
   }
 }
-
-// Make it available globally for the delete buttons
-declare global {
-  interface Window {
-    importWizard: ImportWizardComponent;
-  }
-}

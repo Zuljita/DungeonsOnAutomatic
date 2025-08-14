@@ -4,7 +4,6 @@ import { exportFoundry } from '@src/services/foundry';
 import { loadSystemModule } from '@src/services/system-loader';
 import { populateRooms, htmlRoomDetails } from '@src/services/room-key';
 import { ImportWizardComponent } from './import-wizard';
-main
 import type { SystemModule } from '@src/core/types';
 
 async function generate(): Promise<void> {
@@ -91,9 +90,3 @@ document.addEventListener('DOMContentLoaded', () => {
   // Generate initial dungeon
   generate().catch(console.error);
 });
-
-// Also run on module load for development
-initializeTabs();
-importWizard = new ImportWizardComponent();
-window.importWizard = importWizard;
-generate().catch(console.error);
