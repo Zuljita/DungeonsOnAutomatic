@@ -1,6 +1,7 @@
 import { Dungeon, Monster, SystemModule, Trap, Treasure } from '../../core/types';
 import monstersData from './data/monsters-complete.js';
 import { customDataLoader } from '../../services/custom-data-loader';
+import { DFRPGTreasureGenerator } from './DFRPGTreasure.js';
 
 interface RawMonster {
   Description: string;
@@ -26,6 +27,9 @@ const TREASURE: Treasure[] = [
   { kind: 'art', valueHint: 'minor' }
 ];
 
+// Legacy treasure for backward compatibility
+const SIMPLE_TREASURE = TREASURE;
+
 const ROOM_MODIFIERS = {
   environmental: [
     { tag: 'darkness', description: 'Dark (-5 to vision rolls)', weight: 3 },
@@ -48,9 +52,14 @@ const ROOM_MODIFIERS = {
 export const dfrpg: SystemModule = {
   id: 'dfrpg',
   label: 'GURPS Dungeon Fantasy',
-  enrich(d: Dungeon, opts?: { sources?: string[]; rng?: () => number }): Dungeon {
+  enrich(d: Dungeon, opts?: { sources?: string[]; rng?: () => number; level?: number; useDFRPGTreasure?: boolean }): Dungeon {
     const R = opts?.rng ?? Math.random;
     const encounters = { ...d.encounters };
+    const dungeonLevel = opts?.level ?? 1;
+    const useDFRPGTreasure = opts?.useDFRPGTreasure ?? true;
+    
+    // Initialize DFRPG treasure generator
+    const treasureGenerator = new DFRPGTreasureGenerator(R);
 
     // Use custom monsters if available, otherwise use default data
     let MONSTERS: Monster[];
@@ -101,8 +110,38 @@ export const dfrpg: SystemModule = {
       }
 
       if (R() < 0.5) {
-        const t = TREASURE[Math.floor(R() * TREASURE.length)];
-        treasure.push({ ...t });
+        if (useDFRPGTreasure) {
+          // Generate DFRPG treasure based on room danger and level
+          const roomDanger = monsters.length + traps.length;
+          const hoardSize = roomDanger >= 3 ? 'large' : roomDanger >= 2 ? 'medium' : 'small';
+          const treasureHoard = treasureGenerator.generateTreasureHoard(dungeonLevel, hoardSize);
+          
+          // Convert to simple treasure format for compatibility
+          if (treasureHoard.coins.totalValue > 0) {
+            treasure.push({ 
+              kind: 'coins', 
+              valueHint: `$${treasureHoard.coins.totalValue} (${treasureHoard.coins.totalWeight.toFixed(1)} lbs)` 
+            });
+          }
+          
+          treasureHoard.magicItems.forEach(item => {
+            treasure.push({
+              kind: 'magic',
+              valueHint: `${item.name} ($${item.value}, ${item.weight} lbs) - ${item.quirks.join(', ')}`
+            });
+          });
+          
+          treasureHoard.mundaneItems.forEach(item => {
+            treasure.push({
+              kind: item.category === 'art' ? 'art' : item.category === 'gem' ? 'gems' : 'other',
+              valueHint: `${item.name} ($${item.value}, ${item.weight} lbs)${item.description ? ' - ' + item.description : ''}`
+            });
+          });
+        } else {
+          // Legacy simple treasure
+          const t = SIMPLE_TREASURE[Math.floor(R() * SIMPLE_TREASURE.length)];
+          treasure.push({ ...t });
+        }
       }
 
       encounters[r.id] = { monsters, traps, treasure };
@@ -153,3 +192,4 @@ export default dfrpg;
 
 export { dfrpgLockService } from "./locks";
 export { DFRPGTraps } from "./DFRPGTraps";
+export { DFRPGTreasureGenerator } from "./DFRPGTreasure";
