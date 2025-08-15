@@ -245,12 +245,24 @@ export const dfrpg: SystemModule = {
         );
         
         if (environment.modifiers.length > 0) {
-          // Add environmental tags
-          newTags.push(`gurps:environment:${environment.description}`);
-          environment.tacticalNotes.forEach(note => {
-            newTags.push(`gurps:tactical:${note}`);
+          // Add semantic environmental tags from the modifier data
+          environment.modifiers.forEach(modifier => {
+            newTags.push(modifier.tag); // Use the semantic tag like 'water_knee_deep', 'icy_floor', etc.
+            newTags.push(modifier.category); // terrain, visibility, space, atmospheric, magical
+            newTags.push(modifier.severity); // minor, moderate, severe, extreme
           });
-          newTags.push(`gurps:challenge_level:${environment.totalPenalty}`);
+          
+          // Add challenge level as a separate tag
+          if (environment.totalPenalty > 0) {
+            newTags.push(`challenge_level_${environment.totalPenalty}`);
+          }
+          
+          // Store the environmental description with tactical rules on the room
+          const descriptions = [environment.description];
+          if (environment.tacticalNotes.length > 0) {
+            descriptions.push(`Tactical Effects: ${environment.tacticalNotes.join('; ')}`);
+          }
+          room.description = descriptions.join('. ');
         }
       } else {
         // Fall back to simple room modifiers for backward compatibility
@@ -269,7 +281,15 @@ export const dfrpg: SystemModule = {
         }
       }
       
-      return newTags.length > (room.tags?.length || 0) ? { ...room, tags: newTags } : room;
+      // Return modified room if tags or description changed
+      const hasNewTags = newTags.length > (room.tags?.length || 0);
+      const hasDescription = Boolean(room.description);
+      
+      if (hasNewTags || hasDescription) {
+        return { ...room, tags: newTags, description: room.description };
+      }
+      
+      return room;
     });
 
     return { ...d, rooms: modifiedRooms, encounters };
