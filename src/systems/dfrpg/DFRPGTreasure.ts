@@ -225,7 +225,6 @@ export class DFRPGTreasureGenerator {
     // Standard coin distribution
     const goldRatio = 0.15 + (level * 0.02); // More gold at deeper levels
     const silverRatio = 0.35;
-    const copperRatio = 1 - goldRatio - silverRatio;
 
     const goldValue = Math.floor(remainingValue * goldRatio);
     const silverValue = Math.floor(remainingValue * silverRatio);
@@ -291,7 +290,7 @@ export class DFRPGTreasureGenerator {
 
     const categories = Object.keys(MAGIC_ITEM_TEMPLATES[powerLevel]);
     const category = categories[Math.floor(this.rng() * categories.length)] as keyof typeof MAGIC_ITEM_TEMPLATES.minor;
-    const items = MAGIC_ITEM_TEMPLATES[powerLevel][category];
+    const items = (MAGIC_ITEM_TEMPLATES[powerLevel] as Record<string, Array<{name: string, value: number, weight: number, quirks: string[]}>>)[category];
     const template = items[Math.floor(this.rng() * items.length)];
 
     const quirks = [...template.quirks];
@@ -442,7 +441,7 @@ export class DFRPGTreasureGenerator {
     // Magic items
     if (hoard.magicItems.length > 0) {
       const magicDesc = hoard.magicItems.map(item => 
-        `${item.name} (${item.powerLevel}, ${item.quirks.join(', ')})`
+        `${item.name} (${item.powerLevel}, ${item.quirks?.join(', ') || 'no quirks'})`
       ).join('; ');
       parts.push(`Magic: ${magicDesc}`);
     }

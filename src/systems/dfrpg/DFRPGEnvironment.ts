@@ -516,7 +516,6 @@ export class DFRPGEnvironmentalSystem {
 
     const selectedModifiers: EnvironmentalModifier[] = [];
     const maxModifiers = this.getMaxModifiers(complexity);
-    const baseChance = this.getBaseChance(complexity, dungeonLevel);
 
     // Always try for at least one modifier in challenging+ environments
     const guaranteedModifier = complexity === 'challenging' || complexity === 'extreme';
@@ -563,13 +562,13 @@ export class DFRPGEnvironmentalSystem {
   }
 
   private getBaseChance(complexity: string, dungeonLevel: number): number {
-    const baseChances = { minimal: 0.3, moderate: 0.5, challenging: 0.7, extreme: 0.9 };
+    const baseChances: Record<string, number> = { minimal: 0.3, moderate: 0.5, challenging: 0.7, extreme: 0.9 };
     const levelBonus = Math.min(dungeonLevel * 0.05, 0.3);
     return Math.min((baseChances[complexity] || 0.5) + levelBonus, 0.95);
   }
 
   private getCategoryChance(category: EnvironmentalModifier['category'], dungeonLevel: number, complexity: string): number {
-    const baseChances = {
+    const baseChances: Record<string, number> = {
       terrain: 0.4,
       visibility: 0.35,
       space: 0.3,
@@ -577,7 +576,7 @@ export class DFRPGEnvironmentalSystem {
       magical: Math.min(0.1 + (dungeonLevel * 0.02), 0.4)
     };
 
-    const complexityMultiplier = {
+    const complexityMultiplier: Record<string, number> = {
       minimal: 0.7,
       moderate: 1.0,
       challenging: 1.3,
@@ -607,7 +606,7 @@ export class DFRPGEnvironmentalSystem {
     const sanctityLevels = ['no_sanctity', 'low_sanctity', 'high_sanctity', 'very_high_sanctity'];
     const natureLevels = ['no_nature', 'low_nature', 'high_nature', 'very_high_nature'];
     
-    const incompatibleTags = {
+    const incompatibleTags: Record<string, string[]> = {
       // All lighting levels are mutually exclusive
       ...Object.fromEntries(lightingLevels.map(level => [
         level, lightingLevels.filter(other => other !== level)

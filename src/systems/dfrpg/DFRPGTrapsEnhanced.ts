@@ -461,7 +461,7 @@ const ENHANCED_TRAP_DATA: Record<number, EnhancedTrap[]> = {
 };
 
 // Weighted random selection for level-appropriate traps
-const TRAP_LEVEL_WEIGHTS = {
+const TRAP_LEVEL_WEIGHTS: Record<number, number[]> = {
   1: [1, 1, 1],     // Levels 1-3
   2: [2, 1, 1],
   3: [3, 2, 1],
@@ -486,7 +486,7 @@ export class DFRPGEnhancedTrapSystem {
     const complexityModifier = this.getComplexityModifier(complexity);
     
     // Select trap level based on weights and complexity
-    const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
+    const totalWeight = weights.reduce((sum: number, weight: number) => sum + weight, 0);
     let random = this.rng() * totalWeight;
     let selectedLevel = 1;
     
