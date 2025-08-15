@@ -1,91 +1,172 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dungeons On Automatic — GUI</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DungeonsOnAutomatic</title>
   <style>
-    body { font-family: monospace; padding: 1rem; }
-    label { margin-right: 0.5rem; }
-    pre { white-space: pre; border: 1px solid #ccc; padding: 0.5rem; margin-top: 1rem; }
-    #map { border: 1px solid #ccc; padding: 0.5rem; margin-top: 1rem; display: inline-block; }
-    #room-key { margin-top: 1rem; }
-    /* Navigation tabs */
-    .nav-tabs { margin: 1rem 0; border-bottom: 1px solid #ccc; }
-    .nav-tab { 
-      display: inline-block; 
-      padding: 0.5rem 1rem; 
-      margin-right: 0.25rem; 
-      background: #f0f0f0; 
-      border: 1px solid #ccc; 
-      border-bottom: none; 
-      cursor: pointer; 
-      text-decoration: none; 
-      color: #333;
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #f5f5f5;
     }
-    .nav-tab.active { background: white; border-bottom: 1px solid white; margin-bottom: -1px; }
-    .nav-tab:hover { background: #e0e0e0; }
-    
-    /* Tab content */
-    .tab-content { display: none; margin-top: 1rem; }
-    .tab-content.active { display: block; }
-    
-    /* Import wizard styles */
-    .wizard-step { margin: 1rem 0; padding: 1rem; border: 1px solid #ddd; background: #f9f9f9; }
-    .wizard-step h3 { margin-top: 0; }
-    .form-group { margin: 0.5rem 0; }
-    .form-group label { display: inline-block; width: 150px; }
-    .form-group select, .form-group input { padding: 0.25rem; }
-    .btn { 
-      padding: 0.5rem 1rem; 
-      margin: 0.25rem; 
-      background: #007acc; 
-      color: white; 
-      border: none; 
-      cursor: pointer; 
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      overflow: hidden;
     }
-    .btn:hover { background: #005999; }
-    .btn:disabled { background: #ccc; cursor: not-allowed; }
-    .btn-secondary { background: #6c757d; }
-    .btn-secondary:hover { background: #545b62; }
-    .btn-danger { background: #dc3545; }
-    .btn-danger:hover { background: #c82333; }
-    
-    /* Status messages */
-    .status-message { 
-      padding: 0.75rem; 
-      margin: 0.5rem 0; 
-      border-radius: 0.25rem; 
+    .tabs {
+      display: flex;
+      background: #2c3e50;
     }
-    .status-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-    .status-error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-    .status-info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
-    
-    /* File upload area */
-    .file-upload { 
-      border: 2px dashed #ccc; 
-      padding: 2rem; 
-      text-align: center; 
-      margin: 1rem 0; 
+    .tab {
+      padding: 15px 25px;
+      color: white;
       cursor: pointer;
+      border: none;
+      background: none;
+      font-size: 14px;
+      transition: background 0.3s;
     }
-    .file-upload:hover { border-color: #007acc; }
-    .file-upload.dragover { border-color: #007acc; background: #f0f8ff; }
-    
-    /* Data management */
-    .data-list { margin: 1rem 0; }
-    .data-item { 
-      padding: 0.5rem; 
-      margin: 0.25rem 0; 
-      border: 1px solid #ddd; 
-      background: white; 
-      display: flex; 
-      justify-content: space-between; 
-      align-items: center; 
+    .tab:hover {
+      background: #34495e;
     }
-    .data-item-info { flex-grow: 1; }
-    .data-item-actions { flex-shrink: 0; }
-    
+    .tab.active {
+      background: #3498db;
+    }
+    .tab-content {
+      display: none;
+      padding: 20px;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 500;
+      color: #2c3e50;
+    }
+    select, input, button {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    select:focus, input:focus {
+      outline: none;
+      border-color: #3498db;
+      box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+    }
+    button {
+      background: #3498db;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-weight: 500;
+      transition: background 0.3s;
+    }
+    button:hover {
+      background: #2980b9;
+    }
+    .map-container {
+      margin-top: 20px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .room-key {
+      margin-top: 20px;
+      padding: 15px;
+      background: #f8f9fa;
+      border-radius: 4px;
+      border-left: 4px solid #3498db;
+    }
+    .room-key h2 {
+      margin-top: 0;
+      color: #2c3e50;
+    }
+    .room {
+      margin-bottom: 15px;
+      padding: 10px;
+      background: white;
+      border-radius: 4px;
+      border: 1px solid #e9ecef;
+    }
+    .room h3 {
+      margin-top: 0;
+      color: #495057;
+      border-bottom: 1px solid #dee2e6;
+      padding-bottom: 5px;
+    }
+    .room p {
+      margin: 5px 0;
+      color: #6c757d;
+    }
+    .inputs {
+      margin-top: 20px;
+      padding: 15px;
+      background: #f8f9fa;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 12px;
+      white-space: pre-wrap;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .map-options {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+    .option-group {
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 4px;
+      border: 1px solid #e9ecef;
+    }
+    .option-group h3 {
+      margin-top: 0;
+      color: #495057;
+      font-size: 16px;
+      border-bottom: 1px solid #dee2e6;
+      padding-bottom: 8px;
+    }
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .checkbox-group input[type="checkbox"] {
+      width: auto;
+    }
+    .checkbox-group label {
+      margin-bottom: 0;
+      font-weight: normal;
+    }
+    .download-link {
+      display: inline-block;
+      padding: 8px 16px;
+      background: #27ae60;
+      color: white;
+      text-decoration: none;
+      border-radius: 4px;
+      margin-left: 10px;
+      transition: background 0.3s;
+    }
+    .download-link:hover {
+      background: #229954;
+    }
     /* Tag styling */
     .tag {
       display: inline-block;
@@ -105,113 +186,278 @@
     .tag.loot { background: #FFD700; color: #333; }
     .tag.trap { background: #795548; }
     .tag.mood { background: #607D8B; }
+    
+    /* Import Wizard Styles */
+    .wizard-section, .data-manager-section {
+      margin-bottom: 30px;
+      padding: 20px;
+      border: 1px solid #e9ecef;
+      border-radius: 4px;
+      background: #f8f9fa;
+    }
+    .wizard-section h3, .data-manager-section h3 {
+      margin-top: 0;
+      color: #495057;
+      border-bottom: 1px solid #dee2e6;
+      padding-bottom: 8px;
+    }
+    .upload-area {
+      border: 2px dashed #ddd;
+      border-radius: 4px;
+      padding: 40px;
+      text-align: center;
+      background: white;
+      cursor: pointer;
+      transition: border-color 0.3s;
+      margin: 15px 0;
+    }
+    .upload-area:hover {
+      border-color: #3498db;
+    }
+    .upload-area.dragover {
+      border-color: #3498db;
+      background: #f0f8ff;
+    }
+    .status-message {
+      padding: 10px;
+      border-radius: 4px;
+      margin: 10px 0;
+    }
+    .status-success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    .status-error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    .status-info {
+      background: #cce7ff;
+      color: #004085;
+      border: 1px solid #b3d7ff;
+    }
+    .data-manager-actions {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .data-manager-actions button {
+      width: auto;
+      padding: 8px 16px;
+    }
+    .btn-danger {
+      background: #dc3545 !important;
+    }
+    .btn-danger:hover {
+      background: #c82333 !important;
+    }
+    .data-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px;
+      background: white;
+      border: 1px solid #e9ecef;
+      border-radius: 4px;
+      margin-bottom: 10px;
+    }
+    .data-item-info {
+      flex: 1;
+    }
+    .data-item-actions button {
+      width: auto;
+      padding: 6px 12px;
+      font-size: 12px;
+    }
   </style>
 </head>
 <body>
-  <h1>Dungeon Generator</h1>
-  
-  <!-- Navigation tabs -->
-  <div class="nav-tabs">
-    <a href="#" class="nav-tab active" data-tab="generator">Generator</a>
-    <a href="#" class="nav-tab" data-tab="import-wizard">Data Import Wizard</a>
-    <a href="#" class="nav-tab" data-tab="data-manager">Manage Custom Data</a>
-  </div>
-
-  <!-- Generator Tab -->
-  <div id="generator-tab" class="tab-content active">
-    <div>
-      <label>Rooms: <input id="rooms" type="number" value="8" min="1" /></label>
-      <label>Seed: <input id="seed" type="text" /></label>
-      <label>System:
-        <select id="system">
-          <option value="generic">generic</option>
-          <option value="dfrpg">dfrpg</option>
-        </select>
-      </label>
-      <label>Theme:
-        <select id="theme">
-          <option value="">No Theme (Random)</option>
-        </select>
-      </label>
-      <button id="generate">Generate</button>
-      <a id="download-svg" download="dungeon.svg" style="margin-left: 1rem">Download SVG</a>
-      <a id="download-foundry" download="dungeon.json" style="margin-left: 1rem">Download Foundry JSON</a>
+  <div class="container">
+    <div class="tabs">
+      <button class="tab active" onclick="showTab('generator')">Generator</button>
+      <button class="tab" onclick="showTab('data-manager')">Data Manager</button>
     </div>
-    <div id="map"></div>
-    <h2>Room Key</h2>
-    <div id="room-key"></div>
-    <h2>Input</h2>
-    <pre id="inputs"></pre>
-  </div>
 
-  <!-- Import Wizard Tab -->
-  <div id="import-wizard-tab" class="tab-content">
-    <h2>Data Import Wizard</h2>
-    <p>Create custom data for your dungeons by generating templates, editing them, and uploading them back.</p>
-    
-    <!-- Step 1: Select Module and Data Type -->
-    <div class="wizard-step">
-      <h3>Step 1: Select Module and Data Type</h3>
-      <div class="form-group">
-        <label for="wizard-module">Module:</label>
-        <select id="wizard-module">
-          <option value="">Select a module...</option>
-        </select>
+    <div id="generator-tab" class="tab-content active">
+      <div class="map-options">
+        <div class="option-group">
+          <h3>Basic Settings</h3>
+          <div class="form-group">
+            <label>System:</label>
+            <select id="system">
+              <option value="">Select System</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Theme:</label>
+            <select id="theme">
+              <option value="">No Theme (Random)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Rooms:</label>
+            <input type="number" id="rooms" value="8" min="3" max="20">
+          </div>
+          <div class="form-group">
+            <label>Width:</label>
+            <input type="number" id="width" value="50" min="20" max="100">
+          </div>
+          <div class="form-group">
+            <label>Height:</label>
+            <input type="number" id="height" value="50" min="20" max="100">
+          </div>
+          <div class="form-group">
+            <label>Seed:</label>
+            <input type="text" id="seed" placeholder="Random">
+          </div>
+        </div>
+
+        <div class="option-group">
+          <h3>Layout Type</h3>
+          <div class="form-group">
+            <label>Map Layout:</label>
+            <select id="layout-type">
+              <option value="rectangle">Rectangle</option>
+              <option value="square">Square</option>
+              <option value="box">Box (Courtyard)</option>
+              <option value="cross">Cross</option>
+              <option value="dagger">Dagger</option>
+              <option value="saltire">Saltire (X-Shape)</option>
+              <option value="keep">Keep (Castle)</option>
+              <option value="hexagon">Hexagon</option>
+              <option value="round">Round</option>
+              <option value="cavernous">Cavernous</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="option-group">
+          <h3>Room Configuration</h3>
+          <div class="form-group">
+            <label>Room Layout:</label>
+            <select id="room-layout">
+              <option value="scattered">Scattered</option>
+              <option value="sparse">Sparse</option>
+              <option value="dense">Dense</option>
+              <option value="symmetric">Symmetric</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Room Size:</label>
+            <select id="room-size">
+              <option value="medium">Medium</option>
+              <option value="small">Small</option>
+              <option value="large">Large</option>
+              <option value="mixed">Mixed</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Room Shape:</label>
+            <select id="room-shape">
+              <option value="rectangular">Rectangular</option>
+              <option value="round">Round</option>
+              <option value="hexagonal">Hexagonal</option>
+              <option value="mixed">Mixed</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="option-group">
+          <h3>Corridor Configuration</h3>
+          <div class="form-group">
+            <label>Corridor Type:</label>
+            <select id="corridor-type">
+              <option value="straight">Straight</option>
+              <option value="winding">Winding</option>
+              <option value="maze">Maze</option>
+              <option value="mixed">Mixed</option>
+            </select>
+          </div>
+          <div class="checkbox-group">
+            <input type="checkbox" id="allow-deadends" checked>
+            <label for="allow-deadends">Allow Deadends</label>
+          </div>
+        </div>
+
+        <div class="option-group">
+          <h3>Special Features</h3>
+          <div class="checkbox-group">
+            <input type="checkbox" id="stairs-up">
+            <label for="stairs-up">Stairs Up</label>
+          </div>
+          <div class="checkbox-group">
+            <input type="checkbox" id="stairs-down">
+            <label for="stairs-down">Stairs Down</label>
+          </div>
+          <div class="checkbox-group">
+            <input type="checkbox" id="entrance-periphery">
+            <label for="entrance-periphery">Entrance from Periphery</label>
+          </div>
+        </div>
       </div>
-      <div class="form-group">
-        <label for="wizard-datatype">Data Type:</label>
-        <select id="wizard-datatype" disabled>
-          <option value="">Select module first...</option>
-        </select>
-      </div>
-      <div id="datatype-description"></div>
+
+      <button id="generate">Generate Dungeon</button>
+      <a id="download-svg" download="dungeon.svg" class="download-link">Download SVG</a>
+
+      <div id="map" class="map-container"></div>
+      <div id="room-key" class="room-key"></div>
+      <div id="inputs" class="inputs"></div>
     </div>
 
-    <!-- Step 2: Generate Template -->
-    <div class="wizard-step">
-      <h3>Step 2: Generate Template</h3>
-      <p>Download a CSV template with example data to get started.</p>
-      <button id="generate-template" class="btn" disabled>Generate Template</button>
-      <a id="download-template" style="display: none;">Download Template</a>
-      <div id="template-status"></div>
-    </div>
-
-    <!-- Step 3: Upload Completed File -->
-    <div class="wizard-step">
-      <h3>Step 3: Upload Your Data</h3>
-      <p>After editing the template, upload your completed CSV file here.</p>
+    <div id="data-manager-tab" class="tab-content">
+      <h2>Custom Data Manager</h2>
+      <p>Use the data manager to import custom monsters, traps, and treasure for your selected system.</p>
       
-      <div class="file-upload" id="file-upload-area">
-        <p>Click here or drag and drop your CSV file</p>
-        <input type="file" id="file-input" accept=".csv" style="display: none;">
+      <div class="wizard-section">
+        <h3>Import Data</h3>
+        <div class="form-group">
+          <label>Module:</label>
+          <select id="wizard-module">
+            <option value="">Select a module...</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Data Type:</label>
+          <select id="wizard-datatype" disabled>
+            <option value="">Select module first...</option>
+          </select>
+        </div>
+        <div id="datatype-description"></div>
+        
+        <button id="generate-template" disabled>Generate Template</button>
+        <a id="download-template" style="display: none;" class="download-link">Download Template</a>
+        <div id="template-status"></div>
+        
+        <div id="file-upload-area" class="upload-area">
+          <p>Click here or drag and drop your CSV file</p>
+          <input type="file" id="file-input" accept=".csv" style="display: none;">
+        </div>
+        <div id="upload-status"></div>
+        <div id="validation-results"></div>
+        
+        <div class="form-group">
+          <label>Dataset Name (optional):</label>
+          <input type="text" id="dataset-name" placeholder="Custom dataset name">
+        </div>
+        <button id="save-data" disabled>Save Data</button>
       </div>
       
-      <div id="upload-status"></div>
-      <div id="validation-results"></div>
-      
-      <div style="margin-top: 1rem;">
-        <input type="text" id="dataset-name" placeholder="Enter a name for this dataset (optional)" style="width: 300px;">
-        <button id="save-data" class="btn" disabled>Save Imported Data</button>
+      <div class="data-manager-section">
+        <h3>Data Manager</h3>
+        <div class="data-manager-actions">
+          <button id="export-all-data">Export All Data</button>
+          <button id="import-backup">Import Backup</button>
+          <input type="file" id="backup-file" accept=".json" style="display: none;">
+          <button id="clear-all-data" class="btn-danger">Clear All Data</button>
+        </div>
+        <div id="custom-data-list"></div>
       </div>
     </div>
   </div>
 
-  <!-- Data Manager Tab -->
-  <div id="data-manager-tab" class="tab-content">
-    <h2>Manage Custom Data</h2>
-    <p>View, export, and delete your custom imported datasets.</p>
-    
-    <div style="margin: 1rem 0;">
-      <button id="export-all-data" class="btn btn-secondary">Export All Data</button>
-      <button id="import-backup" class="btn btn-secondary">Import Backup</button>
-      <button id="clear-all-data" class="btn btn-danger">Clear All Data</button>
-      <input type="file" id="backup-file" accept=".json" style="display: none;">
-    </div>
-    
-    <div class="data-list" id="custom-data-list">
-      <!-- Custom data items will be populated here -->
-    </div>
-  </div>
   <script type="module" src="/src/main.ts"></script>
 </body>
 </html>

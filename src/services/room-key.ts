@@ -99,9 +99,28 @@ export function populateRooms(d: Dungeon, r: () => number = Math.random, moduleI
 }
 
 export function htmlRoomDetails(d: Dungeon, details: Record<ID, RoomDetail>): string {
+  if (!d) {
+    console.error('htmlRoomDetails: dungeon is undefined');
+    return '<p>Error: No dungeon data</p>';
+  }
+  if (!d.rooms) {
+    console.error('htmlRoomDetails: dungeon.rooms is undefined');
+    return '<p>Error: No room data</p>';
+  }
+  if (!Array.isArray(d.rooms)) {
+    console.error('htmlRoomDetails: dungeon.rooms is not an array', d.rooms);
+    return '<p>Error: Invalid room data</p>';
+  }
+  
   return d.rooms
     .map((room, index) => {
       const det = details[room.id] ?? { features: [], monsters: [], treasure: [] };
+      
+      // Ensure all properties exist and are arrays
+      const safeFeatures = Array.isArray(det.features) ? det.features : [];
+      const safeMonsters = Array.isArray(det.monsters) ? det.monsters : [];
+      const safeTreasure = Array.isArray(det.treasure) ? det.treasure : [];
+      
       const parts: string[] = [`<section class="room"><h3>Room ${index + 1} (${room.kind})</h3>`];
       
       // Display room tags if present
@@ -110,11 +129,11 @@ export function htmlRoomDetails(d: Dungeon, details: Record<ID, RoomDetail>): st
         parts.push(`<p><strong>Tags:</strong> ${tagHtml}</p>`);
       }
       
-      if (det.features.length) {
-        parts.push(`<p><strong>Features:</strong> ${det.features.join(', ')}</p>`);
+      if (safeFeatures.length) {
+        parts.push(`<p><strong>Features:</strong> ${safeFeatures.join(', ')}</p>`);
       }
-      if (det.monsters.length) {
-        const monsterDetails = det.monsters.map(m => {
+      if (safeMonsters.length) {
+        const monsterDetails = safeMonsters.map(m => {
           const monsterInfo = [m.name];
           if (m.tags && m.tags.length > 0) {
             monsterInfo.push(`[${m.tags.join(', ')}]`);
@@ -123,8 +142,8 @@ export function htmlRoomDetails(d: Dungeon, details: Record<ID, RoomDetail>): st
         });
         parts.push(`<p><strong>Monsters:</strong> ${monsterDetails.join(', ')}</p>`);
       }
-      if (det.treasure.length) {
-        const treasureDetails = det.treasure.map(t => {
+      if (safeTreasure.length) {
+        const treasureDetails = safeTreasure.map(t => {
           const treasureInfo = [t.kind + (t.valueHint ? ` (${t.valueHint})` : '')];
           if (t.tags && t.tags.length > 0) {
             treasureInfo.push(`[${t.tags.join(', ')}]`);

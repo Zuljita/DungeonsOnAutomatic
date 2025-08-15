@@ -1,6 +1,7 @@
 import { getAvailableModules, getDataTypesForModule, getModuleSchema } from '@src/data/schemas';
 import { importWizardService } from '@src/services/import-wizard';
 import { dataStorageService } from '@src/services/data-storage';
+import { ValidationResult, ValidationError } from '@src/data/schemas/types';
 
 export class ImportWizardComponent {
   private currentModule = '';

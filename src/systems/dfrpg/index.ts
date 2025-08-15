@@ -148,9 +148,13 @@ export const dfrpg: SystemModule = {
         monsters.push(...taggedSelectionService.selectMonsters('dfrpg', tagOptions, R));
       } else {
         const monsterCount = Math.floor(R() * 3);
-        for (let i = 0; i < monsterCount; i++) {
-          const m = MONSTERS[Math.floor(R() * MONSTERS.length)];
-          if (m) monsters.push({ ...m });
+        if (MONSTERS && MONSTERS.length > 0) {
+          for (let i = 0; i < monsterCount; i++) {
+            const m = MONSTERS[Math.floor(R() * MONSTERS.length)];
+            if (m) monsters.push({ ...m });
+          }
+        } else {
+          console.error('DFRPG: MONSTERS array is empty or undefined', MONSTERS);
         }
       }
 
@@ -171,8 +175,12 @@ export const dfrpg: SystemModule = {
             });
           } else {
             // Use legacy or custom traps
-            const t = CURRENT_TRAPS[Math.floor(R() * CURRENT_TRAPS.length)];
-            traps.push({ ...t });
+            if (CURRENT_TRAPS && CURRENT_TRAPS.length > 0) {
+              const t = CURRENT_TRAPS[Math.floor(R() * CURRENT_TRAPS.length)];
+              traps.push({ ...t });
+            } else {
+              console.error('DFRPG: CURRENT_TRAPS array is empty or undefined', CURRENT_TRAPS);
+            }
           }
         }
       }
@@ -211,8 +219,12 @@ export const dfrpg: SystemModule = {
             });
           } else {
             // Legacy simple treasure
-            const t = SIMPLE_TREASURE[Math.floor(R() * SIMPLE_TREASURE.length)];
-            treasure.push({ ...t });
+            if (SIMPLE_TREASURE && SIMPLE_TREASURE.length > 0) {
+              const t = SIMPLE_TREASURE[Math.floor(R() * SIMPLE_TREASURE.length)];
+              treasure.push({ ...t });
+            } else {
+              console.error('DFRPG: SIMPLE_TREASURE array is empty or undefined', SIMPLE_TREASURE);
+            }
           }
         }
       }
