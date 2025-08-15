@@ -35,6 +35,7 @@ export interface Monster {
   group_size?: string;
   tactics?: string;
   frequency?: 'very_rare' | 'rare' | 'uncommon' | 'common' | 'very_common';
+  tags?: string[]; // Thematic tags for tag-based selection
 }
 
 export interface Trap {
@@ -46,11 +47,13 @@ export interface Trap {
   detection?: string;
   disarm?: string;
   effect?: string;
+  tags?: string[]; // Thematic tags for tag-based selection
 }
 
 export interface Treasure {
   kind: 'coins' | 'gems' | 'art' | 'gear' | 'magic' | 'other';
   valueHint?: string; // system-agnostic, e.g., 'minor', 'standard', 'major'
+  tags?: string[]; // Thematic tags for tag-based selection
 }
 
 export enum PlacementRule {

@@ -1,5 +1,5 @@
 import { dataStorageService } from './data-storage';
-import { Monster, Trap, Door } from '../core/types';
+import { Monster, Trap, Door, Treasure } from '../core/types';
 
 /**
  * Service to load custom imported data for use in system modules
@@ -75,6 +75,23 @@ export class CustomDataLoaderService {
   }
 
   /**
+   * Get custom treasure for a module, or return default data if none available
+   */
+  getTreasure(moduleId: string, defaultTreasure: Treasure[] = []): Treasure[] {
+    const customData = dataStorageService.getData(moduleId, 'treasure');
+    
+    if (customData.length > 0) {
+      return customData.map(item => ({
+        kind: this.validateTreasureKind(String(item.kind || 'other')),
+        valueHint: String(item.valueHint || ''),
+        tags: Array.isArray(item.tags) ? item.tags.map(String) : []
+      }));
+    }
+    
+    return defaultTreasure;
+  }
+
+  /**
    * Check if custom data exists for a specific module and data type
    */
   hasCustomData(moduleId: string, dataType: string): boolean {
@@ -96,6 +113,11 @@ export class CustomDataLoaderService {
   private validateDoorStatus(status: string): Door['status'] {
     const validStatuses: Door['status'][] = ['locked', 'trapped', 'barred', 'jammed', 'warded', 'secret'];
     return validStatuses.includes(status as Door['status']) ? status as Door['status'] : 'locked';
+  }
+
+  private validateTreasureKind(kind: string): Treasure['kind'] {
+    const validKinds: Treasure['kind'][] = ['coins', 'gems', 'art', 'gear', 'magic', 'other'];
+    return validKinds.includes(kind as Treasure['kind']) ? kind as Treasure['kind'] : 'other';
   }
 }
 

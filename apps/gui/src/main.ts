@@ -1,92 +1,198 @@
-import { buildDungeon } from '@src/services/assembler';
+import { systemLoader } from '@src/services/system-loader';
 import { renderSvg } from '@src/services/render';
-import { exportFoundry } from '@src/services/foundry';
-import { loadSystemModule } from '@src/services/system-loader';
-import { populateRooms, htmlRoomDetails } from '@src/services/room-key';
+import { htmlRoomDetails } from '@src/services/room-key';
 import { ImportWizardComponent } from './import-wizard';
-import type { SystemModule } from '@src/core/types';
+import { tagSystem } from '@src/services/tag-system';
+import { mapGenerator, MapGenerationOptions } from '@src/services/map-generator';
 
-async function generate(): Promise<void> {
-  const roomsInput = document.getElementById('rooms') as HTMLInputElement;
-  const seedInput = document.getElementById('seed') as HTMLInputElement;
-  const systemInput = document.getElementById('system') as HTMLSelectElement;
-  const mapEl = document.getElementById('map') as HTMLElement;
-  const keyEl = document.getElementById('room-key') as HTMLElement;
-  const inputEl = document.getElementById('inputs') as HTMLElement;
-  const svgLink = document.getElementById('download-svg') as HTMLAnchorElement;
-  const foundryLink = document.getElementById('download-foundry') as HTMLAnchorElement;
+let importWizard: ImportWizardComponent;
 
-  const rooms = parseInt(roomsInput.value, 10) || 8;
-  const seed = seedInput.value || undefined;
-  const system = systemInput.value || 'generic';
-
-  const opts = { rooms, seed };
-  inputEl.textContent = JSON.stringify({ ...opts, system }, null, 2);
-  const base = buildDungeon(opts);
-  let sys: SystemModule;
-  try {
-    sys = await loadSystemModule(system, base.rng);
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    alert(msg);
-    sys = await loadSystemModule('generic', base.rng);
-  }
-  const enriched = await sys.enrich(base);
-  const svg = renderSvg(enriched);
-  mapEl.innerHTML = svg;
-  const details = populateRooms(enriched, enriched.rng ?? Math.random, system);
-  keyEl.innerHTML = htmlRoomDetails(enriched, details);
-  const svgBlob = new Blob([svg], { type: 'image/svg+xml' });
-  svgLink.href = URL.createObjectURL(svgBlob);
-  const foundry = exportFoundry(enriched);
-  const foundryBlob = new Blob([JSON.stringify(foundry, null, 2)], { type: 'application/json' });
-  foundryLink.href = URL.createObjectURL(foundryBlob);
-}
-
-// Initialize tab navigation
 function initializeTabs() {
-  const tabButtons = document.querySelectorAll('.nav-tab');
+  const tabs = document.querySelectorAll('.tab');
   const tabContents = document.querySelectorAll('.tab-content');
 
-  tabButtons.forEach(button => {
-    button.addEventListener('click', (e) => {
-      e.preventDefault();
-      const target = (button as HTMLElement).dataset.tab;
-      if (!target) return;
-
-      // Remove active class from all tabs and contents
-      tabButtons.forEach(b => b.classList.remove('active'));
-      tabContents.forEach(c => c.classList.remove('active'));
-
-      // Add active class to clicked tab and corresponding content
-      button.classList.add('active');
-      const content = document.getElementById(`${target}-tab`);
-      if (content) {
-        content.classList.add('active');
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      const targetTab = (tab as HTMLElement).getAttribute('onclick')?.match(/'([^']+)'/)?.[1];
+      if (targetTab) {
+        showTab(targetTab);
       }
     });
   });
 }
 
-// Initialize the import wizard
-let importWizard: ImportWizardComponent;
+function showTab(tabName: string) {
+  // Hide all tab contents
+  const tabContents = document.querySelectorAll('.tab-content');
+  tabContents.forEach(content => content.classList.remove('active'));
 
-document.getElementById('generate')?.addEventListener('click', () => {
-  generate().catch(err => {
-    console.error(err);
-    const mapEl = document.getElementById('map') as HTMLElement;
-    mapEl.textContent = 'Error generating dungeon';
+  // Remove active class from all tabs
+  const tabs = document.querySelectorAll('.tab');
+  tabs.forEach(tab => tab.classList.remove('active'));
+
+  // Show selected tab content
+  const selectedContent = document.getElementById(`${tabName}-tab`);
+  if (selectedContent) {
+    selectedContent.classList.add('active');
+  }
+
+  // Add active class to selected tab
+  const selectedTab = document.querySelector(`[onclick*="${tabName}"]`);
+  if (selectedTab) {
+    selectedTab.classList.add('active');
+  }
+}
+
+function initializeThemeSelector() {
+  const systemSelect = document.getElementById('system') as HTMLSelectElement;
+  const themeSelect = document.getElementById('theme') as HTMLSelectElement;
+  
+  function updateThemes() {
+    const selectedSystem = systemSelect.value;
+    const themes = tagSystem.getThemesForSystem(selectedSystem);
+    
+    themeSelect.innerHTML = '<option value="">No Theme (Random)</option>';
+    
+    themes.forEach(theme => {
+      const option = document.createElement('option');
+      option.value = theme.id;
+      option.textContent = theme.name;
+      themeSelect.appendChild(option);
+    });
+  }
+  
+  systemSelect.addEventListener('change', updateThemes);
+  updateThemes(); // Initial call
+}
+
+function populateSystemSelector() {
+  const systemSelect = document.getElementById('system') as HTMLSelectElement;
+  const systems = systemLoader.getSystems();
+  
+  systemSelect.innerHTML = '<option value="">Select System</option>';
+  
+  systems.forEach(system => {
+    const option = document.createElement('option');
+    option.value = system.id;
+    option.textContent = system.label;
+    systemSelect.appendChild(option);
   });
-});
+}
 
-// Initialize everything when the page loads
+async function generate(): Promise<void> {
+  const roomsInput = document.getElementById('rooms') as HTMLInputElement;
+  const seedInput = document.getElementById('seed') as HTMLInputElement;
+  const systemInput = document.getElementById('system') as HTMLSelectElement;
+  const themeInput = document.getElementById('theme') as HTMLSelectElement;
+  const widthInput = document.getElementById('width') as HTMLInputElement;
+  const heightInput = document.getElementById('height') as HTMLInputElement;
+  const layoutTypeInput = document.getElementById('layout-type') as HTMLSelectElement;
+  const roomLayoutInput = document.getElementById('room-layout') as HTMLSelectElement;
+  const roomSizeInput = document.getElementById('room-size') as HTMLSelectElement;
+  const roomShapeInput = document.getElementById('room-shape') as HTMLSelectElement;
+  const corridorTypeInput = document.getElementById('corridor-type') as HTMLSelectElement;
+  const allowDeadendsInput = document.getElementById('allow-deadends') as HTMLInputElement;
+  const stairsUpInput = document.getElementById('stairs-up') as HTMLInputElement;
+  const stairsDownInput = document.getElementById('stairs-down') as HTMLInputElement;
+  const entrancePeripheryInput = document.getElementById('entrance-periphery') as HTMLInputElement;
+
+  const rooms = parseInt(roomsInput.value) || 8;
+  const seed = seedInput.value || undefined;
+  const system = systemInput.value || 'generic';
+  const theme = themeInput.value || undefined;
+  const width = parseInt(widthInput.value) || 50;
+  const height = parseInt(heightInput.value) || 50;
+  const layoutType = layoutTypeInput.value as any || 'rectangle';
+  const roomLayout = roomLayoutInput.value as any || 'scattered';
+  const roomSize = roomSizeInput.value as any || 'medium';
+  const roomShape = roomShapeInput.value as any || 'rectangular';
+  const corridorType = corridorTypeInput.value as any || 'straight';
+  const allowDeadends = allowDeadendsInput.checked;
+  const stairsUp = stairsUpInput.checked;
+  const stairsDown = stairsDownInput.checked;
+  const entranceFromPeriphery = entrancePeripheryInput.checked;
+
+  const mapEl = document.getElementById('map');
+  const roomKeyEl = document.getElementById('room-key');
+  const inputEl = document.getElementById('inputs');
+  const downloadEl = document.getElementById('download-svg') as HTMLAnchorElement;
+
+  if (!mapEl || !roomKeyEl || !inputEl) return;
+
+  try {
+    // Create map generation options
+    const mapOptions: MapGenerationOptions = {
+      rooms,
+      width,
+      height,
+      seed,
+      layoutType,
+      roomLayout,
+      roomSize,
+      roomShape,
+      corridorType,
+      allowDeadends,
+      stairsUp,
+      stairsDown,
+      entranceFromPeriphery
+    };
+
+    console.log('Map generation options:', mapOptions);
+
+    // Generate the dungeon using the new map generator
+    const dungeon = mapGenerator.generateDungeon(mapOptions);
+    console.log('Generated dungeon:', dungeon);
+
+    // Enrich with system-specific content
+    const sys = await systemLoader.getSystem(system);
+    const tagOptions = theme ? { theme } : undefined;
+    const enriched = await sys.enrich(dungeon, { tags: tagOptions });
+    console.log('Enriched dungeon:', enriched);
+
+    // Display input parameters
+    const inputParams = {
+      ...mapOptions,
+      system,
+      theme: theme || 'none'
+    };
+    inputEl.textContent = JSON.stringify(inputParams, null, 2);
+
+    // Render the map
+    const svg = renderSvg(enriched);
+    mapEl.innerHTML = svg;
+
+    // Generate room details (now with safe error handling)
+    const details = enriched.encounters || {};
+    const roomDetails = htmlRoomDetails(enriched, details as any);
+    roomKeyEl.innerHTML = `<h2>Room Key</h2>${roomDetails}`;
+
+    // Update download link
+    const blob = new Blob([svg], { type: 'image/svg+xml' });
+    downloadEl.href = URL.createObjectURL(blob);
+    downloadEl.download = `dungeon-${layoutType}-${rooms}rooms.svg`;
+
+  } catch (error) {
+    console.error('Error generating dungeon:', error);
+    mapEl.innerHTML = `<p style="color: red;">Error generating dungeon: ${error}</p>`;
+  }
+}
+
+// Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
   initializeTabs();
+  populateSystemSelector();
+  initializeThemeSelector();
   importWizard = new ImportWizardComponent();
   
-  // Make import wizard available globally for delete buttons
-  window.importWizard = importWizard;
-  
-  // Generate initial dungeon
+  const generateBtn = document.getElementById('generate');
+  if (generateBtn) {
+    generateBtn.addEventListener('click', generate);
+  }
+
+  // Initial generation
   generate().catch(console.error);
 });
+
+// Make showTab and importWizard available globally for onclick handlers
+(window as any).showTab = showTab;
+(window as any).importWizard = importWizard;

@@ -1,6 +1,7 @@
 import { Dungeon, Monster, SystemModule, Trap, Treasure } from '../../core/types';
 import monstersData from './data/monsters-complete.js';
 import { customDataLoader } from '../../services/custom-data-loader';
+import { taggedSelectionService, TaggedSelectionOptions } from '../../services/tagged-selection';
 import { DFRPGTreasureGenerator } from './DFRPGTreasure.js';
 import { DFRPGEnhancedTrapSystem } from './DFRPGTrapsEnhanced.js';
 import { DFRPGEnvironmentalSystem } from './DFRPGEnvironment.js';
@@ -42,10 +43,49 @@ const SIMPLE_ROOM_MODIFIERS = {
   ]
 };
 
+// Helper function to generate tags for monsters based on their data
+function getMonsterTags(monster: RawMonster): string[] {
+  const tags: string[] = [];
+  
+  // Add class-based tags
+  if (monster.Class) {
+    const className = monster.Class.toLowerCase();
+    if (className.includes('undead')) tags.push('undead');
+    if (className.includes('dragon')) tags.push('dragon', 'scaled');
+    if (className.includes('elemental')) tags.push('elemental', 'magical');
+    if (className.includes('humanoid')) tags.push('humanoid');
+    if (className.includes('animal')) tags.push('animal', 'wildlife');
+    if (className.includes('goblin')) tags.push('goblin', 'chaotic');
+    if (className.includes('orc')) tags.push('orc', 'brutal');
+  }
+  
+  // Add subclass-based tags
+  if (monster.Subclass) {
+    const subclassName = monster.Subclass.toLowerCase();
+    if (subclassName.includes('fire')) tags.push('fire', 'elemental');
+    if (subclassName.includes('water')) tags.push('water', 'elemental');
+    if (subclassName.includes('earth')) tags.push('earth', 'elemental');
+    if (subclassName.includes('air')) tags.push('air', 'elemental');
+    if (subclassName.includes('skeleton')) tags.push('undead', 'skeleton');
+    if (subclassName.includes('zombie')) tags.push('undead', 'zombie');
+    if (subclassName.includes('ghost')) tags.push('undead', 'ghost');
+  }
+  
+  // Add source-based tags
+  if (monster.Source1) {
+    const sourceName = monster.Source1.toLowerCase();
+    if (sourceName.includes('cult')) tags.push('cult', 'evil');
+    if (sourceName.includes('wizard')) tags.push('wizard', 'arcane');
+    if (sourceName.includes('dragon')) tags.push('dragon', 'majestic');
+  }
+  
+  return [...new Set(tags)]; // Remove duplicates
+}
+
 export const dfrpg: SystemModule = {
   id: 'dfrpg',
   label: 'GURPS Dungeon Fantasy',
-  enrich(d: Dungeon, opts?: { sources?: string[]; rng?: () => number; level?: number; useDFRPGTreasure?: boolean; useEnhancedTraps?: boolean; useEnvironmentalChallenges?: boolean; environmentComplexity?: 'minimal' | 'moderate' | 'challenging' | 'extreme' }): Dungeon {
+  enrich(d: Dungeon, opts?: { sources?: string[]; rng?: () => number; level?: number; useDFRPGTreasure?: boolean; useEnhancedTraps?: boolean; useEnvironmentalChallenges?: boolean; environmentComplexity?: 'minimal' | 'moderate' | 'challenging' | 'extreme'; tags?: TaggedSelectionOptions }): Dungeon {
     const R = opts?.rng ?? Math.random;
     const encounters = { ...d.encounters };
     const dungeonLevel = opts?.level ?? 1;
@@ -53,6 +93,7 @@ export const dfrpg: SystemModule = {
     const useEnhancedTraps = opts?.useEnhancedTraps ?? true;
     const useEnvironmentalChallenges = opts?.useEnvironmentalChallenges ?? true;
     const environmentComplexity = opts?.environmentComplexity ?? 'moderate';
+    const tagOptions = opts?.tags;
     
     // Initialize DFRPG systems
     const treasureGenerator = new DFRPGTreasureGenerator(R);
@@ -78,7 +119,8 @@ export const dfrpg: SystemModule = {
         sm: m.SM ?? null,
         cls: m.Class,
         subclass: m.Subclass,
-        source: m.Source1
+        source: m.Source1,
+        tags: getMonsterTags(m) // Add tags based on monster data
       }));
     }
 
@@ -92,66 +134,98 @@ export const dfrpg: SystemModule = {
     }
 
     d.rooms.forEach((r) => {
+      // Apply room tags if tag options are provided
+      if (tagOptions) {
+        taggedSelectionService.applyRoomTags(r, tagOptions, R);
+      }
+      
       const monsters: Monster[] = [];
       const traps: Trap[] = [];
       const treasure: Treasure[] = [];
 
-      const monsterCount = Math.floor(R() * 3);
-      for (let i = 0; i < monsterCount; i++) {
-        const m = MONSTERS[Math.floor(R() * MONSTERS.length)];
-        if (m) monsters.push({ ...m });
-      }
-
-      if (R() < 0.3) {
-        if (useEnhancedTraps && !customDataLoader.hasCustomData('dfrpg', 'traps')) {
-          // Generate enhanced DFRPG trap
-          const complexity = monsterCount >= 2 ? 'complex' : monsterCount >= 1 ? 'standard' : 'simple';
-          const enhancedTrap = enhancedTrapSystem.generateTrap(dungeonLevel, complexity);
-          
-          traps.push({
-            name: enhancedTrap.name,
-            level: enhancedTrap.level,
-            notes: `${enhancedTrap.trigger.details} | Detection: ${enhancedTrap.detection.modifiers} | Disarm: ${enhancedTrap.disarm.modifiers} | ${enhancedTrap.effect.damage || enhancedTrap.effect.affliction || enhancedTrap.effect.special}`
-          });
+      // Select monsters using tag system or fallback to original logic
+      if (tagOptions) {
+        monsters.push(...taggedSelectionService.selectMonsters('dfrpg', tagOptions, R));
+      } else {
+        const monsterCount = Math.floor(R() * 3);
+        if (MONSTERS && MONSTERS.length > 0) {
+          for (let i = 0; i < monsterCount; i++) {
+            const m = MONSTERS[Math.floor(R() * MONSTERS.length)];
+            if (m) monsters.push({ ...m });
+          }
         } else {
-          // Use legacy or custom traps
-          const t = CURRENT_TRAPS[Math.floor(R() * CURRENT_TRAPS.length)];
-          traps.push({ ...t });
+          console.error('DFRPG: MONSTERS array is empty or undefined', MONSTERS);
         }
       }
 
-      if (R() < 0.5) {
-        if (useDFRPGTreasure) {
-          // Generate DFRPG treasure based on room danger and level
-          const roomDanger = monsters.length + traps.length;
-          const hoardSize = roomDanger >= 3 ? 'large' : roomDanger >= 2 ? 'medium' : 'small';
-          const treasureHoard = treasureGenerator.generateTreasureHoard(dungeonLevel, hoardSize);
-          
-          // Convert to simple treasure format for compatibility
-          if (treasureHoard.coins.totalValue > 0) {
-            treasure.push({ 
-              kind: 'coins', 
-              valueHint: `$${treasureHoard.coins.totalValue} (${treasureHoard.coins.totalWeight.toFixed(1)} lbs)` 
+      // Select traps using tag system or fallback to original logic
+      if (tagOptions) {
+        traps.push(...taggedSelectionService.selectTraps('dfrpg', tagOptions, R));
+      } else {
+        if (R() < 0.3) {
+          if (useEnhancedTraps && !customDataLoader.hasCustomData('dfrpg', 'traps')) {
+            // Generate enhanced DFRPG trap
+            const complexity = monsters.length >= 2 ? 'complex' : monsters.length >= 1 ? 'standard' : 'simple';
+            const enhancedTrap = enhancedTrapSystem.generateTrap(dungeonLevel, complexity);
+            
+            traps.push({
+              name: enhancedTrap.name,
+              level: enhancedTrap.level,
+              notes: `${enhancedTrap.trigger.details} | Detection: ${enhancedTrap.detection.modifiers} | Disarm: ${enhancedTrap.disarm.modifiers} | ${enhancedTrap.effect.damage || enhancedTrap.effect.affliction || enhancedTrap.effect.special}`
             });
+          } else {
+            // Use legacy or custom traps
+            if (CURRENT_TRAPS && CURRENT_TRAPS.length > 0) {
+              const t = CURRENT_TRAPS[Math.floor(R() * CURRENT_TRAPS.length)];
+              traps.push({ ...t });
+            } else {
+              console.error('DFRPG: CURRENT_TRAPS array is empty or undefined', CURRENT_TRAPS);
+            }
           }
-          
-          treasureHoard.magicItems.forEach(item => {
-            treasure.push({
-              kind: 'magic',
-              valueHint: `${item.name} ($${item.value}, ${item.weight} lbs) - ${item.quirks.join(', ')}`
+        }
+      }
+
+      // Select treasure using tag system or fallback to original logic
+      if (tagOptions) {
+        treasure.push(...taggedSelectionService.selectTreasure('dfrpg', tagOptions, monsters.length > 0, R));
+      } else {
+        if (R() < 0.5) {
+          if (useDFRPGTreasure) {
+            // Generate DFRPG treasure based on room danger and level
+            const roomDanger = monsters.length + traps.length;
+            const hoardSize = roomDanger >= 3 ? 'large' : roomDanger >= 2 ? 'medium' : 'small';
+            const treasureHoard = treasureGenerator.generateTreasureHoard(dungeonLevel, hoardSize);
+            
+            // Convert to simple treasure format for compatibility
+            if (treasureHoard.coins.totalValue > 0) {
+              treasure.push({ 
+                kind: 'coins', 
+                valueHint: `$${treasureHoard.coins.totalValue} (${treasureHoard.coins.totalWeight.toFixed(1)} lbs)` 
+              });
+            }
+            
+            treasureHoard.magicItems.forEach(item => {
+              treasure.push({
+                kind: 'magic',
+                valueHint: `${item.name} ($${item.value}, ${item.weight} lbs) - ${item.quirks?.join(', ') || 'No quirks'}`
+              });
             });
-          });
-          
-          treasureHoard.mundaneItems.forEach(item => {
-            treasure.push({
-              kind: item.category === 'art' ? 'art' : item.category === 'gem' ? 'gems' : 'other',
-              valueHint: `${item.name} ($${item.value}, ${item.weight} lbs)${item.description ? ' - ' + item.description : ''}`
+            
+            treasureHoard.mundaneItems.forEach(item => {
+              treasure.push({
+                kind: item.category === 'art' ? 'art' : item.category === 'gem' ? 'gems' : 'other',
+                valueHint: `${item.name} ($${item.value}, ${item.weight} lbs)${item.description ? ' - ' + item.description : ''}`
+              });
             });
-          });
-        } else {
-          // Legacy simple treasure
-          const t = SIMPLE_TREASURE[Math.floor(R() * SIMPLE_TREASURE.length)];
-          treasure.push({ ...t });
+          } else {
+            // Legacy simple treasure
+            if (SIMPLE_TREASURE && SIMPLE_TREASURE.length > 0) {
+              const t = SIMPLE_TREASURE[Math.floor(R() * SIMPLE_TREASURE.length)];
+              treasure.push({ ...t });
+            } else {
+              console.error('DFRPG: SIMPLE_TREASURE array is empty or undefined', SIMPLE_TREASURE);
+            }
+          }
         }
       }
 
