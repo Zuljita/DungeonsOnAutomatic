@@ -281,5 +281,6 @@ export default dfrpg;
 export { dfrpgLockService } from "./locks";
 export { DFRPGTraps } from "./DFRPGTraps";
 export { DFRPGTreasureGenerator } from "./DFRPGTreasure";
+export { DFRPGTreasureItemGenerator } from "./DFRPGTreasureItem";
 export { DFRPGEnhancedTrapSystem } from "./DFRPGTrapsEnhanced";
 export { DFRPGEnvironmentalSystem } from "./DFRPGEnvironment";
