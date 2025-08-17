@@ -1,4 +1,4 @@
-import { Dungeon } from "../core/types";
+import { Dungeon, Room } from "../core/types";
 
 export interface RenderTheme {
   /** Color of the SVG background */
@@ -31,9 +31,9 @@ export const darkTheme: RenderTheme = {
 
 /**
  * Render a simple ASCII map of the dungeon. Rooms are drawn with '#' borders
- * and '.' interiors; corridor tiles are marked with '+'. Doors are currently
- * not depicted but the dungeon's door list is accepted for completeness.
- * The map is tightly cropped to the extents of the dungeon geometry.
+ * and '.' interiors; corridor tiles are marked with '+'. Door locations are
+ * marked with 'D' on the corridor tile adjacent to the room. The map is
+ * tightly cropped to the extents of the dungeon geometry.
  */
 export function renderAscii(d: Dungeon): string {
   const points: { x: number; y: number }[] = [];
@@ -59,17 +59,43 @@ export function renderAscii(d: Dungeon): string {
     for (const p of c.path) {
       if (grid[p.y]?.[p.x] === " ") grid[p.y][p.x] = "+";
     }
+    if (c.path.length > 0) {
+      const start = c.path[0];
+      const end = c.path[c.path.length - 1];
+      grid[start.y][start.x] = "D";
+      grid[end.y][end.x] = "D";
+    }
   }
   return grid.map((row) => row.join("")).join("\n");
 }
 
 /**
  * Render a very simple SVG representation of the dungeon. Rooms are drawn as
- * stroked rectangles and corridor tiles are filled squares. Doors are not
- * currently visualized. The output is a standalone SVG string sized to the
- * dungeon's extents.
+ * stroked rectangles and corridor tiles are filled squares. Doorways are shown
+ * as short lines on corridor-room boundaries. The output is a standalone SVG
+ * string sized to the dungeon's extents.
  */
-export function renderSvg(d: Dungeon, theme: RenderTheme = lightTheme): string {
+function doorEdge(room: Room, tile: { x: number; y: number }) {
+  if (tile.x < room.x)
+    return { x1: room.x, y1: tile.y, x2: room.x, y2: tile.y + 1 };
+  if (tile.x >= room.x + room.w)
+    return { x1: room.x + room.w, y1: tile.y, x2: room.x + room.w, y2: tile.y + 1 };
+  if (tile.y < room.y)
+    return { x1: tile.x, y1: room.y, x2: tile.x + 1, y2: room.y };
+  if (tile.y >= room.y + room.h)
+    return {
+      x1: tile.x,
+      y1: room.y + room.h,
+      x2: tile.x + 1,
+      y2: room.y + room.h,
+    };
+  return null;
+}
+
+export function renderSvg(
+  d: Dungeon,
+  theme: RenderTheme = lightTheme,
+): string {
   const cell = 20; // pixel size of a single grid square
   const points: { x: number; y: number }[] = [];
   for (const r of d.rooms) {
@@ -92,6 +118,26 @@ export function renderSvg(d: Dungeon, theme: RenderTheme = lightTheme): string {
       parts.push(
         `<rect x="${p.x * cell}" y="${p.y * cell}" width="${cell}" height="${cell}" fill="${theme.corridorFill}" stroke="none"/>`,
       );
+    }
+    if (c.path.length > 0) {
+      const start = c.path[0];
+      const end = c.path[c.path.length - 1];
+      const fromRoom = d.rooms.find((r) => r.id === c.from);
+      const toRoom = d.rooms.find((r) => r.id === c.to);
+      if (fromRoom) {
+        const edge = doorEdge(fromRoom, start);
+        if (edge)
+          parts.push(
+            `<line x1="${edge.x1 * cell}" y1="${edge.y1 * cell}" x2="${edge.x2 * cell}" y2="${edge.y2 * cell}" stroke="${theme.roomStroke}" stroke-width="${cell * 0.2}"/>`,
+          );
+      }
+      if (toRoom) {
+        const edge = doorEdge(toRoom, end);
+        if (edge)
+          parts.push(
+            `<line x1="${edge.x1 * cell}" y1="${edge.y1 * cell}" x2="${edge.x2 * cell}" y2="${edge.y2 * cell}" stroke="${theme.roomStroke}" stroke-width="${cell * 0.2}"/>`,
+          );
+      }
     }
   }
 
