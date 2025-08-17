@@ -69,12 +69,12 @@ const MODIFIERS: Modifier[] = [
   {
     name: 'Dwarven',
     cf: 4,
-    eligible: (i) => i.type === 'melee' && i.tags?.includes('unbalanced')
+    eligible: (i) => i.type === 'melee' && !!i.tags?.includes('unbalanced')
   },
   {
     name: 'Elven',
     cf: 16,
-    eligible: (i) => i.tags?.includes('bow')
+    eligible: (i) => !!i.tags?.includes('bow')
   },
   {
     name: 'Fine',
@@ -90,31 +90,32 @@ const MODIFIERS: Modifier[] = [
   {
     name: 'Very Fine',
     cf: 19,
-    eligible: (i) => i.type === 'melee' && (i.tags?.includes('fencing') || i.tags?.includes('sword')),
+    eligible: (i) =>
+      i.type === 'melee' && !!(i.tags?.includes('fencing') || i.tags?.includes('sword')),
     group: 'fineness'
   },
   {
     name: 'Meteoric',
     cf: 19,
-    eligible: (i) => i.tags?.includes('metal weapon'),
+    eligible: (i) => !!i.tags?.includes('metal weapon'),
     group: 'material'
   },
   {
     name: 'Orichalcum',
     cf: 29,
-    eligible: (i) => i.tags?.includes('metal weapon'),
+    eligible: (i) => !!i.tags?.includes('metal weapon'),
     group: 'material'
   },
   {
     name: 'Silvered',
     cf: 2,
-    eligible: (i) => i.tags?.includes('metal weapon'),
+    eligible: (i) => !!i.tags?.includes('metal weapon'),
     group: 'material'
   },
   {
     name: 'Silver',
     cf: 19,
-    eligible: (i) => i.tags?.includes('metal weapon'),
+    eligible: (i) => !!i.tags?.includes('metal weapon'),
     group: 'material'
   },
   {
@@ -135,12 +136,12 @@ const MODIFIERS: Modifier[] = [
   {
     name: 'Spiked',
     cf: 2,
-    eligible: (i) => i.type === 'armor' && i.tags?.includes('plate')
+    eligible: (i) => i.type === 'armor' && !!i.tags?.includes('plate')
   },
   {
     name: "Thieves'",
     cf: 3,
-    eligible: (i) => i.type === 'armor' && i.tags?.includes('mail')
+    eligible: (i) => i.type === 'armor' && !!i.tags?.includes('mail')
   }
 ];
 
