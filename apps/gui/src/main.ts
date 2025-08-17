@@ -1,6 +1,6 @@
 import { systemLoader } from '@src/services/system-loader';
 import { renderSvg } from '@src/services/render';
-import { htmlRoomDetails } from '@src/services/room-key';
+import { htmlRoomDetails, populateRooms } from '@src/services/room-key';
 import { ImportWizardComponent } from './import-wizard';
 import { tagSystem } from '@src/services/tag-system';
 import { mapGenerator, MapGenerationOptions } from '@src/services/map-generator';
@@ -213,9 +213,9 @@ async function generate(): Promise<void> {
     const svg = renderSvg(enriched);
     mapEl.innerHTML = svg;
 
-    // Generate room details (now with safe error handling)
-    const details = enriched.encounters || {};
-    const roomDetails = htmlRoomDetails(enriched, details as any);
+    // Generate room details using populateRooms to get proper format with features
+    const details = populateRooms(enriched, enriched.rng ?? Math.random, system);
+    const roomDetails = htmlRoomDetails(enriched, details);
     roomKeyEl.innerHTML = `<h2>Room Key</h2>${roomDetails}`;
 
     // Update download link

@@ -95,7 +95,12 @@ export function populateRooms(d: Dungeon, r: () => number = Math.random, moduleI
     let monsters: Monster[] = [];
     let treasure: Treasure[] = [];
     if (encounterGen && r() < 0.5) {
-      const enc = encounterGen.generate({ characterPoints: 100, biome: 'dungeon' });
+      const enc = encounterGen.generate({ 
+        characterPoints: 100, 
+        biome: 'dungeon',
+        threatLevel: 'Average',
+        preferGroupedEncounters: true
+      });
       monsters = enc.monsters;
       if (enc.treasure.totalValue > 0) {
         treasure.push({ kind: 'coins', valueHint: `$${enc.treasure.totalValue}` });
@@ -152,6 +157,16 @@ export function htmlRoomDetails(d: Dungeon, details: Record<ID, RoomDetail>): st
       if (safeMonsters.length) {
         const monsterDetails = safeMonsters.map(m => {
           const monsterInfo = [m.name];
+          
+          // Add CER and challenge level if available
+          if (m.cer !== undefined && m.challenge_level) {
+            monsterInfo.push(`(CER ${m.cer} - ${m.challenge_level})`);
+          } else if (m.cer !== undefined) {
+            monsterInfo.push(`(CER ${m.cer})`);
+          } else if (m.challenge_level) {
+            monsterInfo.push(`(${m.challenge_level})`);
+          }
+          
           if (m.tags && m.tags.length > 0) {
             monsterInfo.push(`[${m.tags.join(', ')}]`);
           }

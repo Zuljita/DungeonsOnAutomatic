@@ -1,10 +1,13 @@
-import DFRPGMonsterGenerator, { MonsterGenerationConfig } from './DFRPGMonsterGenerator.js';
+import { DFRPGMonsterGenerator, type GenerateOptions, type GeneratedEncounter } from './DFRPGMonsterGenerator';
 import DFRPGTreasureGenerator, { TreasureHoard } from './DFRPGTreasure.js';
-import type { DFRPGMonster } from './data/monsters.js';
+import type { Monster } from '../../core/types';
 
 export interface Encounter {
-  monsters: DFRPGMonster[];
+  monsters: Monster[];
   treasure: TreasureHoard;
+  totalCER: number;
+  actualThreatLevel: string;
+  encounterType: 'single' | 'group' | 'mixed';
 }
 
 export class DFRPGEncounterGenerator {
@@ -16,10 +19,16 @@ export class DFRPGEncounterGenerator {
     this.treasureGen = new DFRPGTreasureGenerator(rng);
   }
 
-  generate(config: MonsterGenerationConfig): Encounter {
-    const monsters = this.monsterGen.generate(config);
+  generate(config: GenerateOptions): Encounter {
+    const encounter = this.monsterGen.generate(config);
     const treasure = this.treasureGen.generate(config);
-    return { monsters, treasure };
+    return { 
+      monsters: encounter.monsters,
+      treasure,
+      totalCER: encounter.totalCER,
+      actualThreatLevel: encounter.actualThreatLevel,
+      encounterType: encounter.encounterType
+    };
   }
 }
 

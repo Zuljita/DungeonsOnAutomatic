@@ -1,4 +1,4 @@
-import type { MonsterGenerationConfig } from './DFRPGMonsterGenerator.js';
+import type { GenerateOptions } from './DFRPGMonsterGenerator';
 
 interface CoinAmount {
   copper: number;
@@ -181,7 +181,7 @@ export class DFRPGTreasureGenerator {
     this.rng = rng;
   }
 
-  generate(config: MonsterGenerationConfig): TreasureHoard {
+  generate(config: GenerateOptions): TreasureHoard {
     const lootValue = config.characterPoints * 10;
     const level = Math.max(1, Math.floor(config.characterPoints / 50));
     const hoardSize: 'small' | 'medium' | 'large' | 'vast' =

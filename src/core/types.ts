@@ -31,6 +31,7 @@ export interface Monster {
   name: string;
   sm?: number | null;
   cls?: string;
+  class?: string; // Alternative property name for class
   subclass?: string;
   notes?: string;
   source?: string;
@@ -40,7 +41,12 @@ export interface Monster {
   tactics?: string;
   frequency?: 'very_rare' | 'rare' | 'uncommon' | 'common' | 'very_common';
   tags?: string[]; // Thematic tags for tag-based selection
+  cer?: number; // Challenge Equivalent Rating (GURPS point value)
+  challenge_level?: string; // Human-readable challenge description
 }
+
+// Type alias for RNG function
+export type RNG = () => number;
 
 export interface Trap {
   name: string;
