@@ -285,7 +285,11 @@ export const dfrpg: SystemModule = {
     });
 
     // Generate wandering monsters based on monsters placed in the dungeon
-    const wanderingMonsters = wanderingMonsterService.generateWanderingMonsters(d);
+    // Use the updated encounters rather than the original dungeon object
+    const wanderingMonsters = wanderingMonsterService.generateWanderingMonsters({
+      ...d,
+      encounters
+    });
     if (wanderingMonsters.length > 0) {
       console.log(`DFRPG: Generated ${wanderingMonsters.length} wandering monster entries`);
     }
