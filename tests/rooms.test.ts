@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { generateRooms } from '../src/services/rooms.js';
-import { rng } from '../src/services/random.js';
+import { MapGenerator } from '../src/services/map-generator.js';
 
 function overlaps(a: {x:number;y:number;w:number;h:number}, b: {x:number;y:number;w:number;h:number}): boolean {
   // Treat touching rooms as overlapping by adding a one-tile padding
@@ -12,23 +11,65 @@ function overlaps(a: {x:number;y:number;w:number;h:number}, b: {x:number;y:numbe
   );
 }
 
-describe('rooms', () => {
-  it('generateRooms produces non-overlapping rooms', () => {
-    const r = rng('roomTest');
-    const rooms = generateRooms(20, 80, 60, r);
-    expect(rooms.length).toBe(20);
-    for (let i = 0; i < rooms.length; i++) {
-      for (let j = i + 1; j < rooms.length; j++) {
-        expect(overlaps(rooms[i], rooms[j])).toBe(false);
+describe('room generation', () => {
+  it('MapGenerator produces non-overlapping rooms', () => {
+    const generator = new MapGenerator('roomTest');
+    const dungeon = generator.generateDungeon({
+      rooms: 20,
+      width: 80,
+      height: 60,
+      layoutType: 'rectangle',
+      roomLayout: 'scattered',
+      roomSize: 'medium',
+      roomShape: 'rectangular',
+      corridorType: 'straight',
+      allowDeadends: true,
+      stairsUp: false,
+      stairsDown: false,
+      entranceFromPeriphery: false,
+      seed: 'roomTest'
+    });
+    expect(dungeon.rooms.length).toBe(20);
+    for (let i = 0; i < dungeon.rooms.length; i++) {
+      for (let j = i + 1; j < dungeon.rooms.length; j++) {
+        expect(overlaps(dungeon.rooms[i], dungeon.rooms[j])).toBe(false);
       }
     }
   });
 
-  it('generateRooms produces consistent ids with same RNG', () => {
-    const r1 = rng('roomTest');
-    const r2 = rng('roomTest');
-    const rooms1 = generateRooms(10, 80, 60, r1);
-    const rooms2 = generateRooms(10, 80, 60, r2);
-    expect(rooms1.map((r) => r.id)).toEqual(rooms2.map((r) => r.id));
+  it('MapGenerator produces consistent ids with same seed', () => {
+    const generator1 = new MapGenerator('roomTest');
+    const generator2 = new MapGenerator('roomTest');
+    const dungeon1 = generator1.generateDungeon({
+      rooms: 10,
+      width: 80,
+      height: 60,
+      layoutType: 'rectangle',
+      roomLayout: 'scattered',
+      roomSize: 'medium',
+      roomShape: 'rectangular',
+      corridorType: 'straight',
+      allowDeadends: true,
+      stairsUp: false,
+      stairsDown: false,
+      entranceFromPeriphery: false,
+      seed: 'roomTest'
+    });
+    const dungeon2 = generator2.generateDungeon({
+      rooms: 10,
+      width: 80,
+      height: 60,
+      layoutType: 'rectangle',
+      roomLayout: 'scattered',
+      roomSize: 'medium',
+      roomShape: 'rectangular',
+      corridorType: 'straight',
+      allowDeadends: true,
+      stairsUp: false,
+      stairsDown: false,
+      entranceFromPeriphery: false,
+      seed: 'roomTest'
+    });
+    expect(dungeon1.rooms.map((r) => r.id)).toEqual(dungeon2.rooms.map((r) => r.id));
   });
 });
