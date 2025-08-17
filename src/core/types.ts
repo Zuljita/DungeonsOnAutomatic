@@ -45,6 +45,12 @@ export interface Monster {
   challenge_level?: string; // Human-readable challenge description
 }
 
+export interface WanderingMonster {
+  roll: string; // e.g., "2-4"
+  monster: Monster;
+  quantity: string; // e.g., "1d3"
+}
+
 // Type alias for RNG function
 export type RNG = () => number;
 
@@ -109,6 +115,7 @@ export interface Dungeon {
   encounters?: Record<ID, { monsters?: Monster[]; traps?: Trap[]; treasure?: Treasure[] }>;
   keyItems?: KeyItem[];
   locks?: Lock[];
+  wanderingMonsters?: WanderingMonster[];
 }
 
 export interface SystemModule {

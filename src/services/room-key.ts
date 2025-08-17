@@ -1,4 +1,4 @@
-import { Dungeon, Monster, Treasure, ID } from '../core/types';
+import { Dungeon, Monster, Treasure, ID, WanderingMonster } from '../core/types';
 import { customDataLoader } from './custom-data-loader';
 import DFRPGEncounterGenerator from '../systems/dfrpg/DFRPGEncounterGenerator.js';
 
@@ -235,7 +235,9 @@ export function htmlRoomDetails(d: Dungeon, details: Record<ID, RoomDetail>): st
           }
           
           // Add source/page reference if available
-          if (m.source && m.source !== 'Unknown') {
+          if (m.reference && m.reference !== 'Unknown') {
+            monsterInfo.push(`[${m.reference}]`);
+          } else if (m.source && m.source !== 'Unknown') {
             monsterInfo.push(`[${m.source}]`);
           }
           
@@ -282,5 +284,65 @@ export function htmlRoomDetails(d: Dungeon, details: Record<ID, RoomDetail>): st
       return parts.join('\n');
     })
     .join('\n');
+}
+
+/**
+ * Generates HTML for the wandering monsters table
+ */
+export function getWanderingMonstersHtml(dungeon: Dungeon): string {
+  if (!dungeon.wanderingMonsters || dungeon.wanderingMonsters.length === 0) {
+    return '';
+  }
+
+  const tableRows = dungeon.wanderingMonsters.map(wm => {
+    const monsterInfo = [wm.monster.name];
+    
+    // Add CER and challenge level if available
+    if (wm.monster.cer !== undefined && wm.monster.challenge_level) {
+      monsterInfo.push(`(CER ${wm.monster.cer} - ${wm.monster.challenge_level})`);
+    } else if (wm.monster.cer !== undefined) {
+      monsterInfo.push(`(CER ${wm.monster.cer})`);
+    } else if (wm.monster.challenge_level) {
+      monsterInfo.push(`(${wm.monster.challenge_level})`);
+    }
+    
+    // Add source/page reference if available
+    if (wm.monster.reference && wm.monster.reference !== 'Unknown') {
+      monsterInfo.push(`[${wm.monster.reference}]`);
+    } else if (wm.monster.source && wm.monster.source !== 'Unknown') {
+      monsterInfo.push(`[${wm.monster.source}]`);
+    }
+    
+    if (wm.monster.tags && wm.monster.tags.length > 0) {
+      monsterInfo.push(`<span class="monster-tags">[${wm.monster.tags.join(', ')}]</span>`);
+    }
+    
+    return `
+      <tr>
+        <td><strong>${wm.roll}</strong></td>
+        <td>${monsterInfo.join(' ')}</td>
+        <td><strong>${wm.quantity}</strong></td>
+      </tr>
+    `;
+  }).join('');
+
+  return `
+    <section class="wandering-monsters">
+      <h3>Wandering Monsters</h3>
+      <p><em>Check for wandering monsters once per 10 minutes of real time and on any great noise.</em></p>
+      <table class="wandering-monster-table">
+        <thead>
+          <tr>
+            <th>2d6 Roll</th>
+            <th>Monster</th>
+            <th>Quantity</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${tableRows}
+        </tbody>
+      </table>
+    </section>
+  `;
 }
 
