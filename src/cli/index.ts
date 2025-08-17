@@ -16,13 +16,23 @@ program
   .option("--width <n>", "map width", (v) => parseInt(v, 10))
   .option("--height <n>", "map height", (v) => parseInt(v, 10))
   .option("--seed <seed>", "random seed")
+  .option(
+    "--layout-type <type>",
+    "advanced layout type (rectangle, square, box, cross, etc.)"
+  )
   .option("--system <name>", "system module to use (generic|dfrpg)", "generic")
   .option("--source <src...>", "sources to include (system-specific)")
   .option("--ascii", "render an ASCII map instead of JSON output")
   .option("--svg", "render an SVG map instead of JSON output")
   .option("--foundry", "output FoundryVTT-compatible JSON")
     .action(async (opts) => {
-      const d = buildDungeon({ rooms: opts.rooms, seed: opts.seed, width: opts.width, height: opts.height });
+      const d = buildDungeon({
+        rooms: opts.rooms,
+        seed: opts.seed,
+        width: opts.width,
+        height: opts.height,
+        layoutType: opts.layoutType,
+      });
       let sys: SystemModule;
       try {
         sys = await loadSystemModule(opts.system, d.rng);
