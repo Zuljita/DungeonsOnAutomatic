@@ -2,6 +2,8 @@ import { MONSTERS, type DFRPGMonster, getThematicTags } from './data/monsters';
 import { calculateTargetCER, type ThreatLevelName, THREAT_LEVELS } from './data/threats';
 import type { Monster, RNG } from '../../core/types';
 
+export type { DFRPGMonster };
+
 export interface GenerateOptions {
   characterPoints: number;
   threatLevel?: ThreatLevelName;
@@ -24,9 +26,11 @@ export interface GeneratedEncounter {
  */
 export class DFRPGMonsterGenerator {
   private rng: RNG;
+  private monsterPool: DFRPGMonster[];
 
-  constructor(rng: RNG = Math.random) {
+  constructor(rng: RNG = Math.random, customMonsterPool?: DFRPGMonster[]) {
     this.rng = rng;
+    this.monsterPool = customMonsterPool || MONSTERS;
   }
 
   /**
@@ -68,7 +72,7 @@ export class DFRPGMonsterGenerator {
    * Filter monsters by biome, size, tags, and CER constraints
    */
   private filterMonsters(biome: string, maxSize: number, requiredTags: string[]): DFRPGMonster[] {
-    return MONSTERS.filter(monster => {
+    return this.monsterPool.filter(monster => {
       // Size filter - null SM treated as 0
       const monsterSize = monster.sm ?? 0;
       if (monsterSize > maxSize) return false;
