@@ -7,6 +7,9 @@ import { DFRPGEnhancedTrapSystem } from './DFRPGTrapsEnhanced.js';
 import { DFRPGEnvironmentalSystem } from './DFRPGEnvironment.js';
 import { DFRPGMonsterGenerator, type GenerateOptions } from './DFRPGMonsterGenerator';
 import { DFRPGEncounterGenerator } from './DFRPGEncounterGenerator';
+import { LockService, type LockGenerationOptions } from '../../services/locks';
+import { createKeyItemService, type KeyPlacementOptions } from '../../services/key-items';
+import { validateDungeonSolvability } from '../../services/pathfinder';
 
 interface RawMonster {
   Description: string;
@@ -337,7 +340,68 @@ export const dfrpg: SystemModule = {
       return room;
     });
 
-    return { ...d, rooms: modifiedRooms, encounters };
+    // Generate locks and keys for the dungeon
+    const lockGenerationOptions: LockGenerationOptions = {
+      lockPercentage: 0.3, // 30% of doors get locks
+      preferImportantDoors: true,
+      allowMagicalLocks: true // DFRPG supports magical locks
+    };
+
+    const keyPlacementOptions: KeyPlacementOptions = {
+      preferMonsterLoot: true,
+      allowRoomFeatures: true,
+      ensureAccessibility: true
+    };
+
+    // Create services with dungeon's RNG for consistency
+    const lockService = new LockService(R);
+    const keyItemService = createKeyItemService(R);
+
+    let enrichedDungeon = { ...d, rooms: modifiedRooms, encounters };
+
+    // Generate locks for doors
+    const locks = lockService.generateLocks(enrichedDungeon, lockGenerationOptions);
+    
+    if (locks.length > 0) {
+      console.log(`DFRPG: Generated ${locks.length} locks for doors`);
+      
+      // Create keys for the locks
+      const keys = keyItemService.createKeysForLocks(locks);
+      console.log(`DFRPG: Created ${keys.length} keys`);
+      
+      // Place keys strategically in the dungeon
+      keyItemService.placeKeys(enrichedDungeon, keys, keyPlacementOptions);
+      console.log(`DFRPG: Placed keys in rooms`);
+      
+      // Validate that the dungeon is solvable
+      const validation = validateDungeonSolvability(enrichedDungeon);
+      
+      if (!validation.solvable) {
+        console.warn(`DFRPG: ${validation.message} - Attempting key replacement`);
+        
+        // Try to fix by placing all keys in accessible rooms
+        const fallbackOptions: KeyPlacementOptions = {
+          ...keyPlacementOptions,
+          ensureAccessibility: false // Disable strict accessibility to allow more placement options
+        };
+        
+        // Clear previous placement and try again
+        keys.forEach(key => key.locationId = undefined);
+        keyItemService.placeKeys(enrichedDungeon, keys, fallbackOptions);
+        
+        // Validate again
+        const secondValidation = validateDungeonSolvability(enrichedDungeon);
+        if (secondValidation.solvable) {
+          console.log('DFRPG: Successfully fixed dungeon solvability');
+        } else {
+          console.warn('DFRPG: Could not ensure dungeon solvability - players may need alternate solutions');
+        }
+      } else {
+        console.log('DFRPG: Dungeon is solvable with key placement');
+      }
+    }
+
+    return enrichedDungeon;
   }
 };
 
