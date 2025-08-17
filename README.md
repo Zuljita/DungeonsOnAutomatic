@@ -23,9 +23,17 @@ pnpm doa generate --rooms=20 --svg > map.svg
 pnpm doa generate --rooms=15 --foundry > foundry.json
 pnpm doa generate --rooms=8 --ascii
 pnpm doa generate --rooms=5 --width=40 --height=30
+pnpm doa generate --rooms=5 --theme=generic-undead --monster-tag=undead --trap-tag=mechanical --treasure-tag=coins
 ```
 
 Use `--width` and `--height` to control the overall map dimensions.
+
+Tag options allow more control over generated content:
+
+* `--theme <id>` – apply a predefined theme to rooms and encounters
+* `--monster-tag <tag>` – require monsters to include the tag (repeatable)
+* `--trap-tag <tag>` – require traps to include the tag (repeatable)
+* `--treasure-tag <tag>` – require treasure to include the tag (repeatable)
 
 4. GUI:
 

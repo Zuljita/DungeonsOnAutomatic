@@ -18,6 +18,25 @@ program
   .option("--seed <seed>", "random seed")
   .option("--system <name>", "system module to use (generic|dfrpg)", "generic")
   .option("--source <src...>", "sources to include (system-specific)")
+  .option("--theme <id>", "theme id to apply to rooms and encounters")
+  .option(
+    "--monster-tag <tag>",
+    "require monsters to include tag (repeatable)",
+    (v, p) => [...p, v],
+    [] as string[],
+  )
+  .option(
+    "--trap-tag <tag>",
+    "require traps to include tag (repeatable)",
+    (v, p) => [...p, v],
+    [] as string[],
+  )
+  .option(
+    "--treasure-tag <tag>",
+    "require treasure to include tag (repeatable)",
+    (v, p) => [...p, v],
+    [] as string[],
+  )
   .option("--ascii", "render an ASCII map instead of JSON output")
   .option("--svg", "render an SVG map instead of JSON output")
   .option("--foundry", "output FoundryVTT-compatible JSON")
@@ -31,7 +50,16 @@ program
         console.error(msg);
         sys = await loadSystemModule('generic', d.rng);
       }
-      const enriched = await sys.enrich(d, { sources: opts.source });
+      const tagOptions =
+        opts.theme || opts.monsterTag.length || opts.trapTag.length || opts.treasureTag.length
+          ? {
+              theme: opts.theme,
+              monsters: opts.monsterTag.length ? { requiredTags: opts.monsterTag } : undefined,
+              traps: opts.trapTag.length ? { requiredTags: opts.trapTag } : undefined,
+              treasure: opts.treasureTag.length ? { requiredTags: opts.treasureTag } : undefined,
+            }
+          : undefined;
+      const enriched = await sys.enrich(d, { sources: opts.source, tags: tagOptions });
       if (opts.svg) {
         process.stdout.write(renderSvg(enriched) + "\n");
       } else if (opts.ascii) {
