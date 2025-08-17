@@ -1,0 +1,17 @@
+[
+  {
+    "name": "Well-lit",
+    "description": "The area is well-lit by an unknown, magical source.",
+    "weight": 1
+  },
+  {
+    "name": "Dimly lit",
+    "description": "The area is dimly lit by glowing fungi.",
+    "weight": 1
+  },
+  {
+    "name": "Unlit",
+    "description": "The area is unlit. Characters will require their own light sources or dark vision.",
+    "weight": 1
+  }
+]

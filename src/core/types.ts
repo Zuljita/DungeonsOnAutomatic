@@ -54,6 +54,20 @@ export interface WanderingMonster {
 // Type alias for RNG function
 export type RNG = () => number;
 
+export interface EnvironmentalDetail {
+  name: string;
+  description: string;
+  weight: number;
+}
+
+export interface DungeonEnvironment {
+  lighting: EnvironmentalDetail;
+  ceiling: EnvironmentalDetail;
+  manaLevel?: EnvironmentalDetail;
+  sanctityLevel?: EnvironmentalDetail;
+  naturesStrength?: EnvironmentalDetail;
+}
+
 export interface Trap {
   name: string;
   level?: number;
@@ -116,6 +130,7 @@ export interface Dungeon {
   keyItems?: KeyItem[];
   locks?: Lock[];
   wanderingMonsters?: WanderingMonster[];
+  environment?: DungeonEnvironment;
 }
 
 export interface SystemModule {

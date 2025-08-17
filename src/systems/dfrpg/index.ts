@@ -11,6 +11,7 @@ import { LockService, type LockGenerationOptions } from '../../services/locks';
 import { createKeyItemService, type KeyPlacementOptions } from '../../services/key-items';
 import { validateDungeonSolvability } from '../../services/pathfinder';
 import { WanderingMonsterService } from '../../services/wandering-monster-service';
+import { createEnvironmentService } from '../../services/environment';
 
 interface RawMonster {
   Description: string;
@@ -128,6 +129,10 @@ export const dfrpg: SystemModule = {
     const environmentalSystem = new DFRPGEnvironmentalSystem(R);
     const encounterGenerator = new DFRPGEncounterGenerator(R);
     const wanderingMonsterService = new WanderingMonsterService(R);
+    const envService = createEnvironmentService(R);
+
+    // Generate overall dungeon environment details
+    d.environment = envService.generate(true);
 
     // Use custom monsters if available, otherwise use default data
     let MONSTERS: Monster[];

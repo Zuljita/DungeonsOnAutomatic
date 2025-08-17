@@ -1,5 +1,5 @@
 import { dataStorageService } from './data-storage';
-import { Monster, Trap, Door, Treasure } from '../core/types';
+import { Monster, Trap, Door, Treasure, EnvironmentalDetail } from '../core/types';
 
 /**
  * Service to load custom imported data for use in system modules
@@ -89,6 +89,26 @@ export class CustomDataLoaderService {
     }
     
     return defaultTreasure;
+  }
+
+  /**
+   * Get custom environmental details (lighting, ceilings, mana levels, etc.)
+   */
+  getEnvironmentData(
+    dataType: string,
+    defaultData: EnvironmentalDetail[] = []
+  ): EnvironmentalDetail[] {
+    const customData = dataStorageService.getData('environment', dataType);
+
+    if (customData.length > 0) {
+      return customData.map(item => ({
+        name: String(item.name || 'Unknown'),
+        description: String(item.description || ''),
+        weight: typeof item.weight === 'number' ? item.weight : 1
+      }));
+    }
+
+    return defaultData;
   }
 
   /**
