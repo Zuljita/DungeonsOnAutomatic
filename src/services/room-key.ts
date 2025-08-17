@@ -190,7 +190,7 @@ export function htmlRoomDetails(d: Dungeon, details: Record<ID, RoomDetail>): st
             roomTitle = `${roomTitle} - Entrance`;
             roomType = 'dungeon entrance';
           } else {
-            roomType = `special (${room.tags.join(', ')})`;
+            roomType = 'special';
           }
         }
       }
@@ -311,6 +311,77 @@ export function htmlRoomDetails(d: Dungeon, details: Record<ID, RoomDetail>): st
     .join('\n');
 
   return envHtml + roomsHtml;
+}
+
+/**
+ * Get description for mana level
+ */
+function getManaDescription(level: string): string {
+  switch (level) {
+    case 'none': return 'No spells possible, magic items don\'t function';
+    case 'low': return 'Spells at -5, double FP cost, halved recovery';
+    case 'normal': return 'Standard magical conditions';
+    case 'high': return 'Spells at +3, half FP cost, double recovery';
+    case 'very_high': return 'Spells at +5, quarter FP cost, triple recovery, critical failure risk';
+    default: return 'Unknown mana level';
+  }
+}
+
+/**
+ * Get description for sanctity level
+ */
+function getSanctityDescription(sanctity: string): string {
+  switch (sanctity) {
+    case 'cursed': return 'Cursed ground - evil spells enhanced, good spells hindered';
+    case 'defiled': return 'Defiled by evil - minor penalty to good spells';
+    case 'neutral': return 'Neutral ground - no sanctity effects';
+    case 'blessed': return 'Blessed ground - minor bonus to good spells';
+    case 'holy': return 'Holy ground - good spells enhanced, evil spells hindered';
+    default: return 'Unknown sanctity level';
+  }
+}
+
+/**
+ * Get description for nature's strength
+ */
+function getNatureDescription(nature: string): string {
+  switch (nature) {
+    case 'dead': return 'No natural life - plant/animal spells hindered';
+    case 'weak': return 'Sparse nature - minor penalty to nature magic';
+    case 'normal': return 'Normal natural presence';
+    case 'strong': return 'Abundant nature - minor bonus to nature magic';
+    case 'primal': return 'Primal wilderness - nature magic enhanced';
+    default: return 'Unknown nature strength';
+  }
+}
+
+/**
+ * Generates HTML for dungeon defaults and wandering monsters
+ */
+export function getDungeonMetaHtml(dungeon: Dungeon): string {
+  let html = '';
+  
+  // Add dungeon defaults section if available
+  if (dungeon.defaults) {
+    const defaults = dungeon.defaults;
+    html += `
+      <section class="dungeon-defaults">
+        <h3>Dungeon Details</h3>
+        ${defaults.name ? `<p><strong>Name:</strong> ${defaults.name}</p>` : ''}
+        ${defaults.manaLevel ? `<p><strong>Mana Level:</strong> ${defaults.manaLevel} - ${getManaDescription(defaults.manaLevel)}</p>` : ''}
+        ${defaults.sanctity ? `<p><strong>Sanctity:</strong> ${defaults.sanctity} - ${getSanctityDescription(defaults.sanctity)}</p>` : ''}
+        ${defaults.nature ? `<p><strong>Nature's Strength:</strong> ${defaults.nature} - ${getNatureDescription(defaults.nature)}</p>` : ''}
+      </section>
+    `;
+  }
+  
+  // Add wandering monsters if available
+  const wanderingHtml = getWanderingMonstersHtml(dungeon);
+  if (wanderingHtml) {
+    html += wanderingHtml;
+  }
+  
+  return html;
 }
 
 /**

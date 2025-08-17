@@ -99,17 +99,17 @@ export function exportFoundry(d: Dungeon, grid = 100): FoundryScene {
       const toRoom = d.rooms.find((r) => r.id === c.to);
       if (fromRoom) {
         const seg = doorEdge(fromRoom, start);
-        if (seg) doorSegments.push(seg);
+        if (seg) doorSegments.push([...seg]);
       }
       if (toRoom) {
         const seg = doorEdge(toRoom, end);
-        if (seg) doorSegments.push(seg);
+        if (seg) doorSegments.push([...seg]);
       }
     }
   }
 
-  const doors = doorSegments.map(([x1, y1, x2, y2]) => ({
-    c: [x1 * grid, y1 * grid, x2 * grid, y2 * grid],
+  const doors: FoundryDoor[] = doorSegments.map(([x1, y1, x2, y2]) => ({
+    c: [x1 * grid, y1 * grid, x2 * grid, y2 * grid] as [number, number, number, number],
   }));
 
   const walls: FoundryWall[] = Array.from(edges).map((e) => {

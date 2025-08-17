@@ -12,6 +12,7 @@ export interface BuildDungeonOptions {
   roomSize?: MapGenerationOptions['roomSize'];
   roomShape?: MapGenerationOptions['roomShape'];
   corridorType?: MapGenerationOptions['corridorType'];
+  corridorWidth?: MapGenerationOptions['corridorWidth'];
   allowDeadends?: boolean;
   stairsUp?: boolean;
   stairsDown?: boolean;
@@ -37,6 +38,7 @@ export function buildDungeon(opts: BuildDungeonOptions): Dungeon {
     roomSize: opts.roomSize ?? 'medium',
     roomShape: opts.roomShape ?? 'rectangular',
     corridorType: opts.corridorType ?? 'straight',
+    corridorWidth: opts.corridorWidth ?? 1,
     allowDeadends: opts.allowDeadends ?? true,
     stairsUp: opts.stairsUp ?? false,
     stairsDown: opts.stairsDown ?? false,

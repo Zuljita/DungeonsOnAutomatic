@@ -400,4 +400,4 @@ export function createKeyItemService(rng: () => number): KeyItemService {
 }
 
 export { KeyItemService, PlacementRule, PlacementTarget };
-export type { KeyItem, KeyPlacementOptions };
+export type { KeyItem };

@@ -12,6 +12,7 @@ import { createKeyItemService, type KeyPlacementOptions } from '../../services/k
 import { validateDungeonSolvability } from '../../services/pathfinder';
 import { WanderingMonsterService } from '../../services/wandering-monster-service';
 import { createEnvironmentService } from '../../services/environment';
+import { DungeonDefaultsService } from '../../services/dungeon-defaults';
 
 interface RawMonster {
   Description: string;
@@ -132,6 +133,7 @@ export const dfrpg: SystemModule = {
     const encounterGenerator = new DFRPGEncounterGenerator(R);
     const wanderingMonsterService = new WanderingMonsterService(R);
     const envService = createEnvironmentService(R);
+    const defaultsService = new DungeonDefaultsService(R);
 
     // Generate overall dungeon environment details
     d.environment = envService.generate(true);
@@ -211,6 +213,7 @@ export const dfrpg: SystemModule = {
     const environmentalSystem = new DFRPGEnvironmentalSystem(R);
     const encounterGenerator = new DFRPGEncounterGenerator(R, DFRPG_MONSTERS);
     const wanderingMonsterService = new WanderingMonsterService(R);
+    const defaultsService = new DungeonDefaultsService(R);
 
     // Use custom traps if available, otherwise use default data
     const CURRENT_TRAPS = customDataLoader.hasCustomData('dfrpg', 'traps') 
@@ -337,14 +340,15 @@ export const dfrpg: SystemModule = {
     });
 
     // Generate wandering monsters based on monsters placed in the dungeon
-    // Use the updated encounters rather than the original dungeon object
-    const wanderingMonsters = wanderingMonsterService.generateWanderingMonsters({
-      ...d,
-      encounters
-    });
+    const tempDungeon = { ...d, encounters };
+    const wanderingMonsters = wanderingMonsterService.generateWanderingMonsters(tempDungeon);
     if (wanderingMonsters.length > 0) {
       console.log(`DFRPG: Generated ${wanderingMonsters.length} wandering monster entries`);
     }
+
+    // Generate dungeon defaults (name, mana level, sanctity, nature's strength)
+    const dungeonDefaults = defaultsService.generateDefaults();
+    console.log(`DFRPG: Generated dungeon "${dungeonDefaults.name}" with mana: ${dungeonDefaults.manaLevel}, sanctity: ${dungeonDefaults.sanctity}, nature: ${dungeonDefaults.nature}`);
 
     // Add environmental challenges to rooms
     const modifiedRooms = d.rooms.map((room) => {
@@ -352,8 +356,12 @@ export const dfrpg: SystemModule = {
       
       if (useEnvironmentalChallenges) {
         // Generate comprehensive environmental challenges
+        // Map special room types to basic 'special' for environmental system
+        const roomKind = ['exit to upper level', 'entrance to lower level', 'dungeon entrance'].includes(room.kind) 
+          ? 'special' as const 
+          : room.kind as 'chamber' | 'hall' | 'cavern' | 'lair' | 'special';
         const environment = environmentalSystem.generateRoomEnvironment(
-          room.kind,
+          roomKind,
           dungeonLevel,
           environmentComplexity
         );
@@ -423,7 +431,7 @@ export const dfrpg: SystemModule = {
     const lockService = new LockService(R);
     const keyItemService = createKeyItemService(R);
 
-    let enrichedDungeon = { ...d, rooms: modifiedRooms, encounters, wanderingMonsters };
+    let enrichedDungeon = { ...d, rooms: modifiedRooms, encounters, wanderingMonsters, defaults: dungeonDefaults };
 
     // Generate locks for doors
     const locks = lockService.generateLocks(enrichedDungeon, lockGenerationOptions);
