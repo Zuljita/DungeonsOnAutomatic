@@ -455,10 +455,16 @@
 
     <div id="data-manager-tab" class="tab-content">
       <h2>Custom Data Manager</h2>
-      <p>Use the data manager to import custom monsters, traps, and treasure for your selected system.</p>
+      <p>Use the data manager to import custom monsters, traps, treasure, and environmental details for your selected system.</p>
       
       <div class="wizard-section">
         <h3>Import Data</h3>
+        <p class="small">Environmental details like lighting, ceilings, mana, sanctity, and nature's strength can now be
+          imported via the <strong>Environment</strong> module using CSV files with <code>name</code>,
+          <code>description</code>, and <code>weight</code> columns. For quick overrides, you can still upload JSON files named
+          <code>custom-lighting.json</code>, <code>custom-ceilings.json</code>,
+          <code>custom-dfrpg-mana-levels.json</code>, <code>custom-dfrpg-sanctity-levels.json</code>, and
+          <code>custom-dfrpg-natures-strength.json</code>.</p>
         <div class="form-group">
           <label>Module:</label>
           <select id="wizard-module">

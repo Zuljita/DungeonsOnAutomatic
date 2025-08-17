@@ -44,6 +44,30 @@ export interface RoomDetail {
   treasure: Treasure[];
 }
 
+function environmentSummary(d: Dungeon): string {
+  const env = d.environment;
+  if (!env) return '';
+
+  const parts: string[] = ['<section class="environment"><h3>Environment</h3>'];
+  if (env.lighting) {
+    parts.push(`<p><strong>Lighting:</strong> ${env.lighting.name} - ${env.lighting.description}</p>`);
+  }
+  if (env.ceiling) {
+    parts.push(`<p><strong>Ceiling:</strong> ${env.ceiling.name} - ${env.ceiling.description}</p>`);
+  }
+  if (env.manaLevel) {
+    parts.push(`<p><strong>Mana Level:</strong> ${env.manaLevel.name} - ${env.manaLevel.description}</p>`);
+  }
+  if (env.sanctityLevel) {
+    parts.push(`<p><strong>Sanctity:</strong> ${env.sanctityLevel.name} - ${env.sanctityLevel.description}</p>`);
+  }
+  if (env.naturesStrength) {
+    parts.push(`<p><strong>Nature's Strength:</strong> ${env.naturesStrength.name} - ${env.naturesStrength.description}</p>`);
+  }
+  parts.push('</section>');
+  return parts.join('');
+}
+
 export function featureRoom(r: () => number, moduleId: string = 'generic'): string[] {
   const features: string[] = [];
   
@@ -129,7 +153,8 @@ export function htmlRoomDetails(d: Dungeon, details: Record<ID, RoomDetail>): st
     return '<p>Error: Invalid room data</p>';
   }
   
-  return d.rooms
+  const envHtml = environmentSummary(d);
+  const roomsHtml = d.rooms
     .map((room, index) => {
       const det = details[room.id] ?? { features: [], monsters: [], treasure: [] };
       
@@ -284,6 +309,8 @@ export function htmlRoomDetails(d: Dungeon, details: Record<ID, RoomDetail>): st
       return parts.join('\n');
     })
     .join('\n');
+
+  return envHtml + roomsHtml;
 }
 
 /**
