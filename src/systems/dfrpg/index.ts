@@ -5,7 +5,7 @@ import { taggedSelectionService, TaggedSelectionOptions } from '../../services/t
 import { DFRPGTreasureGenerator } from './DFRPGTreasure.js';
 import { DFRPGEnhancedTrapSystem } from './DFRPGTrapsEnhanced.js';
 import { DFRPGEnvironmentalSystem } from './DFRPGEnvironment.js';
-import { DFRPGMonsterGenerator, type GenerateOptions } from './DFRPGMonsterGenerator';
+import { DFRPGMonsterGenerator, type GenerateOptions, type DFRPGMonster } from './DFRPGMonsterGenerator';
 import { DFRPGEncounterGenerator } from './DFRPGEncounterGenerator';
 import { LockService, type LockGenerationOptions } from '../../services/locks';
 import { createKeyItemService, type KeyPlacementOptions } from '../../services/key-items';
@@ -17,6 +17,7 @@ interface RawMonster {
   Class?: string;
   SM?: number | null;
   Subclass?: string;
+  Environment?: string;
   Source1?: string;
   Page1?: string | null;
   CER?: number;
@@ -122,17 +123,13 @@ export const dfrpg: SystemModule = {
     const environmentComplexity = opts?.environmentComplexity ?? 'moderate';
     const tagOptions = opts?.tags;
     
-    // Initialize DFRPG systems
-    const treasureGenerator = new DFRPGTreasureGenerator(R);
-    const enhancedTrapSystem = new DFRPGEnhancedTrapSystem(R);
-    const environmentalSystem = new DFRPGEnvironmentalSystem(R);
-    const encounterGenerator = new DFRPGEncounterGenerator(R);
-    const wanderingMonsterService = new WanderingMonsterService(R);
-
     // Use custom monsters if available, otherwise use default data
     let MONSTERS: Monster[];
+    let DFRPG_MONSTERS: DFRPGMonster[];
     if (customDataLoader.hasCustomData('dfrpg', 'monsters')) {
       MONSTERS = customDataLoader.getMonsters('dfrpg');
+      // For custom monsters, we'll need to convert them or work around this
+      DFRPG_MONSTERS = []; // TODO: Handle custom monsters properly
       console.log(`Using ${MONSTERS.length} custom DFRPG monsters`);
     } else {
       // Original logic for default monsters
@@ -143,6 +140,41 @@ export const dfrpg: SystemModule = {
           m.Source1 && allowed.some((src) => m.Source1!.toLowerCase().includes(src))
         );
       }
+      // Convert filtered raw monsters to DFRPG monster format
+      DFRPG_MONSTERS = pool.map((m) => {
+        const cer = typeof m.CER === 'number' ? m.CER : 0;
+        const sm = typeof m.SM === 'number' ? m.SM : null;
+        const tags = getMonsterTags(m);
+        
+        // Parse biome/environment data (using same logic as data/monsters.ts)
+        const biome = typeof m.Environment === 'string' && m.Environment.trim()
+          ? m.Environment.split(/,\s*/).map((b: string) => b.toLowerCase().trim()).filter(b => b.length > 0)
+          : ['dungeon']; // Default to dungeon if no environment specified
+        
+        // Calculate frequency based on CER (same logic as data/monsters.ts)
+        const frequency: 'very_rare' | 'rare' | 'uncommon' | 'common' | 'very_common' =
+          cer >= 150
+            ? 'very_rare'
+            : cer >= 100
+              ? 'rare'
+              : cer >= 50
+                ? 'uncommon'
+                : cer >= 25
+                  ? 'common'
+                  : 'very_common';
+
+        return {
+          name: m.Description,
+          cer,
+          sm,
+          tags,
+          biome,
+          frequency,
+          class: m.Class || '',
+          subclass: m.Subclass || '',
+          source: m.Source1 || ''
+        };
+      });
       MONSTERS = pool.map((m) => {
         const cer = (typeof m.CER === 'number') ? m.CER : 0;
         return {
@@ -159,6 +191,13 @@ export const dfrpg: SystemModule = {
         };
       });
     }
+
+    // Initialize DFRPG systems with filtered monsters
+    const treasureGenerator = new DFRPGTreasureGenerator(R);
+    const enhancedTrapSystem = new DFRPGEnhancedTrapSystem(R);
+    const environmentalSystem = new DFRPGEnvironmentalSystem(R);
+    const encounterGenerator = new DFRPGEncounterGenerator(R, DFRPG_MONSTERS);
+    const wanderingMonsterService = new WanderingMonsterService(R);
 
     // Use custom traps if available, otherwise use default data
     const CURRENT_TRAPS = customDataLoader.hasCustomData('dfrpg', 'traps') 

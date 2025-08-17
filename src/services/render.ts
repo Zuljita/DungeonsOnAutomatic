@@ -76,6 +76,7 @@ export function renderAscii(d: Dungeon): string {
  * string sized to the dungeon's extents.
  */
 function doorEdge(room: Room, tile: { x: number; y: number }) {
+  // Handle case where corridor point is outside room (original logic)
   if (tile.x < room.x)
     return { x1: room.x, y1: tile.y, x2: room.x, y2: tile.y + 1 };
   if (tile.x >= room.x + room.w)
@@ -89,6 +90,30 @@ function doorEdge(room: Room, tile: { x: number; y: number }) {
       x2: tile.x + 1,
       y2: room.y + room.h,
     };
+  
+  // Handle case where corridor point is inside room
+  // Find the closest edge of the room to place the door
+  const distToLeft = tile.x - room.x;
+  const distToRight = (room.x + room.w - 1) - tile.x;
+  const distToTop = tile.y - room.y;
+  const distToBottom = (room.y + room.h - 1) - tile.y;
+  
+  const minDist = Math.min(distToLeft, distToRight, distToTop, distToBottom);
+  
+  if (minDist === distToLeft && distToLeft >= 0) {
+    // Door on left edge
+    return { x1: room.x, y1: tile.y, x2: room.x, y2: tile.y + 1 };
+  } else if (minDist === distToRight && distToRight >= 0) {
+    // Door on right edge
+    return { x1: room.x + room.w, y1: tile.y, x2: room.x + room.w, y2: tile.y + 1 };
+  } else if (minDist === distToTop && distToTop >= 0) {
+    // Door on top edge
+    return { x1: tile.x, y1: room.y, x2: tile.x + 1, y2: room.y };
+  } else if (minDist === distToBottom && distToBottom >= 0) {
+    // Door on bottom edge
+    return { x1: tile.x, y1: room.y + room.h, x2: tile.x + 1, y2: room.y + room.h };
+  }
+  
   return null;
 }
 

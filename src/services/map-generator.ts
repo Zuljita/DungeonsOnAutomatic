@@ -384,9 +384,30 @@ export class MapGenerator {
             type: 'room'
           };
           
-          // Only add both rooms if both fit without overlapping
-          if (addRoomWithOverlapCheck(room1)) {
-            addRoomWithOverlapCheck(room2);
+          // Check if both rooms can be added without overlap (don't add either if one fails)
+          const room1FitsInBoundary = boundaries.some(boundary => 
+            room1.x >= boundary.x &&
+            room1.y >= boundary.y &&
+            room1.x + room1.width <= boundary.x + boundary.width &&
+            room1.y + room1.height <= boundary.y + boundary.height
+          );
+          const room2FitsInBoundary = boundaries.some(boundary => 
+            room2.x >= boundary.x &&
+            room2.y >= boundary.y &&
+            room2.x + room2.width <= boundary.x + boundary.width &&
+            room2.y + room2.height <= boundary.y + boundary.height
+          );
+          
+          const room1NoOverlap = !roomBoundaries.some(existingRoom => overlaps(existingRoom, room1));
+          const room2NoOverlap = !roomBoundaries.some(existingRoom => overlaps(existingRoom, room2));
+          
+          const room1Fits = room1FitsInBoundary && room1NoOverlap;
+          const room2Fits = room2FitsInBoundary && room2NoOverlap;
+          
+          // Only add both if both fit, ensuring symmetry
+          if (room1Fits && room2Fits) {
+            roomBoundaries.push(room1);
+            roomBoundaries.push(room2);
           }
         }
         break;

@@ -1,4 +1,4 @@
-import { DFRPGMonsterGenerator, type GenerateOptions, type GeneratedEncounter } from './DFRPGMonsterGenerator';
+import { DFRPGMonsterGenerator, type GenerateOptions, type GeneratedEncounter, type DFRPGMonster } from './DFRPGMonsterGenerator';
 import DFRPGTreasureGenerator, { TreasureHoard } from './DFRPGTreasure.js';
 import type { Monster } from '../../core/types';
 
@@ -14,8 +14,8 @@ export class DFRPGEncounterGenerator {
   private monsterGen: DFRPGMonsterGenerator;
   private treasureGen: DFRPGTreasureGenerator;
 
-  constructor(rng: () => number = Math.random) {
-    this.monsterGen = new DFRPGMonsterGenerator(rng);
+  constructor(rng: () => number = Math.random, customMonsterPool?: DFRPGMonster[]) {
+    this.monsterGen = new DFRPGMonsterGenerator(rng, customMonsterPool);
     this.treasureGen = new DFRPGTreasureGenerator(rng);
   }
 

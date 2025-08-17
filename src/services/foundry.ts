@@ -55,13 +55,38 @@ export function exportFoundry(d: Dungeon, grid = 100): FoundryScene {
     addEdge(x, y + 1, x, y);
   }
 
-  const doorEdge = (room: Room, tile: { x: number; y: number }) => {
+  const doorEdge = (room: Room, tile: { x: number; y: number }, pathDirection?: { x: number; y: number }) => {
+    // Handle case where corridor point is outside room (original logic)
     if (tile.x < room.x) return [room.x, tile.y, room.x, tile.y + 1] as const;
     if (tile.x >= room.x + room.w)
       return [room.x + room.w, tile.y, room.x + room.w, tile.y + 1] as const;
     if (tile.y < room.y) return [tile.x, room.y, tile.x + 1, room.y] as const;
     if (tile.y >= room.y + room.h)
       return [tile.x, room.y + room.h, tile.x + 1, room.y + room.h] as const;
+    
+    // Handle case where corridor point is inside room
+    // Find the closest edge of the room to place the door
+    const distToLeft = tile.x - room.x;
+    const distToRight = (room.x + room.w - 1) - tile.x;
+    const distToTop = tile.y - room.y;
+    const distToBottom = (room.y + room.h - 1) - tile.y;
+    
+    const minDist = Math.min(distToLeft, distToRight, distToTop, distToBottom);
+    
+    if (minDist === distToLeft && distToLeft >= 0) {
+      // Door on left edge
+      return [room.x, tile.y, room.x, tile.y + 1] as const;
+    } else if (minDist === distToRight && distToRight >= 0) {
+      // Door on right edge
+      return [room.x + room.w, tile.y, room.x + room.w, tile.y + 1] as const;
+    } else if (minDist === distToTop && distToTop >= 0) {
+      // Door on top edge
+      return [tile.x, room.y, tile.x + 1, room.y] as const;
+    } else if (minDist === distToBottom && distToBottom >= 0) {
+      // Door on bottom edge
+      return [tile.x, room.y + room.h, tile.x + 1, room.y + room.h] as const;
+    }
+    
     return null;
   };
 
