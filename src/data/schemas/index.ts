@@ -1,12 +1,14 @@
 import { ModuleSchema } from './types';
 import { genericSchema } from './generic';
 import { dfrpgSchema } from './dfrpg';
+import { environmentSchema } from './environment';
 
 export * from './types';
 
 export const moduleSchemas: Record<string, ModuleSchema> = {
   generic: genericSchema,
-  dfrpg: dfrpgSchema
+  dfrpg: dfrpgSchema,
+  environment: environmentSchema
 };
 
 export function getModuleSchema(moduleId: string): ModuleSchema | undefined {

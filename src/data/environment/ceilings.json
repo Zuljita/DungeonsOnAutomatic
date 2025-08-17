@@ -1,0 +1,17 @@
+[
+  {
+    "name": "Standard Height",
+    "description": "10-foot high ceilings.",
+    "weight": 1
+  },
+  {
+    "name": "High Ceilings",
+    "description": "20-foot high ceilings.",
+    "weight": 1
+  },
+  {
+    "name": "Cavernous",
+    "description": "Cavernous ceilings at least 60 feet high.",
+    "weight": 1
+  }
+]

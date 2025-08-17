@@ -1,0 +1,27 @@
+[
+  {
+    "name": "Very High Mana",
+    "description": "Magic works at +5. All spells cost 1 less fatigue to cast (minimum 1).",
+    "weight": 1
+  },
+  {
+    "name": "High Mana",
+    "description": "Magic works at +2.",
+    "weight": 2
+  },
+  {
+    "name": "Normal Mana",
+    "description": "No modifier to magic.",
+    "weight": 6
+  },
+  {
+    "name": "Low Mana",
+    "description": "Magic works at -5. Spells cost double the fatigue to cast.",
+    "weight": 2
+  },
+  {
+    "name": "No Mana",
+    "description": "Magic does not function here.",
+    "weight": 1
+  }
+]

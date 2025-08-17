@@ -1,0 +1,17 @@
+[
+  {
+    "name": "Hallowed Ground",
+    "description": "Clerics and holy warriors get +1 to all skill rolls. Unholy beings are at -1.",
+    "weight": 1
+  },
+  {
+    "name": "Neutral Ground",
+    "description": "No modifier to sanctity.",
+    "weight": 10
+  },
+  {
+    "name": "Unholy Ground",
+    "description": "Clerics and holy warriors are at -1 to all skill rolls. Unholy beings are at +1.",
+    "weight": 1
+  }
+]

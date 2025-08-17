@@ -1,0 +1,17 @@
+[
+  {
+    "name": "Pristine/Verdant",
+    "description": "Druidic and elemental spells are at +2. Clerical turning of undead is at +2.",
+    "weight": 1
+  },
+  {
+    "name": "Neutral",
+    "description": "No modifier to nature's strength.",
+    "weight": 10
+  },
+  {
+    "name": "Barren/Eldritch",
+    "description": "Druidic and elemental spells are at -2. Clerical turning of undead is at -2.",
+    "weight": 1
+  }
+]

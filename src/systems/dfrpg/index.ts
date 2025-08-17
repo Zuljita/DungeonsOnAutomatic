@@ -11,6 +11,7 @@ import { LockService, type LockGenerationOptions } from '../../services/locks';
 import { createKeyItemService, type KeyPlacementOptions } from '../../services/key-items';
 import { validateDungeonSolvability } from '../../services/pathfinder';
 import { WanderingMonsterService } from '../../services/wandering-monster-service';
+import { createEnvironmentService } from '../../services/environment';
 
 interface RawMonster {
   Description: string;
@@ -123,6 +124,18 @@ export const dfrpg: SystemModule = {
     const environmentComplexity = opts?.environmentComplexity ?? 'moderate';
     const tagOptions = opts?.tags;
     
+
+    // Initialize DFRPG systems
+    const treasureGenerator = new DFRPGTreasureGenerator(R);
+    const enhancedTrapSystem = new DFRPGEnhancedTrapSystem(R);
+    const environmentalSystem = new DFRPGEnvironmentalSystem(R);
+    const encounterGenerator = new DFRPGEncounterGenerator(R);
+    const wanderingMonsterService = new WanderingMonsterService(R);
+    const envService = createEnvironmentService(R);
+
+    // Generate overall dungeon environment details
+    d.environment = envService.generate(true);
+
     // Use custom monsters if available, otherwise use default data
     let MONSTERS: Monster[];
     let DFRPG_MONSTERS: DFRPGMonster[];
@@ -324,7 +337,11 @@ export const dfrpg: SystemModule = {
     });
 
     // Generate wandering monsters based on monsters placed in the dungeon
-    const wanderingMonsters = wanderingMonsterService.generateWanderingMonsters(d);
+    // Use the updated encounters rather than the original dungeon object
+    const wanderingMonsters = wanderingMonsterService.generateWanderingMonsters({
+      ...d,
+      encounters
+    });
     if (wanderingMonsters.length > 0) {
       console.log(`DFRPG: Generated ${wanderingMonsters.length} wandering monster entries`);
     }
