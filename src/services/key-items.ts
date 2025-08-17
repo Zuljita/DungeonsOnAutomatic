@@ -1,5 +1,7 @@
 import { PlacementRule, PlacementTarget, type KeyItem, type Lock, type Dungeon, type Room, type ID } from '../core/types';
 import { id } from './random';
+import keyNameDefaults from '../data/key-names.json';
+import { customDataLoader } from './custom-data-loader';
 
 export interface KeyPlacementOptions {
   preferMonsterLoot?: boolean;
@@ -11,6 +13,7 @@ class KeyItemService {
   private items = new Map<string, KeyItem>();
   private seq = 0;
   private rng: () => number;
+  private keyNameParts = customDataLoader.getKeyNames(keyNameDefaults);
 
   constructor(rng: () => number = Math.random) {
     this.rng = rng;
@@ -58,29 +61,12 @@ class KeyItemService {
   /**
    * Generate a thematic name for the key based on the lock
    */
-  private generateKeyName(lock: Lock): string {
-    const materialNames = {
-      wood: ['Wooden', 'Oak', 'Pine'],
-      stone: ['Stone', 'Granite', 'Marble'],
-      iron: ['Iron', 'Wrought Iron', 'Rusted Iron'],
-      steel: ['Steel', 'Tempered Steel', 'Gleaming Steel']
-    };
-
-    const qualityAdjectives = {
-      simple: ['Simple', 'Plain', 'Basic'],
-      average: ['Sturdy', 'Solid', 'Standard'],
-      good: ['Fine', 'Quality', 'Well-made'],
-      fine: ['Ornate', 'Masterwork', 'Exquisite'],
-      magical: ['Enchanted', 'Mystical', 'Arcane']
-    };
-
-    const materialOptions = materialNames[lock.material];
-    const qualityOptions = qualityAdjectives[lock.quality];
-    
-    const material = materialOptions[Math.floor(this.rng() * materialOptions.length)];
-    const quality = qualityOptions[Math.floor(this.rng() * qualityOptions.length)];
-    
-    return `${quality} ${material} Key`;
+  private generateKeyName(_lock: Lock): string {
+    const { adjectives, materials, nouns } = this.keyNameParts;
+    const adj = adjectives[Math.floor(this.rng() * adjectives.length)] || '';
+    const mat = materials[Math.floor(this.rng() * materials.length)] || '';
+    const noun = nouns[Math.floor(this.rng() * nouns.length)] || 'Key';
+    return `${adj} ${mat} ${noun}`.trim();
   }
 
   /**

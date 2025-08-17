@@ -1,0 +1,20 @@
+[
+  {
+    "name": "Average Lock",
+    "description": "A standard tumbler lock.",
+    "skill_penalty": 0,
+    "weight": 10
+  },
+  {
+    "name": "Good Lock",
+    "description": "A well-made lock, requiring fine tools.",
+    "skill_penalty": -2,
+    "weight": 5
+  },
+  {
+    "name": "Amazing Lock",
+    "description": "An intricate and complex locking mechanism.",
+    "skill_penalty": -5,
+    "weight": 1
+  }
+]

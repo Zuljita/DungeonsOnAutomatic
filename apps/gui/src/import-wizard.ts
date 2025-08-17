@@ -2,6 +2,7 @@ import { getAvailableModules, getDataTypesForModule, getModuleSchema } from '@sr
 import { importWizardService } from '@src/services/import-wizard';
 import { dataStorageService } from '@src/services/data-storage';
 import { ValidationResult, ValidationError } from '@src/data/schemas/types';
+import { customDataLoader } from '@src/services/custom-data-loader';
 
 export class ImportWizardComponent {
   private currentModule = '';
@@ -13,6 +14,7 @@ export class ImportWizardComponent {
     this.setupEventListeners();
     this.populateModules();
     this.updateDataManager();
+    this.showStatus('datatype-description', 'Customizable files now include traps, locks, key names, and room features. JSON and CSV formats are supported.', 'info');
   }
 
   private initializeElements() {
@@ -22,7 +24,10 @@ export class ImportWizardComponent {
     this.getElement('generate-template');
     this.getElement('download-template');
     this.getElement('file-upload-area');
-    this.getElement('file-input');
+    const fileInput = this.getElement('file-input') as HTMLInputElement;
+    fileInput.accept = '.csv,.json';
+    const uploadArea = this.getElement('file-upload-area');
+    uploadArea.innerHTML = '<p>Click here or drag and drop your JSON or CSV file</p>';
     this.getElement('save-data');
     this.getElement('dataset-name');
   }
@@ -211,29 +216,33 @@ export class ImportWizardComponent {
       return;
     }
 
-    if (!file.name.toLowerCase().endsWith('.csv')) {
-      this.showStatus('upload-status', 'Please upload a CSV file.', 'error');
-      return;
-    }
-
+    const lower = file.name.toLowerCase();
     try {
       const content = await this.readFileAsText(file);
-      const result = importWizardService.validateAndParse(this.currentModule, this.currentDataType, content);
-
-      if (result.isValid && result.data) {
-        this.validatedData = result.data;
-        this.showStatus('upload-status', `File uploaded successfully! Found ${result.data.length} valid records.`, 'success');
-        this.showValidationResults(result);
-        
+      if (lower.endsWith('.csv')) {
+        const result = importWizardService.validateAndParse(this.currentModule, this.currentDataType, content);
+        if (result.isValid && result.data) {
+          this.validatedData = result.data;
+          this.showStatus('upload-status', `File uploaded successfully! Found ${result.data.length} valid records.`, 'success');
+          this.showValidationResults(result);
+          const saveBtn = this.getElement('save-data') as HTMLButtonElement;
+          saveBtn.disabled = false;
+        } else {
+          this.validatedData = null;
+          this.showStatus('upload-status', 'File validation failed. Please fix the errors below.', 'error');
+          this.showValidationResults(result);
+          const saveBtn = this.getElement('save-data') as HTMLButtonElement;
+          saveBtn.disabled = true;
+        }
+      } else if (lower.endsWith('.json')) {
+        const data = customDataLoader.parseDataFile(file.name, content);
+        this.validatedData = data;
+        this.clearStatus('validation-results');
+        this.showStatus('upload-status', `JSON file loaded with ${data.length} records.`, 'success');
         const saveBtn = this.getElement('save-data') as HTMLButtonElement;
         saveBtn.disabled = false;
       } else {
-        this.validatedData = null;
-        this.showStatus('upload-status', 'File validation failed. Please fix the errors below.', 'error');
-        this.showValidationResults(result);
-        
-        const saveBtn = this.getElement('save-data') as HTMLButtonElement;
-        saveBtn.disabled = true;
+        this.showStatus('upload-status', 'Unsupported file type. Please upload a JSON or CSV file.', 'error');
       }
     } catch (error) {
       this.showStatus('upload-status', `Error reading file: ${error}`, 'error');

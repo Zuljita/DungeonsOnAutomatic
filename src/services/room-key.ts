@@ -1,6 +1,7 @@
 import { Dungeon, Monster, Treasure, ID, WanderingMonster } from '../core/types';
 import { customDataLoader } from './custom-data-loader';
 import DFRPGEncounterGenerator from '../systems/dfrpg/DFRPGEncounterGenerator.js';
+import roomFeatureDefaults from '../data/room-features.json';
 
 interface Weighted<T> {
   item: T;
@@ -17,13 +18,8 @@ function weightedPick<T>(r: () => number, table: Weighted<T>[]): T {
   return table[0].item;
 }
 
-const FEATURE_TABLE: Weighted<string>[] = [
-  { item: 'crumbling statue', weight: 2 },
-  { item: 'moldy furniture', weight: 3 },
-  { item: 'tapestry', weight: 2 },
-  { item: 'ominous altar', weight: 1 },
-  { item: 'empty', weight: 5 },
-];
+const DEFAULT_FEATURES: Array<{ name: string; weight: number; description: string }> =
+  roomFeatureDefaults as Array<{ name: string; weight: number; description: string }>;
 
 const MONSTER_TABLE: Weighted<Monster>[] = [
   { item: { name: 'Goblin' }, weight: 4 },
@@ -88,8 +84,12 @@ export function featureRoom(r: () => number, moduleId: string = 'generic'): stri
   } else {
     // Use default features
     if (r() < 0.7) {
-      features.push(weightedPick(r, FEATURE_TABLE));
-      if (r() < 0.3) features.push(weightedPick(r, FEATURE_TABLE));
+      const weightedDefaults: Weighted<string>[] = DEFAULT_FEATURES.map(f => ({
+        item: f.name,
+        weight: f.weight
+      }));
+      features.push(weightedPick(r, weightedDefaults));
+      if (r() < 0.3) features.push(weightedPick(r, weightedDefaults));
     }
   }
   

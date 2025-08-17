@@ -31,15 +31,18 @@ export class CustomDataLoaderService {
    */
   getTraps(moduleId: string, defaultTraps: Trap[] = []): Trap[] {
     const customData = dataStorageService.getData(moduleId, 'traps');
-    
+
     if (customData.length > 0) {
       return customData.map(item => ({
         name: String(item.name || 'Unknown Trap'),
-        level: typeof item.level === 'number' ? item.level : undefined,
-        notes: String(item.notes || item.effect || '')
-      }));
+        description: String(item.description || ''),
+        detection: String(item.detection || ''),
+        disarm: String(item.disarm || ''),
+        effect: String(item.damage || item.effect || ''),
+        weight: typeof item.weight === 'number' ? item.weight : undefined
+      })) as Trap[];
     }
-    
+
     return defaultTraps;
   }
 
@@ -109,6 +112,84 @@ export class CustomDataLoaderService {
     }
 
     return defaultData;
+  }
+
+  /**
+   * Get key naming components or return defaults
+   */
+  getKeyNames(defaults: { adjectives: string[]; materials: string[]; nouns: string[] }) {
+    const adjectivesData = dataStorageService.getData('key-names', 'adjectives');
+    const materialsData = dataStorageService.getData('key-names', 'materials');
+    const nounsData = dataStorageService.getData('key-names', 'nouns');
+
+    return {
+      adjectives: adjectivesData.length > 0 ? adjectivesData.map(i => String(i.name || Object.values(i)[0] || '')) : defaults.adjectives,
+      materials: materialsData.length > 0 ? materialsData.map(i => String(i.name || Object.values(i)[0] || '')) : defaults.materials,
+      nouns: nounsData.length > 0 ? nounsData.map(i => String(i.name || Object.values(i)[0] || '')) : defaults.nouns
+    };
+  }
+
+  /**
+   * Parse uploaded file content (JSON or CSV) into array of objects
+   */
+  parseDataFile(fileName: string, content: string): Record<string, unknown>[] {
+    const lower = fileName.toLowerCase();
+    if (lower.endsWith('.json')) {
+      try {
+        const data = JSON.parse(content);
+        return Array.isArray(data) ? data : [data];
+      } catch {
+        return [];
+      }
+    }
+
+    if (lower.endsWith('.csv')) {
+      const lines = content.trim().split(/\r?\n/);
+      if (lines.length === 0) return [];
+      const headers = this.parseCsvRow(lines[0]);
+      return lines.slice(1).map(line => {
+        const values = this.parseCsvRow(line);
+        const obj: Record<string, unknown> = {};
+        headers.forEach((h, i) => {
+          obj[h] = values[i];
+        });
+        return obj;
+      });
+    }
+
+    return [];
+  }
+
+  private parseCsvRow(row: string): string[] {
+    const result: string[] = [];
+    let current = '';
+    let inQuotes = false;
+    for (let i = 0; i < row.length; i++) {
+      const char = row[i];
+      if (inQuotes) {
+        if (char === '"') {
+          if (row[i + 1] === '"') {
+            current += '"';
+            i++;
+          } else {
+            inQuotes = false;
+          }
+        } else {
+          current += char;
+        }
+      } else {
+        if (char === ',') {
+          result.push(current);
+          current = '';
+        } else if (char === '"') {
+          inQuotes = true;
+        } else {
+          current += char;
+        }
+      }
+    }
+    result.push(current);
+    return result.map(s => s.trim());
   }
 
   /**

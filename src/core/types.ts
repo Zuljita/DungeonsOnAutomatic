@@ -78,6 +78,7 @@ export interface Trap {
   disarm?: string;
   effect?: string;
   tags?: string[]; // Thematic tags for tag-based selection
+  weight?: number;
 }
 
 export interface Treasure {
