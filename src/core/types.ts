@@ -80,6 +80,15 @@ export enum PlacementTarget {
   NPC_POSSESSION = 'NPC_POSSESSION',
 }
 
+export interface Lock {
+  id: ID;
+  doorId: ID;
+  quality: 'simple' | 'average' | 'good' | 'fine' | 'magical';
+  material: 'wood' | 'stone' | 'iron' | 'steel';
+  requiresKey: boolean;
+  description?: string;
+}
+
 export interface KeyItem {
   id: ID;
   doorId: ID;
@@ -88,6 +97,7 @@ export interface KeyItem {
   placementRule: PlacementRule;
   placementTarget: PlacementTarget;
   locationId?: ID;
+  description?: string;
 }
 
 export interface Dungeon {
@@ -98,6 +108,7 @@ export interface Dungeon {
   rng?: () => number;
   encounters?: Record<ID, { monsters?: Monster[]; traps?: Trap[]; treasure?: Treasure[] }>;
   keyItems?: KeyItem[];
+  locks?: Lock[];
 }
 
 export interface SystemModule {

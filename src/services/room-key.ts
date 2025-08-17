@@ -219,6 +219,9 @@ export function htmlRoomDetails(d: Dungeon, details: Record<ID, RoomDetail>): st
         parts.push(`<p><strong>Features:</strong> ${safeFeatures.join(', ')}</p>`);
       }
       if (safeMonsters.length) {
+        // Calculate total CER for the encounter
+        const totalCER = safeMonsters.reduce((sum, m) => sum + (m.cer || 0), 0);
+        
         const monsterDetails = safeMonsters.map(m => {
           const monsterInfo = [m.name];
           
@@ -231,12 +234,22 @@ export function htmlRoomDetails(d: Dungeon, details: Record<ID, RoomDetail>): st
             monsterInfo.push(`(${m.challenge_level})`);
           }
           
+          // Add source/page reference if available
+          if (m.source && m.source !== 'Unknown') {
+            monsterInfo.push(`[${m.source}]`);
+          }
+          
           if (m.tags && m.tags.length > 0) {
-            monsterInfo.push(`[${m.tags.join(', ')}]`);
+            monsterInfo.push(`<span class="monster-tags">[${m.tags.join(', ')}]</span>`);
           }
           return monsterInfo.join(' ');
         });
-        parts.push(`<p><strong>Monsters:</strong> ${monsterDetails.join(', ')}</p>`);
+        
+        // Include total CER in the monsters section header
+        const monstersHeader = totalCER > 0 
+          ? `<strong>Monsters (Total CER: ${totalCER}):</strong>` 
+          : `<strong>Monsters:</strong>`;
+        parts.push(`<p>${monstersHeader} ${monsterDetails.join(', ')}</p>`);
       }
       if (safeTreasure.length) {
         const treasureDetails = safeTreasure.map(t => {
@@ -248,6 +261,23 @@ export function htmlRoomDetails(d: Dungeon, details: Record<ID, RoomDetail>): st
         });
         parts.push(`<p><strong>Treasure:</strong> ${treasureDetails.join(', ')}</p>`);
       }
+
+      // Display keys found in this room
+      const keysInRoom = (d.keyItems || []).filter(key => key.locationId === room.id);
+      if (keysInRoom.length > 0) {
+        const keyDetails = keysInRoom.map(key => {
+          // Find which door this key unlocks
+          const unlockedDoor = d.doors?.find(door => door.id === key.doorId);
+          const doorDescription = unlockedDoor 
+            ? `unlocks ${unlockedDoor.type} door ${unlockedDoor.id}` 
+            : `unlocks door ${key.doorId}`;
+          
+          return `<strong>${key.name}</strong> (${doorDescription})${key.description ? ` - ${key.description}` : ''}`;
+        });
+        
+        parts.push(`<p><strong>Keys Found:</strong> ${keyDetails.join(', ')}</p>`);
+      }
+
       parts.push('</section>');
       return parts.join('\n');
     })
