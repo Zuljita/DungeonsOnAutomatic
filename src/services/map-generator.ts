@@ -1,5 +1,6 @@
 import { Dungeon, Room, Corridor, Door } from '../core/types';
 import { rng } from './random';
+import Delaunator from 'delaunator';
 import { generateDoor } from './doors';
 
 export interface MapGenerationOptions {
@@ -433,141 +434,160 @@ export class MapGenerator {
   }
 
   /**
-   * Generate corridors based on type
+   * Generate corridors using graph algorithms
    */
   private generateCorridors(rooms: Room[], type: string, allowDeadends: boolean): Corridor[] {
+    const edges = this.buildRoomGraph(rooms, allowDeadends);
     const corridors: Corridor[] = [];
-    
+
+    const pickType = (): string =>
+      type === 'mixed'
+        ? ['maze', 'winding', 'straight'][Math.floor(this.R() * 3)]
+        : type;
+
+    edges.forEach(([a, b], i) => {
+      const room1 = rooms[a];
+      const room2 = rooms[b];
+      const corridorType = pickType();
+      const path = this.createPath(corridorType, room1, room2);
+      if (path.length > 0) {
+        corridors.push({
+          id: `corridor-${i}`,
+          from: room1.id,
+          to: room2.id,
+          path
+        });
+      }
+    });
+
+    return corridors;
+  }
+
+  /**
+   * Build a graph connecting rooms using Delaunay triangulation and MST
+   */
+  private buildRoomGraph(rooms: Room[], allowDeadends: boolean): Array<[number, number]> {
+    if (rooms.length < 2) return [];
+
+    const centers = rooms.map(r => [r.x + Math.floor(r.w / 2), r.y + Math.floor(r.h / 2)] as const);
+    const delaunay = Delaunator.from(centers);
+    const edgeMap = new Map<string, { a: number; b: number; d: number }>();
+
+    const addEdge = (i: number, j: number): void => {
+      if (i > j) [i, j] = [j, i];
+      const key = `${i}-${j}`;
+      if (!edgeMap.has(key)) {
+        const dx = centers[i][0] - centers[j][0];
+        const dy = centers[i][1] - centers[j][1];
+        const d = Math.sqrt(dx * dx + dy * dy);
+        edgeMap.set(key, { a: i, b: j, d });
+      }
+    };
+
+    for (let t = 0; t < delaunay.triangles.length; t += 3) {
+      const a = delaunay.triangles[t];
+      const b = delaunay.triangles[t + 1];
+      const c = delaunay.triangles[t + 2];
+      addEdge(a, b);
+      addEdge(b, c);
+      addEdge(c, a);
+    }
+
+    // Ensure every room has at least one edge
+    const used = new Set<number>();
+    edgeMap.forEach((e) => {
+      used.add(e.a);
+      used.add(e.b);
+    });
+    for (let i = 0; i < rooms.length; i++) {
+      if (!used.has(i)) {
+        let best = -1;
+        let bestD = Infinity;
+        for (let j = 0; j < rooms.length; j++) {
+          if (i === j) continue;
+          const dx = centers[i][0] - centers[j][0];
+          const dy = centers[i][1] - centers[j][1];
+          const d = Math.sqrt(dx * dx + dy * dy);
+          if (d < bestD) {
+            bestD = d;
+            best = j;
+          }
+        }
+        if (best >= 0) addEdge(i, best);
+      }
+    }
+
+    let edges = Array.from(edgeMap.values()).sort((e1, e2) => e1.d - e2.d);
+
+    const buildMST = (edgesList: { a: number; b: number; d: number }[]) => {
+      const parent = Array.from({ length: rooms.length }, (_, i) => i);
+      const find = (x: number): number => (parent[x] === x ? x : (parent[x] = find(parent[x])));
+      const unite = (a: number, b: number): void => {
+        parent[find(a)] = find(b);
+      };
+      const mstEdges: Array<[number, number]> = [];
+      const extra: { a: number; b: number; d: number }[] = [];
+      for (const e of edgesList) {
+        if (find(e.a) !== find(e.b)) {
+          unite(e.a, e.b);
+          mstEdges.push([e.a, e.b]);
+        } else {
+          extra.push(e);
+        }
+      }
+      return { mstEdges, extra };
+    };
+
+    let { mstEdges: mst, extra: leftovers } = buildMST(edges);
+
+    if (mst.length < rooms.length - 1) {
+      const complete: { a: number; b: number; d: number }[] = [];
+      for (let i = 0; i < rooms.length; i++) {
+        for (let j = i + 1; j < rooms.length; j++) {
+          const dx = centers[i][0] - centers[j][0];
+          const dy = centers[i][1] - centers[j][1];
+          const d = Math.sqrt(dx * dx + dy * dy);
+          complete.push({ a: i, b: j, d });
+        }
+      }
+      complete.sort((e1, e2) => e1.d - e2.d);
+      const res = buildMST(complete);
+      mst = res.mstEdges;
+      leftovers = res.extra;
+    }
+
+    if (!allowDeadends && leftovers.length) {
+      leftovers.forEach((e) => {
+        if (this.R() < 0.3) mst.push([e.a, e.b]);
+      });
+      if (mst.length === rooms.length - 1) {
+        const e = leftovers[Math.floor(this.R() * leftovers.length)];
+        mst.push([e.a, e.b]);
+      }
+    }
+
+    return mst;
+  }
+
+  /**
+   * Create a path between two rooms based on corridor type
+   */
+  private createPath(type: string, room1: Room, room2: Room): { x: number; y: number }[] {
+    let path: { x: number; y: number }[] = [];
     switch (type) {
       case 'maze':
-        corridors.push(...this.generateMazeCorridors(rooms, allowDeadends));
+        path = this.createMazePath(room1, room2);
         break;
-      
       case 'winding':
-        corridors.push(...this.generateWindingCorridors(rooms, allowDeadends));
+        path = this.createWindingPath(room1, room2);
         break;
-      
       case 'straight':
-        corridors.push(...this.generateStraightCorridors(rooms, allowDeadends));
-        break;
-      
-      case 'mixed':
-        corridors.push(...this.generateMixedCorridors(rooms, allowDeadends));
+      default:
+        path = this.createStraightPath(room1, room2);
         break;
     }
-    
-    return corridors;
-  }
 
-  /**
-   * Generate maze-like corridors
-   */
-  private generateMazeCorridors(rooms: Room[], allowDeadends: boolean): Corridor[] {
-    const corridors: Corridor[] = [];
-    
-    // Create a grid-based maze connecting rooms
-    for (let i = 0; i < rooms.length - 1; i++) {
-      const room1 = rooms[i];
-      const room2 = rooms[i + 1];
-      
-      const path = this.createMazePath(room1, room2);
-      if (path.length > 0) {
-        corridors.push({
-          id: `corridor-${i}`,
-          from: room1.id,
-          to: room2.id,
-          path
-        });
-      }
-    }
-    
-    return corridors;
-  }
-
-  /**
-   * Generate winding corridors
-   */
-  private generateWindingCorridors(rooms: Room[], allowDeadends: boolean): Corridor[] {
-    const corridors: Corridor[] = [];
-    
-    for (let i = 0; i < rooms.length - 1; i++) {
-      const room1 = rooms[i];
-      const room2 = rooms[i + 1];
-      
-      const path = this.createWindingPath(room1, room2);
-      if (path.length > 0) {
-        corridors.push({
-          id: `corridor-${i}`,
-          from: room1.id,
-          to: room2.id,
-          path
-        });
-      }
-    }
-    
-    return corridors;
-  }
-
-  /**
-   * Generate straight corridors
-   */
-  private generateStraightCorridors(rooms: Room[], allowDeadends: boolean): Corridor[] {
-    const corridors: Corridor[] = [];
-    
-    for (let i = 0; i < rooms.length - 1; i++) {
-      const room1 = rooms[i];
-      const room2 = rooms[i + 1];
-      
-      const path = this.createStraightPath(room1, room2);
-      if (path.length > 0) {
-        corridors.push({
-          id: `corridor-${i}`,
-          from: room1.id,
-          to: room2.id,
-          path
-        });
-      }
-    }
-    
-    return corridors;
-  }
-
-  /**
-   * Generate mixed corridor types
-   */
-  private generateMixedCorridors(rooms: Room[], allowDeadends: boolean): Corridor[] {
-    const corridors: Corridor[] = [];
-    
-    for (let i = 0; i < rooms.length - 1; i++) {
-      const room1 = rooms[i];
-      const room2 = rooms[i + 1];
-      
-      const corridorType = ['maze', 'winding', 'straight'][Math.floor(this.R() * 3)];
-      let path: { x: number; y: number }[] = [];
-      
-      switch (corridorType) {
-        case 'maze':
-          path = this.createMazePath(room1, room2);
-          break;
-        case 'winding':
-          path = this.createWindingPath(room1, room2);
-          break;
-        case 'straight':
-          path = this.createStraightPath(room1, room2);
-          break;
-      }
-      
-      if (path.length > 0) {
-        corridors.push({
-          id: `corridor-${i}`,
-          from: room1.id,
-          to: room2.id,
-          path
-        });
-      }
-    }
-    
-    return corridors;
+    return path;
   }
 
   /**
@@ -599,7 +619,7 @@ export class MapGenerator {
         path.push({ x: randomX, y: randomY });
       }
     }
-    
+    path.push({ x: endX, y: endY });
     return path;
   }
 
@@ -628,7 +648,7 @@ export class MapGenerator {
         else if (currentY > endY) currentY--;
       }
     }
-    
+    path.push({ x: endX, y: endY });
     return path;
   }
 
@@ -654,7 +674,7 @@ export class MapGenerator {
       if (currentY < endY) currentY++;
       else if (currentY > endY) currentY--;
     }
-    
+    path.push({ x: endX, y: endY });
     return path;
   }
 

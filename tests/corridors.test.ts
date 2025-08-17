@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { generateRooms } from '../src/services/rooms.js';
 import { connectRooms } from '../src/services/corridors.js';
 import { rng } from '../src/services/random.js';
+import { MapGenerator } from '../src/services/map-generator.js';
 
 describe('corridors', () => {
   it('connectRooms returns a fully connected graph', () => {
@@ -67,5 +68,26 @@ describe('corridors', () => {
 
     expect(horizFirst[1].y).toBe(horizFirst[0].y); // moved horizontally first
     expect(vertFirst[1].x).toBe(vertFirst[0].x);   // moved vertically first
+  });
+
+  it('adds extra corridors to create loops when deadends are disallowed', () => {
+    const gen = new MapGenerator('loop-test');
+    const dungeon = gen.generateDungeon({
+      layoutType: 'rectangle',
+      roomLayout: 'scattered',
+      roomSize: 'medium',
+      roomShape: 'rectangular',
+      corridorType: 'straight',
+      allowDeadends: false,
+      stairsUp: false,
+      stairsDown: false,
+      entranceFromPeriphery: false,
+      rooms: 12,
+      width: 80,
+      height: 60,
+      seed: 'loop-test',
+    });
+
+    expect(dungeon.corridors.length).toBeGreaterThan(dungeon.rooms.length - 1);
   });
 });
