@@ -36,4 +36,38 @@ describe('cli', () => {
     // ensure dungeon structure is still returned
     expect(Array.isArray(d.rooms)).toBe(true);
   });
+
+  it('applies theme and tag filters', () => {
+    const result = spawnSync(
+      process.execPath,
+      [
+        '--import',
+        'tsx',
+        cliPath,
+        'generate',
+        '--rooms',
+        '1',
+        '--seed',
+        'seed1',
+        '--theme',
+        'generic-undead',
+        '--monster-tag',
+        'undead',
+        '--trap-tag',
+        'mechanical',
+        '--treasure-tag',
+        'coins',
+      ],
+      { encoding: 'utf-8' },
+    );
+    expect(result.status).toBe(0);
+    const d = JSON.parse(result.stdout) as Dungeon;
+    const room = d.rooms[0];
+    expect(room.tags).toContain('undead');
+    const enc = d.encounters?.[room.id];
+    expect(enc?.monsters.every((m) => m.tags?.includes('undead'))).toBe(true);
+    expect(enc?.traps.every((t) => t.tags?.includes('mechanical'))).toBe(true);
+    expect(enc?.treasure.every((t) => t.tags?.includes('coins'))).toBe(true);
+  });
 });
+
