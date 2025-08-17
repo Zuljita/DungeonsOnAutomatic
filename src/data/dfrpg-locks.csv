@@ -1,0 +1,4 @@
+name,description,skill_penalty,weight
+"Average Lock","A standard tumbler lock.",0,10
+"Good Lock","A well-made lock, requiring fine tools.",-2,5
+"Amazing Lock","An intricate and complex locking mechanism.",-5,1

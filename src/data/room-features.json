@@ -1,0 +1,17 @@
+[
+  {
+    "name": "Furniture",
+    "description": "The room contains moldering furniture: a table and several chairs.",
+    "weight": 10
+  },
+  {
+    "name": "Statue",
+    "description": "A statue of a forgotten deity stands in the center of the room.",
+    "weight": 5
+  },
+  {
+    "name": "Fountain",
+    "description": "A fountain, now dry, is built into the far wall.",
+    "weight": 3
+  }
+]

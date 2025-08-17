@@ -1,0 +1,18 @@
+[
+  {
+    "name": "Poison Needle",
+    "description": "A tiny needle coated in poison springs out.",
+    "detection": "Per-based Traps roll",
+    "disarm": "DX-based Traps roll",
+    "damage": "1 HP + follow-up poison",
+    "weight": 10
+  },
+  {
+    "name": "Pit Trap",
+    "description": "A section of the floor gives way to a 20-foot drop.",
+    "detection": "Per-based Traps roll at +2",
+    "disarm": "Cannot be disarmed, but can be avoided or bridged.",
+    "damage": "2d6 falling damage",
+    "weight": 5
+  }
+]
