@@ -85,6 +85,20 @@ export const dfrpgSchema: ModuleSchema = {
         ['Enchanted Brazier', 'magical', '1', '$500', 'true', 'Light with Ignite Fire spell', 'Provides magical light and warmth when activated'],
         ['Collapsed Bookshelf', 'furniture', '4', '$20', 'false', 'Search for surviving books', 'Most books destroyed, but may contain valuable tomes']
       ]
+    },
+    monster_generation: {
+      name: 'Monster Generation Config',
+      fileName: 'dfrpg-monster-generation-template.csv',
+      description: 'Configuration options for generating DFRPG encounters',
+      fields: [
+        { name: 'characterPoints', type: 'number', required: true, description: 'Point value budget for the party' },
+        { name: 'biome', type: 'string', required: false, description: 'Preferred biome or environment' },
+        { name: 'includeTags', type: 'string', required: false, description: 'Comma-separated monster tags to include' },
+        { name: 'excludeTags', type: 'string', required: false, description: 'Comma-separated monster tags to exclude' }
+      ],
+      examples: [
+        ['250', 'dungeon', 'undead', 'fire']
+      ]
     }
   }
 };

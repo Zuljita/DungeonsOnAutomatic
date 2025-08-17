@@ -284,3 +284,5 @@ export { DFRPGTreasureGenerator } from "./DFRPGTreasure";
 export { DFRPGTreasureItemGenerator } from "./DFRPGTreasureItem";
 export { DFRPGEnhancedTrapSystem } from "./DFRPGTrapsEnhanced";
 export { DFRPGEnvironmentalSystem } from "./DFRPGEnvironment";
+export { DFRPGMonsterGenerator } from "./DFRPGMonsterGenerator";
+export { DFRPGEncounterGenerator } from "./DFRPGEncounterGenerator";

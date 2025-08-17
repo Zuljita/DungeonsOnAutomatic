@@ -1,3 +1,5 @@
+import type { MonsterGenerationConfig } from './DFRPGMonsterGenerator.js';
+
 interface CoinAmount {
   copper: number;
   silver: number;
@@ -31,7 +33,7 @@ interface MundaneValuable {
   description?: string;
 }
 
-interface TreasureHoard {
+export interface TreasureHoard {
   coins: CoinAmount;
   magicItems: MagicItem[];
   mundaneItems: MundaneValuable[];
@@ -177,6 +179,14 @@ export class DFRPGTreasureGenerator {
 
   constructor(rng: () => number = Math.random) {
     this.rng = rng;
+  }
+
+  generate(config: MonsterGenerationConfig): TreasureHoard {
+    const lootValue = config.characterPoints * 10;
+    const level = Math.max(1, Math.floor(config.characterPoints / 50));
+    const hoardSize: 'small' | 'medium' | 'large' | 'vast' =
+      lootValue < 500 ? 'small' : lootValue < 2000 ? 'medium' : lootValue < 5000 ? 'large' : 'vast';
+    return this.generateTreasureHoard(level, hoardSize);
   }
 
   generateCoins(level: number, hoardSize: 'small' | 'medium' | 'large' | 'vast' = 'medium'): CoinAmount {

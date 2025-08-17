@@ -1,5 +1,6 @@
 import { Dungeon, Monster, Treasure, ID } from '../core/types';
 import { customDataLoader } from './custom-data-loader';
+import DFRPGEncounterGenerator from '../systems/dfrpg/DFRPGEncounterGenerator.js';
 
 interface Weighted<T> {
   item: T;
@@ -89,9 +90,20 @@ export function treasureRoom(r: () => number, hasMonsters = false): Treasure[] {
 
 export function populateRooms(d: Dungeon, r: () => number = Math.random, moduleId: string = 'generic'): Record<ID, RoomDetail> {
   const details: Record<ID, RoomDetail> = {};
+  const encounterGen = moduleId === 'dfrpg' ? new DFRPGEncounterGenerator(r) : undefined;
   for (const room of d.rooms) {
-    const monsters = d.encounters?.[room.id]?.monsters ?? monsterRoom(r);
-    const treasure = d.encounters?.[room.id]?.treasure ?? treasureRoom(r, monsters.length > 0);
+    let monsters: Monster[] = [];
+    let treasure: Treasure[] = [];
+    if (encounterGen && r() < 0.5) {
+      const enc = encounterGen.generate({ characterPoints: 100, biome: 'dungeon' });
+      monsters = enc.monsters;
+      if (enc.treasure.totalValue > 0) {
+        treasure.push({ kind: 'coins', valueHint: `$${enc.treasure.totalValue}` });
+      }
+    } else {
+      monsters = d.encounters?.[room.id]?.monsters ?? monsterRoom(r);
+      treasure = d.encounters?.[room.id]?.treasure ?? treasureRoom(r, monsters.length > 0);
+    }
     const features = featureRoom(r, moduleId);
     details[room.id] = { features, monsters, treasure };
   }
