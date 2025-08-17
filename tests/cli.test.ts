@@ -16,6 +16,18 @@ describe('cli', () => {
     expect(maxY).toBeLessThanOrEqual(20);
   });
 
+  it('generates using advanced layout type when provided', () => {
+    const result = spawnSync(
+      process.execPath,
+      ['--import', 'tsx', cliPath, 'generate', '--rooms', '1', '--layout-type', 'square', '--seed', 'cli'],
+      { encoding: 'utf-8' }
+    );
+    expect(result.status).toBe(0);
+    const d = JSON.parse(result.stdout) as Dungeon;
+    expect(Array.isArray(d.rooms)).toBe(true);
+    expect(d.rooms.length).toBeGreaterThan(0);
+  });
+
   it('falls back to generic system when unknown system specified', () => {
     const result = spawnSync(process.execPath, ['--import', 'tsx', cliPath, 'generate', '--rooms', '1', '--system', 'bogus'], { encoding: 'utf-8' });
     expect(result.status).toBe(0);
