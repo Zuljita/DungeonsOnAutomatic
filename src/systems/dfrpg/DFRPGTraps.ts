@@ -15,6 +15,12 @@ const TRAP_DATA: Record<string, Record<string, TrapStatBlock>> = {
       disarm: { skill: 'Traps (DX or IQ)' },
       effect: { falling: '1d6 per 10 ft' }
     },
+    medium: {
+      name: 'Deep Pit',
+      detect: { skill: 'Traps (Per)', modifier: -3 },
+      disarm: { skill: 'Traps (DX or IQ)' },
+      effect: { falling: '2d6 per 10 ft' }
+    },
     hard: {
       name: 'Spiked Pit',
       detect: { skill: 'Traps (Per)', modifier: -4 },
@@ -28,6 +34,12 @@ const TRAP_DATA: Record<string, Record<string, TrapStatBlock>> = {
       detect: { skill: 'Vision or Perception', modifier: -4 },
       disarm: { skill: 'Traps (DX or IQ)' },
       effect: { poison: 'HT-2, 1d toxic' }
+    },
+    medium: {
+      name: 'Vicious Poison Dart Trap',
+      detect: { skill: 'Vision or Perception', modifier: -4 },
+      disarm: { skill: 'Traps (DX or IQ)' },
+      effect: { poison: 'HT-3, 1d toxic' }
     },
     hard: {
       name: 'Nasty Poison Dart Trap',
@@ -43,6 +55,12 @@ const TRAP_DATA: Record<string, Record<string, TrapStatBlock>> = {
       disarm: { skill: 'Traps (DX or IQ)' },
       effect: { damage: '2d cutting', dodge: true }
     },
+    medium: {
+      name: 'Weighted Swinging Blade',
+      detect: { skill: 'Traps (Per)', modifier: -3 },
+      disarm: { skill: 'Traps (DX or IQ)' },
+      effect: { damage: '2d+1 cutting', dodge: true }
+    },
     hard: {
       name: 'Heavy Swinging Blade',
       detect: { skill: 'Traps (Per)', modifier: -3 },
@@ -57,6 +75,12 @@ const TRAP_DATA: Record<string, Record<string, TrapStatBlock>> = {
       disarm: { skill: 'Thaumatology or Traps' },
       effect: { spell: 'Fireball', damage: '3d+3 burning' }
     },
+    medium: {
+      name: 'Lightning Glyph',
+      detect: { skill: 'Detect Magic or Traps (Per)', modifier: -1 },
+      disarm: { skill: 'Thaumatology or Traps', modifier: -1 },
+      effect: { spell: 'Lightning', damage: '2d burning' }
+    },
     hard: {
       name: 'Paralyzing Glyph',
       detect: { skill: 'Detect Magic or Traps (Per)', modifier: -2 },
@@ -67,8 +91,16 @@ const TRAP_DATA: Record<string, Record<string, TrapStatBlock>> = {
 };
 
 export const DFRPGTraps: TrapSystem = {
-  getTrapStats(type: string, difficulty: string) {
-    return TRAP_DATA[type]?.[difficulty] ?? { name: `${difficulty} ${type} trap` };
+  getTrapStats(type: string, difficulty: string = 'easy') {
+    const trap = TRAP_DATA[type];
+    if (!trap) {
+      return { name: `${difficulty} ${type} trap` };
+    }
+    const stats = trap[difficulty];
+    if (!stats) {
+      throw new Error(`Unknown difficulty '${difficulty}' for trap type '${type}'`);
+    }
+    return stats;
   }
 };
 
