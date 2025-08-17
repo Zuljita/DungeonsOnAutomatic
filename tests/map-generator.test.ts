@@ -84,4 +84,30 @@ describe('map generator', () => {
     const nonSpecialRooms = dungeon.rooms.filter((r) => r.kind !== 'special');
     expect(dungeon.corridors.length).toBe(nonSpecialRooms.length - 1);
   });
+
+  it('generates identical dungeons when using the same seed', () => {
+    const generator = new MapGenerator();
+    const options = {
+      layoutType: 'rectangle',
+      roomLayout: 'scattered',
+      roomSize: 'medium',
+      roomShape: 'rectangular',
+      corridorType: 'straight',
+      allowDeadends: false,
+      stairsUp: false,
+      stairsDown: false,
+      entranceFromPeriphery: false,
+      rooms: BASE_ROOMS,
+      width: WIDTH,
+      height: HEIGHT,
+      seed: 'repeat-me'
+    } as const;
+
+    const first = generator.generateDungeon(options);
+    const second = generator.generateDungeon(options);
+
+    const { rng: _r1, ...rest1 } = first;
+    const { rng: _r2, ...rest2 } = second;
+    expect(rest2).toEqual(rest1);
+  });
 });

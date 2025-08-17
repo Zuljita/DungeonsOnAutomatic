@@ -48,6 +48,10 @@ export class MapGenerator {
    * Generate a dungeon with the specified options
    */
   public generateDungeon(options: MapGenerationOptions): Dungeon {
+    // Reinitialize RNG so each generation with the same seed is deterministic
+    const seed = options.seed ?? this.R().toString(36).slice(2, 10);
+    this.R = rng(seed);
+
     const { rooms, width, height, layoutType, roomLayout, roomSize, roomShape, corridorType, allowDeadends, stairsUp, stairsDown, entranceFromPeriphery } = options;
 
     // Generate layout boundaries based on type
@@ -74,7 +78,7 @@ export class MapGenerator {
     const doors = this.generateDoors(corridors);
     
     return {
-      seed: options.seed || this.R().toString(36).slice(2, 10),
+      seed,
       rooms: [...dungeonRooms, ...specialRooms],
       corridors,
       doors,
