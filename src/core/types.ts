@@ -2,7 +2,7 @@ export type ID = string;
 
 export interface Room {
   id: ID;
-  kind: 'chamber' | 'hall' | 'cavern' | 'lair' | 'special';
+  kind: 'chamber' | 'hall' | 'cavern' | 'lair' | 'special' | 'exit to upper level' | 'entrance to lower level' | 'dungeon entrance';
   x: number;  // top-left x in grid units
   y: number;  // top-left y in grid units
   w: number;  // width in grid units
@@ -49,6 +49,13 @@ export interface WanderingMonster {
   roll: string; // e.g., "2-4"
   monster: Monster;
   quantity: string; // e.g., "1d3"
+}
+
+export interface DungeonDefaults {
+  name?: string;
+  manaLevel?: 'none' | 'low' | 'normal' | 'high' | 'very_high';
+  sanctity?: 'cursed' | 'defiled' | 'neutral' | 'blessed' | 'holy';
+  nature?: 'dead' | 'weak' | 'normal' | 'strong' | 'primal';
 }
 
 // Type alias for RNG function
@@ -132,6 +139,7 @@ export interface Dungeon {
   locks?: Lock[];
   wanderingMonsters?: WanderingMonster[];
   environment?: DungeonEnvironment;
+  defaults?: DungeonDefaults;
 }
 
 export interface SystemModule {

@@ -1,6 +1,6 @@
 import { systemLoader } from '@src/services/system-loader';
 import { renderSvg } from '@src/services/render';
-import { htmlRoomDetails, populateRooms, getWanderingMonstersHtml } from '@src/services/room-key';
+import { htmlRoomDetails, populateRooms, getDungeonMetaHtml } from '@src/services/room-key';
 import { ImportWizardComponent } from './import-wizard';
 import { tagSystem } from '@src/services/tag-system';
 import { mapGenerator, MapGenerationOptions } from '@src/services/map-generator';
@@ -96,6 +96,7 @@ function loadGeneratorSettings() {
     const roomSizeInput = document.getElementById('room-size') as HTMLSelectElement;
     const roomShapeInput = document.getElementById('room-shape') as HTMLSelectElement;
     const corridorTypeInput = document.getElementById('corridor-type') as HTMLSelectElement;
+    const corridorWidthInput = document.getElementById('corridor-width') as HTMLSelectElement;
     const allowDeadendsInput = document.getElementById('allow-deadends') as HTMLInputElement;
     const stairsUpInput = document.getElementById('stairs-up') as HTMLInputElement;
     const stairsDownInput = document.getElementById('stairs-down') as HTMLInputElement;
@@ -116,6 +117,7 @@ function loadGeneratorSettings() {
     roomSizeInput.value = settings.roomSize ?? '';
     roomShapeInput.value = settings.roomShape ?? '';
     corridorTypeInput.value = settings.corridorType ?? '';
+    corridorWidthInput.value = settings.corridorWidth !== undefined ? String(settings.corridorWidth) : '1';
     allowDeadendsInput.checked = !!settings.allowDeadends;
     stairsUpInput.checked = !!settings.stairsUp;
     stairsDownInput.checked = !!settings.stairsDown;
@@ -137,6 +139,7 @@ async function generate(): Promise<void> {
   const roomSizeInput = document.getElementById('room-size') as HTMLSelectElement;
   const roomShapeInput = document.getElementById('room-shape') as HTMLSelectElement;
   const corridorTypeInput = document.getElementById('corridor-type') as HTMLSelectElement;
+  const corridorWidthInput = document.getElementById('corridor-width') as HTMLSelectElement;
   const allowDeadendsInput = document.getElementById('allow-deadends') as HTMLInputElement;
   const stairsUpInput = document.getElementById('stairs-up') as HTMLInputElement;
   const stairsDownInput = document.getElementById('stairs-down') as HTMLInputElement;
@@ -153,6 +156,7 @@ async function generate(): Promise<void> {
   const roomSize = roomSizeInput.value as any || 'medium';
   const roomShape = roomShapeInput.value as any || 'rectangular';
   const corridorType = corridorTypeInput.value as any || 'straight';
+  const corridorWidth = parseInt(corridorWidthInput.value) || 1;
   const allowDeadends = allowDeadendsInput.checked;
   const stairsUp = stairsUpInput.checked;
   const stairsDown = stairsDownInput.checked;
@@ -177,6 +181,7 @@ async function generate(): Promise<void> {
       roomSize,
       roomShape,
       corridorType,
+      corridorWidth,
       allowDeadends,
       stairsUp,
       stairsDown,
@@ -217,9 +222,9 @@ async function generate(): Promise<void> {
     const details = populateRooms(enriched, enriched.rng ?? Math.random, system);
     const roomDetails = htmlRoomDetails(enriched, details);
     
-    // Add wandering monsters if available
-    const wanderingMonstersHtml = getWanderingMonstersHtml(enriched);
-    const fullRoomKey = `<h2>Room Key</h2>${roomDetails}${wanderingMonstersHtml}`;
+    // Add dungeon metadata and wandering monsters if available
+    const dungeonMetaHtml = getDungeonMetaHtml(enriched);
+    const fullRoomKey = `<h2>Room Key</h2>${roomDetails}${dungeonMetaHtml}`;
     
     roomKeyEl.innerHTML = fullRoomKey;
 

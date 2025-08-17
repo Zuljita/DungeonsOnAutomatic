@@ -14,6 +14,7 @@ export interface MapGenerationOptions {
   
   // Corridor Configuration
   corridorType: 'maze' | 'winding' | 'straight' | 'mixed';
+  corridorWidth: 1 | 2 | 3; // Width in tiles for battle map compatibility
   allowDeadends: boolean;
   
   // Special Features
@@ -54,7 +55,7 @@ export class MapGenerator {
     const seed = options.seed ?? this.R().toString(36).slice(2, 10);
     this.R = rng(seed);
 
-    const { rooms, width, height, layoutType, roomLayout, roomSize, roomShape, corridorType, allowDeadends, stairsUp, stairsDown, entranceFromPeriphery } = options;
+    const { rooms, width, height, layoutType, roomLayout, roomSize, roomShape, corridorType, corridorWidth, allowDeadends, stairsUp, stairsDown, entranceFromPeriphery } = options;
 
     // Generate layout boundaries based on type
     const boundaries = this.generateLayoutBoundaries(layoutType, width, height);
@@ -77,7 +78,7 @@ export class MapGenerator {
     const allRooms = [...dungeonRooms, ...specialRooms];
     
     // Generate corridors based on type (including special rooms)
-    const corridors = this.generateCorridors(allRooms, corridorType, allowDeadends);
+    const corridors = this.generateCorridors(allRooms, corridorType, corridorWidth, allowDeadends);
     
     // Generate doors
     const doors = this.generateDoors(corridors);
@@ -510,7 +511,7 @@ export class MapGenerator {
   /**
    * Generate corridors using graph algorithms
    */
-  private generateCorridors(rooms: Room[], type: string, allowDeadends: boolean): Corridor[] {
+  private generateCorridors(rooms: Room[], type: string, width: number, allowDeadends: boolean): Corridor[] {
     const edges = this.buildRoomGraph(rooms, allowDeadends);
     const corridors: Corridor[] = [];
 
@@ -523,8 +524,10 @@ export class MapGenerator {
       const room1 = rooms[a];
       const room2 = rooms[b];
       const corridorType = pickType();
-      const path = this.createPath(corridorType, room1, room2);
-      if (path.length > 0) {
+      const basePath = this.createPath(corridorType, room1, room2);
+      if (basePath.length > 0) {
+        // Expand path to desired width for battle map compatibility
+        const path = this.expandCorridorToWidth(basePath, width);
         corridors.push({
           id: `corridor-${i}`,
           from: room1.id,
@@ -647,17 +650,23 @@ export class MapGenerator {
    * Create a path between two rooms based on corridor type
    */
   private createPath(type: string, room1: Room, room2: Room): { x: number; y: number }[] {
+    // Calculate door connection points on room edges instead of room centers
+    const connectionPoints = this.calculateConnectionPoints(room1, room2);
+    const startPoint = connectionPoints.start;
+    const endPoint = connectionPoints.end;
+
     let path: { x: number; y: number }[] = [];
     switch (type) {
       case 'maze':
-        path = this.createMazePath(room1, room2);
+        path = this.createMazePathBetweenPoints(startPoint, endPoint);
         break;
       case 'winding':
-        path = this.createWindingPath(room1, room2);
+        path = this.createWindingPathBetweenPoints(startPoint, endPoint);
         break;
       case 'straight':
       default:
-        path = this.createStraightPath(room1, room2);
+        // Use battle-map friendly L-shaped paths for straight corridors
+        path = this.createBattleMapPath(startPoint, endPoint);
         break;
     }
 
@@ -665,26 +674,67 @@ export class MapGenerator {
   }
 
   /**
-   * Create a maze-like path between two rooms
+   * Calculate the best connection points on the edges of two rooms
    */
-  private createMazePath(room1: Room, room2: Room): { x: number; y: number }[] {
+  private calculateConnectionPoints(room1: Room, room2: Room): {
+    start: { x: number; y: number };
+    end: { x: number; y: number };
+  } {
+    // Calculate room centers for direction finding
+    const center1 = { x: room1.x + room1.w / 2, y: room1.y + room1.h / 2 };
+    const center2 = { x: room2.x + room2.w / 2, y: room2.y + room2.h / 2 };
+    
+    // Determine the best edge for each room based on the direction to the other room
+    const dx = center2.x - center1.x;
+    const dy = center2.y - center1.y;
+    
+    let start: { x: number; y: number };
+    let end: { x: number; y: number };
+    
+    // Find connection point on room1's edge facing room2
+    if (Math.abs(dx) > Math.abs(dy)) {
+      // Horizontal connection
+      if (dx > 0) {
+        // room2 is to the right of room1
+        start = { x: room1.x + room1.w, y: Math.floor(room1.y + room1.h / 2) };
+        end = { x: room2.x, y: Math.floor(room2.y + room2.h / 2) };
+      } else {
+        // room2 is to the left of room1
+        start = { x: room1.x, y: Math.floor(room1.y + room1.h / 2) };
+        end = { x: room2.x + room2.w, y: Math.floor(room2.y + room2.h / 2) };
+      }
+    } else {
+      // Vertical connection
+      if (dy > 0) {
+        // room2 is below room1
+        start = { x: Math.floor(room1.x + room1.w / 2), y: room1.y + room1.h };
+        end = { x: Math.floor(room2.x + room2.w / 2), y: room2.y };
+      } else {
+        // room2 is above room1
+        start = { x: Math.floor(room1.x + room1.w / 2), y: room1.y };
+        end = { x: Math.floor(room2.x + room2.w / 2), y: room2.y + room2.h };
+      }
+    }
+    
+    return { start, end };
+  }
+
+  /**
+   * Create a maze-like path between two points
+   */
+  private createMazePathBetweenPoints(start: { x: number; y: number }, end: { x: number; y: number }): { x: number; y: number }[] {
     const path: { x: number; y: number }[] = [];
-    const startX = room1.x + Math.floor(room1.w / 2);
-    const startY = room1.y + Math.floor(room1.h / 2);
-    const endX = room2.x + Math.floor(room2.w / 2);
-    const endY = room2.y + Math.floor(room2.h / 2);
+    let currentX = start.x;
+    let currentY = start.y;
     
-    let currentX = startX;
-    let currentY = startY;
-    
-    while (currentX !== endX || currentY !== endY) {
+    while (currentX !== end.x || currentY !== end.y) {
       path.push({ x: currentX, y: currentY });
       
-      if (currentX < endX) currentX++;
-      else if (currentX > endX) currentX--;
+      if (currentX < end.x) currentX++;
+      else if (currentX > end.x) currentX--;
       
-      if (currentY < endY) currentY++;
-      else if (currentY > endY) currentY--;
+      if (currentY < end.y) currentY++;
+      else if (currentY > end.y) currentY--;
       
       // Add some randomness for maze-like appearance
       if (this.R() < 0.3) {
@@ -693,62 +743,152 @@ export class MapGenerator {
         path.push({ x: randomX, y: randomY });
       }
     }
-    path.push({ x: endX, y: endY });
+    path.push({ x: end.x, y: end.y });
     return path;
   }
 
   /**
-   * Create a winding path between two rooms
+   * Create a winding path between two points
    */
-  private createWindingPath(room1: Room, room2: Room): { x: number; y: number }[] {
+  private createWindingPathBetweenPoints(start: { x: number; y: number }, end: { x: number; y: number }): { x: number; y: number }[] {
     const path: { x: number; y: number }[] = [];
-    const startX = room1.x + Math.floor(room1.w / 2);
-    const startY = room1.y + Math.floor(room1.h / 2);
-    const endX = room2.x + Math.floor(room2.w / 2);
-    const endY = room2.y + Math.floor(room2.h / 2);
+    let currentX = start.x;
+    let currentY = start.y;
     
-    let currentX = startX;
-    let currentY = startY;
-    
-    while (currentX !== endX || currentY !== endY) {
+    while (currentX !== end.x || currentY !== end.y) {
       path.push({ x: currentX, y: currentY });
       
       // Add winding movement
       if (this.R() < 0.7) {
-        if (currentX < endX) currentX++;
-        else if (currentX > endX) currentX--;
+        if (currentX < end.x) currentX++;
+        else if (currentX > end.x) currentX--;
       } else {
-        if (currentY < endY) currentY++;
-        else if (currentY > endY) currentY--;
+        if (currentY < end.y) currentY++;
+        else if (currentY > end.y) currentY--;
       }
     }
-    path.push({ x: endX, y: endY });
+    path.push({ x: end.x, y: end.y });
     return path;
   }
 
   /**
-   * Create a straight path between two rooms
+   * Create a straight path between two points
    */
-  private createStraightPath(room1: Room, room2: Room): { x: number; y: number }[] {
+  private createStraightPathBetweenPoints(start: { x: number; y: number }, end: { x: number; y: number }): { x: number; y: number }[] {
     const path: { x: number; y: number }[] = [];
-    const startX = room1.x + Math.floor(room1.w / 2);
-    const startY = room1.y + Math.floor(room1.h / 2);
-    const endX = room2.x + Math.floor(room2.w / 2);
-    const endY = room2.y + Math.floor(room2.h / 2);
+    let currentX = start.x;
+    let currentY = start.y;
     
-    let currentX = startX;
-    let currentY = startY;
-    
-    while (currentX !== endX || currentY !== endY) {
+    while (currentX !== end.x || currentY !== end.y) {
       path.push({ x: currentX, y: currentY });
       
-      if (currentX < endX) currentX++;
-      else if (currentX > endX) currentX--;
+      if (currentX < end.x) currentX++;
+      else if (currentX > end.x) currentX--;
       
-      if (currentY < endY) currentY++;
-      else if (currentY > endY) currentY--;
+      if (currentY < end.y) currentY++;
+      else if (currentY > end.y) currentY--;
     }
-    path.push({ x: endX, y: endY });
+    path.push({ x: end.x, y: end.y });
+    return path;
+  }
+
+  /**
+   * Expand a single-width corridor path to the specified width for battle map compatibility
+   */
+  private expandCorridorToWidth(path: { x: number; y: number }[], width: number): { x: number; y: number }[] {
+    if (width === 1 || path.length === 0) return path;
+    
+    const expandedTiles = new Set<string>();
+    
+    // Add the original path
+    path.forEach(tile => {
+      expandedTiles.add(`${tile.x},${tile.y}`);
+    });
+    
+    // For each tile in the path, add adjacent tiles to create width
+    path.forEach((tile, i) => {
+      const prevTile = i > 0 ? path[i - 1] : null;
+      const nextTile = i < path.length - 1 ? path[i + 1] : null;
+      
+      // Determine the direction of travel to expand perpendicular to it
+      let expandDirection = { x: 0, y: 1 }; // Default to vertical expansion
+      
+      if (nextTile) {
+        const dx = nextTile.x - tile.x;
+        const dy = nextTile.y - tile.y;
+        
+        if (Math.abs(dx) > Math.abs(dy)) {
+          // Horizontal movement, expand vertically
+          expandDirection = { x: 0, y: 1 };
+        } else {
+          // Vertical movement, expand horizontally
+          expandDirection = { x: 1, y: 0 };
+        }
+      } else if (prevTile) {
+        const dx = tile.x - prevTile.x;
+        const dy = tile.y - prevTile.y;
+        
+        if (Math.abs(dx) > Math.abs(dy)) {
+          // Horizontal movement, expand vertically
+          expandDirection = { x: 0, y: 1 };
+        } else {
+          // Vertical movement, expand horizontally
+          expandDirection = { x: 1, y: 0 };
+        }
+      }
+      
+      // Add expansion tiles
+      const expansion = Math.floor((width - 1) / 2);
+      for (let offset = -expansion; offset <= expansion; offset++) {
+        if (offset === 0) continue; // Already have the center tile
+        
+        const expandedX = tile.x + expandDirection.x * offset;
+        const expandedY = tile.y + expandDirection.y * offset;
+        expandedTiles.add(`${expandedX},${expandedY}`);
+      }
+    });
+    
+    // Convert back to array of points
+    return Array.from(expandedTiles).map(key => {
+      const [x, y] = key.split(',').map(Number);
+      return { x, y };
+    });
+  }
+
+  /**
+   * Create a more battle-map friendly path with proper rectilinear segments
+   */
+  private createBattleMapPath(start: { x: number; y: number }, end: { x: number; y: number }): { x: number; y: number }[] {
+    const path: { x: number; y: number }[] = [];
+    let currentX = start.x;
+    let currentY = start.y;
+    
+    // Create an L-shaped path: horizontal first, then vertical (or vice versa based on random choice)
+    const horizontalFirst = this.R() < 0.5;
+    
+    if (horizontalFirst) {
+      // Move horizontally first, then vertically
+      while (currentX !== end.x) {
+        path.push({ x: currentX, y: currentY });
+        currentX += currentX < end.x ? 1 : -1;
+      }
+      while (currentY !== end.y) {
+        path.push({ x: currentX, y: currentY });
+        currentY += currentY < end.y ? 1 : -1;
+      }
+    } else {
+      // Move vertically first, then horizontally  
+      while (currentY !== end.y) {
+        path.push({ x: currentX, y: currentY });
+        currentY += currentY < end.y ? 1 : -1;
+      }
+      while (currentX !== end.x) {
+        path.push({ x: currentX, y: currentY });
+        currentX += currentX < end.x ? 1 : -1;
+      }
+    }
+    
+    path.push({ x: end.x, y: end.y });
     return path;
   }
 

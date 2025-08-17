@@ -51,15 +51,24 @@ describe('map generator', () => {
         expect(from).toBeDefined();
         expect(to).toBeDefined();
         const start = corridor.path[0];
-        const fromCenterX = from!.x + Math.floor(from!.w / 2);
-        const fromCenterY = from!.y + Math.floor(from!.h / 2);
-        expect(start.x).toBe(fromCenterX);
-        expect(start.y).toBe(fromCenterY);
         const end = corridor.path[corridor.path.length - 1];
-        const toCenterX = to!.x + Math.floor(to!.w / 2);
-        const toCenterY = to!.y + Math.floor(to!.h / 2);
-        expect(Math.abs(end.x - toCenterX)).toBeLessThanOrEqual(1);
-        expect(Math.abs(end.y - toCenterY)).toBeLessThanOrEqual(1);
+        
+        // Corridors should start at room edges (door connections), not centers
+        // Check that start point is on the edge of the from room
+        const isStartOnFromRoomEdge = 
+          (start.x === from!.x && start.y >= from!.y && start.y < from!.y + from!.h) ||           // Left edge
+          (start.x === from!.x + from!.w && start.y >= from!.y && start.y < from!.y + from!.h) || // Right edge  
+          (start.y === from!.y && start.x >= from!.x && start.x < from!.x + from!.w) ||           // Top edge
+          (start.y === from!.y + from!.h && start.x >= from!.x && start.x < from!.x + from!.w);  // Bottom edge
+        expect(isStartOnFromRoomEdge).toBe(true);
+        
+        // Check that end point is on the edge of the to room
+        const isEndOnToRoomEdge = 
+          (end.x === to!.x && end.y >= to!.y && end.y < to!.y + to!.h) ||           // Left edge
+          (end.x === to!.x + to!.w && end.y >= to!.y && end.y < to!.y + to!.h) ||   // Right edge
+          (end.y === to!.y && end.x >= to!.x && end.x < to!.x + to!.w) ||           // Top edge
+          (end.y === to!.y + to!.h && end.x >= to!.x && end.x < to!.x + to!.w);     // Bottom edge
+        expect(isEndOnToRoomEdge).toBe(true);
       });
     });
   });
