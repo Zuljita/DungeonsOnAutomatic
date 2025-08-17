@@ -1,6 +1,7 @@
 import { Dungeon, Room, Corridor, Door } from '../core/types';
 import { rng } from './random';
 import Delaunator from 'delaunator';
+import { generateDoor } from './doors';
 
 export interface MapGenerationOptions {
   // Layout Types
@@ -49,6 +50,10 @@ export class MapGenerator {
    * Generate a dungeon with the specified options
    */
   public generateDungeon(options: MapGenerationOptions): Dungeon {
+    // Reinitialize RNG so each generation with the same seed is deterministic
+    const seed = options.seed ?? this.R().toString(36).slice(2, 10);
+    this.R = rng(seed);
+
     const { rooms, width, height, layoutType, roomLayout, roomSize, roomShape, corridorType, allowDeadends, stairsUp, stairsDown, entranceFromPeriphery } = options;
 
     // Generate layout boundaries based on type
@@ -75,7 +80,7 @@ export class MapGenerator {
     const doors = this.generateDoors(corridors);
     
     return {
-      seed: options.seed || this.R().toString(36).slice(2, 10),
+      seed,
       rooms: [...dungeonRooms, ...specialRooms],
       corridors,
       doors,
@@ -725,29 +730,15 @@ export class MapGenerator {
    * Generate doors for corridors
    */
   private generateDoors(corridors: Corridor[]): Door[] {
-    const doors: Door[] = [];
-    
-    corridors.forEach((corridor, index) => {
-      // Add doors at corridor endpoints
-      if (corridor.path.length > 0) {
-        const start = corridor.path[0];
-        const end = corridor.path[corridor.path.length - 1];
-        
-        doors.push({
-          id: `door-${index}-start`,
-          type: 'normal',
-          status: this.R() < 0.3 ? 'locked' : 'secret'
-        });
-        
-        doors.push({
-          id: `door-${index}-end`,
-          type: 'normal',
-          status: this.R() < 0.3 ? 'locked' : 'secret'
-        });
-      }
+    return corridors.flatMap((corridor) => {
+      if (corridor.path.length === 0) return [];
+      const start = corridor.path[0];
+      const end = corridor.path[corridor.path.length - 1];
+      return [
+        generateDoor(this.R, { fromRoom: corridor.from, toRoom: corridor.to, location: start }),
+        generateDoor(this.R, { fromRoom: corridor.to, toRoom: corridor.from, location: end }),
+      ];
     });
-    
-    return doors;
   }
 }
 

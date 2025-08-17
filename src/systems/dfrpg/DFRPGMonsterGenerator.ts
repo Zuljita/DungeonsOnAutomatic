@@ -10,6 +10,27 @@ export interface MonsterGenerationConfig {
 export class DFRPGMonsterGenerator {
   private rng: () => number;
 
+  private static freqWeights: Record<DFRPGMonster['frequency'], number> = {
+    very_rare: 1,
+    rare: 2,
+    uncommon: 3,
+    common: 4,
+    very_common: 5
+  };
+
+  private weightedChoice(options: DFRPGMonster[]): DFRPGMonster {
+    const total = options.reduce(
+      (sum, m) => sum + DFRPGMonsterGenerator.freqWeights[m.frequency],
+      0
+    );
+    let r = this.rng() * total;
+    for (const m of options) {
+      r -= DFRPGMonsterGenerator.freqWeights[m.frequency];
+      if (r < 0) return m;
+    }
+    return options[options.length - 1];
+  }
+
   constructor(rng: () => number = Math.random) {
     this.rng = rng;
   }
@@ -42,7 +63,7 @@ export class DFRPGMonsterGenerator {
 
     const sorted = [...pool].sort((a, b) => b.points - a.points);
     const leaderOptions = sorted.filter(m => m.points <= characterPoints);
-    const leader = leaderOptions[Math.floor(this.rng() * leaderOptions.length)];
+    const leader = this.weightedChoice(leaderOptions);
 
     const encounter: DFRPGMonster[] = [leader];
     let remaining = characterPoints - leader.points;
@@ -50,7 +71,7 @@ export class DFRPGMonsterGenerator {
     while (remaining > 0) {
       const candidates = sorted.filter(m => m.points <= remaining);
       if (candidates.length === 0) break;
-      const next = candidates[Math.floor(this.rng() * candidates.length)];
+      const next = this.weightedChoice(candidates);
       encounter.push(next);
       remaining -= next.points;
       if (next.points === 0) break;
