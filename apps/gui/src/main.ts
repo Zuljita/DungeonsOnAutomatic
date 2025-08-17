@@ -6,6 +6,7 @@ import { tagSystem } from '@src/services/tag-system';
 import { mapGenerator, MapGenerationOptions } from '@src/services/map-generator';
 
 let importWizard: ImportWizardComponent;
+const STORAGE_KEY = 'doa-generator-settings';
 
 function initializeTabs() {
   const tabs = document.querySelectorAll('.tab');
@@ -68,7 +69,7 @@ function initializeThemeSelector() {
 function populateSystemSelector() {
   const systemSelect = document.getElementById('system') as HTMLSelectElement;
   const systems = systemLoader.getSystems();
-  
+
   systemSelect.innerHTML = '<option value="">Select System</option>';
   
   systems.forEach(system => {
@@ -77,6 +78,51 @@ function populateSystemSelector() {
     option.textContent = system.label;
     systemSelect.appendChild(option);
   });
+}
+
+function loadGeneratorSettings() {
+  const stored = localStorage.getItem(STORAGE_KEY);
+  if (!stored) return;
+  try {
+    const settings = JSON.parse(stored);
+    const roomsInput = document.getElementById('rooms') as HTMLInputElement;
+    const seedInput = document.getElementById('seed') as HTMLInputElement;
+    const systemInput = document.getElementById('system') as HTMLSelectElement;
+    const themeInput = document.getElementById('theme') as HTMLSelectElement;
+    const widthInput = document.getElementById('width') as HTMLInputElement;
+    const heightInput = document.getElementById('height') as HTMLInputElement;
+    const layoutTypeInput = document.getElementById('layout-type') as HTMLSelectElement;
+    const roomLayoutInput = document.getElementById('room-layout') as HTMLSelectElement;
+    const roomSizeInput = document.getElementById('room-size') as HTMLSelectElement;
+    const roomShapeInput = document.getElementById('room-shape') as HTMLSelectElement;
+    const corridorTypeInput = document.getElementById('corridor-type') as HTMLSelectElement;
+    const allowDeadendsInput = document.getElementById('allow-deadends') as HTMLInputElement;
+    const stairsUpInput = document.getElementById('stairs-up') as HTMLInputElement;
+    const stairsDownInput = document.getElementById('stairs-down') as HTMLInputElement;
+    const entrancePeripheryInput = document.getElementById('entrance-periphery') as HTMLInputElement;
+
+    roomsInput.value =
+      settings.rooms !== undefined ? String(settings.rooms) : '';
+    seedInput.value = settings.seed ?? '';
+    systemInput.value = settings.system ?? '';
+    systemInput.dispatchEvent(new Event('change'));
+    themeInput.value = settings.theme ?? '';
+    widthInput.value =
+      settings.width !== undefined ? String(settings.width) : '';
+    heightInput.value =
+      settings.height !== undefined ? String(settings.height) : '';
+    layoutTypeInput.value = settings.layoutType ?? '';
+    roomLayoutInput.value = settings.roomLayout ?? '';
+    roomSizeInput.value = settings.roomSize ?? '';
+    roomShapeInput.value = settings.roomShape ?? '';
+    corridorTypeInput.value = settings.corridorType ?? '';
+    allowDeadendsInput.checked = !!settings.allowDeadends;
+    stairsUpInput.checked = !!settings.stairsUp;
+    stairsDownInput.checked = !!settings.stairsDown;
+    entrancePeripheryInput.checked = !!settings.entranceFromPeriphery;
+  } catch (error) {
+    console.error('Failed to load generator settings', error);
+  }
 }
 
 async function generate(): Promise<void> {
@@ -136,6 +182,12 @@ async function generate(): Promise<void> {
       stairsDown,
       entranceFromPeriphery
     };
+    const generatorSettings = {
+      ...mapOptions,
+      system,
+      theme
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(generatorSettings));
 
     console.log('Map generation options:', mapOptions);
 
@@ -182,6 +234,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initializeTabs();
   populateSystemSelector();
   initializeThemeSelector();
+  loadGeneratorSettings();
   importWizard = new ImportWizardComponent();
   
   const generateBtn = document.getElementById('generate');
