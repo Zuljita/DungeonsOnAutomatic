@@ -123,6 +123,11 @@ export function htmlRoomDetails(d: Dungeon, details: Record<ID, RoomDetail>): st
       
       const parts: string[] = [`<section class="room"><h3>Room ${index + 1} (${room.kind})</h3>`];
       
+      // Display room description if present
+      if (room.description) {
+        parts.push(`<p><strong>Environment:</strong> ${room.description}</p>`);
+      }
+      
       // Display room tags if present
       if (room.tags && room.tags.length > 0) {
         const tagHtml = room.tags.map(tag => `<span class="tag">${tag}</span>`).join(' ');

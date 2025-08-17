@@ -8,6 +8,7 @@ export interface Room {
   w: number;  // width in grid units
   h: number;  // height in grid units
   tags?: string[];
+  description?: string; // Environmental and thematic description
 }
 
 export interface Corridor {
