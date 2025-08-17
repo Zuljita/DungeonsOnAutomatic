@@ -207,13 +207,8 @@ export const dfrpg: SystemModule = {
       });
     }
 
-    // Initialize DFRPG systems with filtered monsters
-    const treasureGenerator = new DFRPGTreasureGenerator(R);
-    const enhancedTrapSystem = new DFRPGEnhancedTrapSystem(R);
-    const environmentalSystem = new DFRPGEnvironmentalSystem(R);
-    const encounterGenerator = new DFRPGEncounterGenerator(R, DFRPG_MONSTERS);
-    const wanderingMonsterService = new WanderingMonsterService(R);
-    const defaultsService = new DungeonDefaultsService(R);
+    // Recreate the encounter generator with filtered monsters
+    const filteredEncounterGenerator = new DFRPGEncounterGenerator(R, DFRPG_MONSTERS);
 
     // Use custom traps if available, otherwise use default data
     const CURRENT_TRAPS = customDataLoader.hasCustomData('dfrpg', 'traps') 
@@ -246,7 +241,7 @@ export const dfrpg: SystemModule = {
           requiredTags: tagOptions?.monsters?.requiredTags || []
         };
         
-        const encounter = encounterGenerator.generate(encounterOptions);
+        const encounter = filteredEncounterGenerator.generate(encounterOptions);
         monsters.push(...encounter.monsters);
       } else {
         // Fallback to legacy monster selection
