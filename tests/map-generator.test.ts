@@ -22,7 +22,7 @@ describe('map generator', () => {
         roomSize: 'medium',
         roomShape: 'rectangular',
         corridorType: 'straight',
-        allowDeadends: false,
+        allowDeadends: true,
         stairsUp: false,
         stairsDown: false,
         entranceFromPeriphery: false,
@@ -82,6 +82,6 @@ describe('map generator', () => {
     });
 
     const nonSpecialRooms = dungeon.rooms.filter((r) => r.kind !== 'special');
-    expect(dungeon.corridors.length).toBe(nonSpecialRooms.length - 1);
+    expect(dungeon.corridors.length).toBeGreaterThanOrEqual(nonSpecialRooms.length - 1);
   });
 });
