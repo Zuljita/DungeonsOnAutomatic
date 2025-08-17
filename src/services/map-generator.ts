@@ -524,7 +524,7 @@ export class MapGenerator {
       const room1 = rooms[a];
       const room2 = rooms[b];
       const corridorType = pickType();
-      const basePath = this.createPath(corridorType, room1, room2);
+      const basePath = this.createPath(corridorType, room1, room2, rooms);
       if (basePath.length > 0) {
         // Expand path to desired width for battle map compatibility
         const path = this.expandCorridorToWidth(basePath, width);
@@ -649,24 +649,27 @@ export class MapGenerator {
   /**
    * Create a path between two rooms based on corridor type
    */
-  private createPath(type: string, room1: Room, room2: Room): { x: number; y: number }[] {
+  private createPath(type: string, room1: Room, room2: Room, allRooms: Room[]): { x: number; y: number }[] {
     // Calculate door connection points on room edges instead of room centers
     const connectionPoints = this.calculateConnectionPoints(room1, room2);
     const startPoint = connectionPoints.start;
     const endPoint = connectionPoints.end;
+    
+    // Exclude the connecting rooms from collision detection (corridors can enter their doors)
+    const excludeRooms = [room1.id, room2.id];
 
     let path: { x: number; y: number }[] = [];
     switch (type) {
       case 'maze':
-        path = this.createMazePathBetweenPoints(startPoint, endPoint);
+        path = this.createMazePathWithCollisionDetection(startPoint, endPoint, allRooms, excludeRooms);
         break;
       case 'winding':
-        path = this.createWindingPathBetweenPoints(startPoint, endPoint);
+        path = this.createWindingPathWithCollisionDetection(startPoint, endPoint, allRooms, excludeRooms);
         break;
       case 'straight':
       default:
-        // Use battle-map friendly L-shaped paths for straight corridors
-        path = this.createBattleMapPath(startPoint, endPoint);
+        // Use battle-map friendly L-shaped paths for straight corridors with collision avoidance
+        path = this.createBattleMapPath(startPoint, endPoint, allRooms, excludeRooms);
         break;
     }
 
@@ -793,6 +796,40 @@ export class MapGenerator {
   }
 
   /**
+   * Create a maze path between two points with collision detection
+   */
+  private createMazePathWithCollisionDetection(start: { x: number; y: number }, end: { x: number; y: number }, rooms: Room[], excludeRooms: string[]): { x: number; y: number }[] {
+    // First try the original maze path
+    const originalPath = this.createMazePathBetweenPoints(start, end);
+    const allowedEdgePoints = [start, end];
+    const collisions = this.countRoomCollisions(originalPath, rooms, allowedEdgePoints);
+    
+    if (collisions === 0) {
+      return originalPath; // Use original if no collisions
+    }
+    
+    // If there are collisions, fall back to battle map path which has collision avoidance
+    return this.createBattleMapPath(start, end, rooms, excludeRooms);
+  }
+
+  /**
+   * Create a winding path between two points with collision detection
+   */
+  private createWindingPathWithCollisionDetection(start: { x: number; y: number }, end: { x: number; y: number }, rooms: Room[], excludeRooms: string[]): { x: number; y: number }[] {
+    // First try the original winding path
+    const originalPath = this.createWindingPathBetweenPoints(start, end);
+    const allowedEdgePoints = [start, end];
+    const collisions = this.countRoomCollisions(originalPath, rooms, allowedEdgePoints);
+    
+    if (collisions === 0) {
+      return originalPath; // Use original if no collisions
+    }
+    
+    // If there are collisions, fall back to battle map path which has collision avoidance
+    return this.createBattleMapPath(start, end, rooms, excludeRooms);
+  }
+
+  /**
    * Expand a single-width corridor path to the specified width for battle map compatibility
    */
   private expandCorridorToWidth(path: { x: number; y: number }[], width: number): { x: number; y: number }[] {
@@ -856,14 +893,67 @@ export class MapGenerator {
   }
 
   /**
-   * Create a more battle-map friendly path with proper rectilinear segments
+   * Check if a point collides with any room interior (corridors should go around rooms, not through them)
    */
-  private createBattleMapPath(start: { x: number; y: number }, end: { x: number; y: number }): { x: number; y: number }[] {
+  private isRoomCollision(x: number, y: number, rooms: Room[], allowedEdgePoints: { x: number; y: number }[] = []): boolean {
+    for (const room of rooms) {
+      // Check if point is inside the room
+      const insideRoom = x >= room.x && x < room.x + room.w && 
+                        y >= room.y && y < room.y + room.h;
+      
+      if (insideRoom) {
+        // Allow specific edge points (door connections)
+        const isAllowedEdgePoint = allowedEdgePoints.some(point => point.x === x && point.y === y);
+        if (isAllowedEdgePoint) {
+          return false; // This is an allowed door connection point
+        }
+        return true; // Collision detected - corridor should not go through room interior
+      }
+    }
+    return false; // No collision with room interiors
+  }
+
+  /**
+   * Create a more battle-map friendly path with proper wall avoidance
+   */
+  private createBattleMapPath(start: { x: number; y: number }, end: { x: number; y: number }, rooms?: Room[], excludeRooms?: string[]): { x: number; y: number }[] {
+    // If no rooms provided for collision detection, fall back to simple L-shaped path
+    if (!rooms) {
+      return this.createSimpleLShapedPath(start, end);
+    }
+    
+    // Define allowed edge points (start and end door connections)
+    const allowedEdgePoints = [start, end];
+    
+    // Try both horizontal-first and vertical-first approaches
+    const horizontalFirstPath = this.createLShapedPathWithCollisionAvoidance(start, end, true, rooms, allowedEdgePoints);
+    const verticalFirstPath = this.createLShapedPathWithCollisionAvoidance(start, end, false, rooms, allowedEdgePoints);
+    
+    // Choose the path with fewer room collisions
+    const horizontalCollisions = this.countRoomCollisions(horizontalFirstPath, rooms, allowedEdgePoints);
+    const verticalCollisions = this.countRoomCollisions(verticalFirstPath, rooms, allowedEdgePoints);
+    
+    if (horizontalCollisions === 0 && verticalCollisions === 0) {
+      // Both paths are clean, choose randomly for variety
+      return this.R() < 0.5 ? horizontalFirstPath : verticalFirstPath;
+    } else if (horizontalCollisions === 0) {
+      return horizontalFirstPath;
+    } else if (verticalCollisions === 0) {
+      return verticalFirstPath;
+    } else {
+      // Both have collisions, choose the one with fewer
+      return horizontalCollisions <= verticalCollisions ? horizontalFirstPath : verticalFirstPath;
+    }
+  }
+
+  /**
+   * Create simple L-shaped path without collision detection
+   */
+  private createSimpleLShapedPath(start: { x: number; y: number }, end: { x: number; y: number }): { x: number; y: number }[] {
     const path: { x: number; y: number }[] = [];
     let currentX = start.x;
     let currentY = start.y;
     
-    // Create an L-shaped path: horizontal first, then vertical (or vice versa based on random choice)
     const horizontalFirst = this.R() < 0.5;
     
     if (horizontalFirst) {
@@ -890,6 +980,53 @@ export class MapGenerator {
     
     path.push({ x: end.x, y: end.y });
     return path;
+  }
+
+  /**
+   * Create L-shaped path with collision avoidance
+   */
+  private createLShapedPathWithCollisionAvoidance(start: { x: number; y: number }, end: { x: number; y: number }, horizontalFirst: boolean, rooms: Room[], allowedEdgePoints: { x: number; y: number }[]): { x: number; y: number }[] {
+    const path: { x: number; y: number }[] = [];
+    let currentX = start.x;
+    let currentY = start.y;
+    
+    if (horizontalFirst) {
+      // Move horizontally first, then vertically
+      while (currentX !== end.x) {
+        path.push({ x: currentX, y: currentY });
+        currentX += currentX < end.x ? 1 : -1;
+      }
+      while (currentY !== end.y) {
+        path.push({ x: currentX, y: currentY });
+        currentY += currentY < end.y ? 1 : -1;
+      }
+    } else {
+      // Move vertically first, then horizontally  
+      while (currentY !== end.y) {
+        path.push({ x: currentX, y: currentY });
+        currentY += currentY < end.y ? 1 : -1;
+      }
+      while (currentX !== end.x) {
+        path.push({ x: currentX, y: currentY });
+        currentX += currentX < end.x ? 1 : -1;
+      }
+    }
+    
+    path.push({ x: end.x, y: end.y });
+    return path;
+  }
+
+  /**
+   * Count room collisions in a path
+   */
+  private countRoomCollisions(path: { x: number; y: number }[], rooms: Room[], allowedEdgePoints: { x: number; y: number }[]): number {
+    let collisions = 0;
+    for (const point of path) {
+      if (this.isRoomCollision(point.x, point.y, rooms, allowedEdgePoints)) {
+        collisions++;
+      }
+    }
+    return collisions;
   }
 
   /**
