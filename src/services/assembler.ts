@@ -19,6 +19,13 @@ export function buildDungeon(opts: { rooms?: number; seed?: string; width?: numb
   );
   const rooms = generateRooms(n, width, height, R);
   const corridors = connectRooms(rooms, R);
-  const doors = corridors.flatMap(() => [generateDoor(R), generateDoor(R)]);
+  const doors = corridors.flatMap(c => [
+    generateDoor(R, { fromRoom: c.from, toRoom: c.to, location: c.path[0] }),
+    generateDoor(R, {
+      fromRoom: c.to,
+      toRoom: c.from,
+      location: c.path[c.path.length - 1],
+    }),
+  ]);
   return { seed, rooms, corridors, doors, encounters: {}, rng: R };
 }

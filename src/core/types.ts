@@ -22,6 +22,9 @@ export interface Door {
   id: ID;
   type: 'normal' | 'arch' | 'portcullis' | 'hole';
   status: 'locked' | 'trapped' | 'barred' | 'jammed' | 'warded' | 'secret';
+  fromRoom?: ID;
+  toRoom?: ID;
+  location?: { x: number; y: number };
 }
 
 export interface Monster {
