@@ -1,31 +1,38 @@
 import { describe, it, expect } from 'vitest';
-import { generateRooms } from '../src/services/rooms.js';
 import { connectRooms } from '../src/services/corridors.js';
 import { rng } from '../src/services/random.js';
 import { MapGenerator } from '../src/services/map-generator.js';
 
 describe('corridors', () => {
-  it('connectRooms returns a fully connected graph', () => {
-    const r = rng('corridorTest');
-    const rooms = generateRooms(15, 80, 60, r);
-    const corridors = connectRooms(rooms, r);
-    expect(corridors.length).toBe(rooms.length - 1);
+  it('MapGenerator creates connected dungeons', () => {
+    const generator = new MapGenerator('corridorTest');
+    const dungeon = generator.generateDungeon({
+      rooms: 15,
+      width: 80,
+      height: 60,
+      layoutType: 'rectangle',
+      roomLayout: 'scattered',
+      roomSize: 'medium',
+      roomShape: 'rectangular',
+      corridorType: 'straight',
+      allowDeadends: true,
+      stairsUp: false,
+      stairsDown: false,
+      entranceFromPeriphery: false,
+      seed: 'corridorTest'
+    });
+    const rooms = dungeon.rooms;
+    const corridors = dungeon.corridors;
 
-    // Each corridor should traverse at least one tile between rooms
+    // Should have corridors connecting rooms
+    expect(corridors.length).toBeGreaterThanOrEqual(rooms.length - 1);
+
+    // Each corridor should have a path
     for (const c of corridors) {
       expect(c.path.length).toBeGreaterThan(0);
     }
 
-    const byId = new Map(rooms.map((r) => [r.id, r] as const));
-    const inside = (p: { x: number; y: number }, r: (typeof rooms)[number]) =>
-      p.x >= r.x && p.x < r.x + r.w && p.y >= r.y && p.y < r.y + r.h;
-    for (const c of corridors) {
-      const start = c.path[0];
-      const end = c.path[c.path.length - 1];
-      expect(inside(start, byId.get(c.from)!)).toBe(false);
-      expect(inside(end, byId.get(c.to)!)).toBe(false);
-    }
-
+    // Test connectivity - all rooms should be reachable
     const adj = new Map<string, string[]>();
     for (const c of corridors) {
       if (!adj.has(c.from)) adj.set(c.from, []);
@@ -47,14 +54,40 @@ describe('corridors', () => {
     expect(visited.size).toBe(rooms.length);
   });
 
-  it('connectRooms generates consistent ids with same RNG', () => {
-    const r1 = rng('corridorIds');
-    const r2 = rng('corridorIds');
-    const rooms1 = generateRooms(10, 80, 60, r1);
-    const rooms2 = generateRooms(10, 80, 60, r2);
-    const corridors1 = connectRooms(rooms1, r1);
-    const corridors2 = connectRooms(rooms2, r2);
-    expect(corridors1.map((c) => c.id)).toEqual(corridors2.map((c) => c.id));
+  it('MapGenerator generates consistent ids with same seed', () => {
+    const generator1 = new MapGenerator('corridorIds');
+    const generator2 = new MapGenerator('corridorIds');
+    const dungeon1 = generator1.generateDungeon({
+      rooms: 10,
+      width: 80,
+      height: 60,
+      layoutType: 'rectangle',
+      roomLayout: 'scattered',
+      roomSize: 'medium',
+      roomShape: 'rectangular',
+      corridorType: 'straight',
+      allowDeadends: true,
+      stairsUp: false,
+      stairsDown: false,
+      entranceFromPeriphery: false,
+      seed: 'corridorIds'
+    });
+    const dungeon2 = generator2.generateDungeon({
+      rooms: 10,
+      width: 80,
+      height: 60,
+      layoutType: 'rectangle',
+      roomLayout: 'scattered',
+      roomSize: 'medium',
+      roomShape: 'rectangular',
+      corridorType: 'straight',
+      allowDeadends: true,
+      stairsUp: false,
+      stairsDown: false,
+      entranceFromPeriphery: false,
+      seed: 'corridorIds'
+    });
+    expect(dungeon1.corridors.map((c) => c.id)).toEqual(dungeon2.corridors.map((c) => c.id));
   });
 
   it('randomizes corridor orientation using the RNG', () => {

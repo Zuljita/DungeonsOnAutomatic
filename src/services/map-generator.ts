@@ -70,18 +70,21 @@ export class MapGenerator {
     // Convert boundaries to actual rooms
     const dungeonRooms = this.createRooms(roomBoundaries, roomShape);
     
-    // Generate corridors based on type
-    const corridors = this.generateCorridors(dungeonRooms, corridorType, allowDeadends);
-    
-    // Add special features
+    // Add special features BEFORE corridor generation so they get connected
     const specialRooms = this.addSpecialFeatures(dungeonRooms, boundaries, stairsUp, stairsDown, entranceFromPeriphery);
+    
+    // Combine all rooms for corridor generation
+    const allRooms = [...dungeonRooms, ...specialRooms];
+    
+    // Generate corridors based on type (including special rooms)
+    const corridors = this.generateCorridors(allRooms, corridorType, allowDeadends);
     
     // Generate doors
     const doors = this.generateDoors(corridors);
     
     return {
       seed,
-      rooms: [...dungeonRooms, ...specialRooms],
+      rooms: allRooms,
       corridors,
       doors,
       rng: this.R
@@ -242,6 +245,7 @@ export class MapGenerator {
 
   /**
    * Generate room boundaries based on layout and configuration
+   * Now includes overlap detection to prevent overlapping rooms
    */
   private generateRoomBoundaries(
     boundaries: LayoutBoundary[],
@@ -251,65 +255,110 @@ export class MapGenerator {
     shape: string
   ): LayoutBoundary[] {
     const roomBoundaries: LayoutBoundary[] = [];
+    const maxAttempts = roomCount * 50; // Same as rooms.ts
+    let attempts = 0;
+
+    const overlaps = (a: LayoutBoundary, b: LayoutBoundary): boolean => {
+      // Same logic as rooms.ts - includes 1-tile padding
+      return !(
+        a.x + a.width + 1 <= b.x ||
+        b.x + b.width + 1 <= a.x ||
+        a.y + a.height + 1 <= b.y ||
+        b.y + b.height + 1 <= a.y
+      );
+    };
+
+    const addRoomWithOverlapCheck = (candidateRoom: LayoutBoundary): boolean => {
+      // Check if room fits within any boundary
+      const fitsInBoundary = boundaries.some(boundary => 
+        candidateRoom.x >= boundary.x &&
+        candidateRoom.y >= boundary.y &&
+        candidateRoom.x + candidateRoom.width <= boundary.x + boundary.width &&
+        candidateRoom.y + candidateRoom.height <= boundary.y + boundary.height
+      );
+
+      if (!fitsInBoundary) return false;
+
+      // Check for overlaps with existing rooms
+      if (roomBoundaries.some(existingRoom => overlaps(existingRoom, candidateRoom))) {
+        return false;
+      }
+
+      roomBoundaries.push(candidateRoom);
+      return true;
+    };
 
     switch (layout) {
       case 'sparse':
         // Fewer, larger rooms spread out
         const sparseCount = Math.floor(roomCount * 0.6);
-        for (let i = 0; i < sparseCount; i++) {
+        while (roomBoundaries.length < sparseCount && attempts < maxAttempts) {
+          attempts++;
           const boundary = this.selectRandomBoundary(boundaries);
           const roomSize = this.getRoomSize(size, 'large');
           const maxX = Math.max(0, boundary.width - roomSize.width);
           const maxY = Math.max(0, boundary.height - roomSize.height);
-          roomBoundaries.push({
+          
+          const candidateRoom: LayoutBoundary = {
             x: boundary.x + this.R() * maxX,
             y: boundary.y + this.R() * maxY,
             width: roomSize.width,
             height: roomSize.height,
             type: 'room'
-          });
+          };
+          
+          addRoomWithOverlapCheck(candidateRoom);
         }
         break;
 
       case 'scattered':
         // Random placement within boundaries
-        for (let i = 0; i < roomCount; i++) {
+        while (roomBoundaries.length < roomCount && attempts < maxAttempts) {
+          attempts++;
           const boundary = this.selectRandomBoundary(boundaries);
           const roomSize = this.getRoomSize(size, 'mixed');
           const maxX = Math.max(0, boundary.width - roomSize.width);
           const maxY = Math.max(0, boundary.height - roomSize.height);
-          roomBoundaries.push({
+          
+          const candidateRoom: LayoutBoundary = {
             x: boundary.x + this.R() * maxX,
             y: boundary.y + this.R() * maxY,
             width: roomSize.width,
             height: roomSize.height,
             type: 'room'
-          });
+          };
+          
+          addRoomWithOverlapCheck(candidateRoom);
         }
         break;
 
       case 'dense':
         // Many smaller rooms packed together
         const denseCount = Math.floor(roomCount * 1.5);
-        for (let i = 0; i < denseCount; i++) {
+        while (roomBoundaries.length < denseCount && attempts < maxAttempts) {
+          attempts++;
           const boundary = this.selectRandomBoundary(boundaries);
           const roomSize = this.getRoomSize(size, 'small');
           const maxX = Math.max(0, boundary.width - roomSize.width);
           const maxY = Math.max(0, boundary.height - roomSize.height);
-          roomBoundaries.push({
+          
+          const candidateRoom: LayoutBoundary = {
             x: boundary.x + this.R() * maxX,
             y: boundary.y + this.R() * maxY,
             width: roomSize.width,
             height: roomSize.height,
             type: 'room'
-          });
+          };
+          
+          addRoomWithOverlapCheck(candidateRoom);
         }
         break;
 
       case 'symmetric':
         // Symmetrical placement
         const symmetricCount = Math.floor(roomCount / 2) * 2; // Ensure even number
-        for (let i = 0; i < symmetricCount; i += 2) {
+        while (roomBoundaries.length < symmetricCount && attempts < maxAttempts) {
+          attempts += 2; // We're placing two rooms per iteration
           const boundary = this.selectRandomBoundary(boundaries);
           const roomSize = this.getRoomSize(size, 'medium');
           const centerX = boundary.x + boundary.width / 2;
@@ -319,22 +368,26 @@ export class MapGenerator {
           const offsetX = (this.R() - 0.5) * boundary.width * 0.3;
           const offsetY = (this.R() - 0.5) * boundary.height * 0.3;
           
-          roomBoundaries.push(
-            {
-              x: centerX + offsetX - roomSize.width / 2,
-              y: centerY + offsetY - roomSize.height / 2,
-              width: roomSize.width,
-              height: roomSize.height,
-              type: 'room'
-            },
-            {
-              x: centerX - offsetX - roomSize.width / 2,
-              y: centerY - offsetY - roomSize.height / 2,
-              width: roomSize.width,
-              height: roomSize.height,
-              type: 'room'
-            }
-          );
+          const room1: LayoutBoundary = {
+            x: centerX + offsetX - roomSize.width / 2,
+            y: centerY + offsetY - roomSize.height / 2,
+            width: roomSize.width,
+            height: roomSize.height,
+            type: 'room'
+          };
+          
+          const room2: LayoutBoundary = {
+            x: centerX - offsetX - roomSize.width / 2,
+            y: centerY - offsetY - roomSize.height / 2,
+            width: roomSize.width,
+            height: roomSize.height,
+            type: 'room'
+          };
+          
+          // Only add both rooms if both fit without overlapping
+          if (addRoomWithOverlapCheck(room1)) {
+            addRoomWithOverlapCheck(room2);
+          }
         }
         break;
     }
