@@ -5,6 +5,8 @@ import { taggedSelectionService, TaggedSelectionOptions } from '../../services/t
 import { DFRPGTreasureGenerator } from './DFRPGTreasure.js';
 import { DFRPGEnhancedTrapSystem } from './DFRPGTrapsEnhanced.js';
 import { DFRPGEnvironmentalSystem } from './DFRPGEnvironment.js';
+import { DFRPGMonsterGenerator, type GenerateOptions } from './DFRPGMonsterGenerator';
+import { DFRPGEncounterGenerator } from './DFRPGEncounterGenerator';
 
 interface RawMonster {
   Description: string;
@@ -12,6 +14,7 @@ interface RawMonster {
   SM?: number | null;
   Subclass?: string;
   Source1?: string;
+  CER?: number;
 }
 
 const RAW_MONSTERS: RawMonster[] = monstersData as RawMonster[];
@@ -82,6 +85,25 @@ function getMonsterTags(monster: RawMonster): string[] {
   return [...new Set(tags)]; // Remove duplicates
 }
 
+// Helper function to calculate challenge level from CER
+function getChallengeLevel(cer: number): string {
+  if (cer <= 0) return 'Trivial';
+  if (cer <= 25) return 'Easy';
+  if (cer <= 50) return 'Moderate';
+  if (cer <= 75) return 'Hard';
+  if (cer <= 100) return 'Very Hard';
+  if (cer <= 150) return 'Extreme';
+  if (cer <= 200) return 'Epic';
+  return 'Legendary';
+}
+
+// Helper function to get threat rating from CER
+function getThreatRating(cer: number): 'fodder' | 'worthy' | 'boss' {
+  if (cer <= 25) return 'fodder';
+  if (cer <= 100) return 'worthy';
+  return 'boss';
+}
+
 export const dfrpg: SystemModule = {
   id: 'dfrpg',
   label: 'GURPS Dungeon Fantasy',
@@ -99,6 +121,7 @@ export const dfrpg: SystemModule = {
     const treasureGenerator = new DFRPGTreasureGenerator(R);
     const enhancedTrapSystem = new DFRPGEnhancedTrapSystem(R);
     const environmentalSystem = new DFRPGEnvironmentalSystem(R);
+    const encounterGenerator = new DFRPGEncounterGenerator(R);
 
     // Use custom monsters if available, otherwise use default data
     let MONSTERS: Monster[];
@@ -114,14 +137,20 @@ export const dfrpg: SystemModule = {
           m.Source1 && allowed.some((src) => m.Source1!.toLowerCase().includes(src))
         );
       }
-      MONSTERS = pool.map((m) => ({
-        name: m.Description,
-        sm: m.SM ?? null,
-        cls: m.Class,
-        subclass: m.Subclass,
-        source: m.Source1,
-        tags: getMonsterTags(m) // Add tags based on monster data
-      }));
+      MONSTERS = pool.map((m) => {
+        const cer = (typeof m.CER === 'number') ? m.CER : 0;
+        return {
+          name: m.Description,
+          sm: m.SM ?? null,
+          cls: m.Class,
+          subclass: m.Subclass,
+          source: m.Source1,
+          tags: getMonsterTags(m), // Add tags based on monster data
+          cer: cer, // Challenge Equivalent Rating
+          challenge_level: getChallengeLevel(cer),
+          threat_rating: getThreatRating(cer)
+        };
+      });
     }
 
     // Use custom traps if available, otherwise use default data
@@ -143,18 +172,34 @@ export const dfrpg: SystemModule = {
       const traps: Trap[] = [];
       const treasure: Treasure[] = [];
 
-      // Select monsters using tag system or fallback to original logic
-      if (tagOptions) {
-        monsters.push(...taggedSelectionService.selectMonsters('dfrpg', tagOptions, R));
+      // Select monsters using new encounter system or fallback to original logic
+      if (tagOptions || R() < 0.6) {
+        // 60% chance to use new encounter system or when tags are specified
+        const encounterOptions: GenerateOptions = {
+          characterPoints: 100, // Default party strength
+          threatLevel: dungeonLevel <= 2 ? 'Easy' : dungeonLevel <= 4 ? 'Average' : 'Challenging',
+          biome: 'dungeon',
+          maxSize: 2, // Reasonable for dungeon rooms
+          preferGroupedEncounters: true,
+          requiredTags: tagOptions?.monsters?.requiredTags || []
+        };
+        
+        const encounter = encounterGenerator.generate(encounterOptions);
+        monsters.push(...encounter.monsters);
       } else {
-        const monsterCount = Math.floor(R() * 3);
-        if (MONSTERS && MONSTERS.length > 0) {
-          for (let i = 0; i < monsterCount; i++) {
-            const m = MONSTERS[Math.floor(R() * MONSTERS.length)];
-            if (m) monsters.push({ ...m });
-          }
+        // Fallback to legacy monster selection
+        if (tagOptions) {
+          monsters.push(...taggedSelectionService.selectMonsters('dfrpg', tagOptions, R));
         } else {
-          console.error('DFRPG: MONSTERS array is empty or undefined', MONSTERS);
+          const monsterCount = Math.floor(R() * 3);
+          if (MONSTERS && MONSTERS.length > 0) {
+            for (let i = 0; i < monsterCount; i++) {
+              const m = MONSTERS[Math.floor(R() * MONSTERS.length)];
+              if (m) monsters.push({ ...m });
+            }
+          } else {
+            console.error('DFRPG: MONSTERS array is empty or undefined', MONSTERS);
+          }
         }
       }
 
