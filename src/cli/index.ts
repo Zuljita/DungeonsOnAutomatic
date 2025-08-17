@@ -20,6 +20,9 @@ program
     "--layout-type <type>",
     "advanced layout type (rectangle, square, box, cross, etc.)"
   )
+  .option("--stairs-up", "include stairs up to upper level")
+  .option("--stairs-down", "include stairs down to lower level")
+  .option("--entrance-from-periphery", "include entrance from outside")
   .option("--system <name>", "system module to use (generic|dfrpg)", "generic")
   .option("--source <src...>", "sources to include (system-specific)")
   .option("--theme <id>", "theme id to apply to rooms and encounters")
@@ -51,6 +54,9 @@ program
         width: opts.width,
         height: opts.height,
         layoutType: opts.layoutType,
+        stairsUp: opts.stairsUp,
+        stairsDown: opts.stairsDown,
+        entranceFromPeriphery: opts.entranceFromPeriphery,
       });
       let sys: SystemModule;
       try {

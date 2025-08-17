@@ -138,7 +138,46 @@ export function htmlRoomDetails(d: Dungeon, details: Record<ID, RoomDetail>): st
       const safeMonsters = Array.isArray(det.monsters) ? det.monsters : [];
       const safeTreasure = Array.isArray(det.treasure) ? det.treasure : [];
       
-      const parts: string[] = [`<section class="room"><h3>Room ${index + 1} (${room.kind})</h3>`];
+      // Create room title with special feature detection
+      let roomTitle = `Room ${index + 1}`;
+      let roomType = room.kind;
+      
+      // Check for special rooms and enhance the title
+      if (room.kind === 'special') {
+        if (room.id === 'stairs-up') {
+          roomTitle = `${roomTitle} - Stairs Up`;
+          roomType = 'exit to upper level';
+        } else if (room.id === 'stairs-down') {
+          roomTitle = `${roomTitle} - Stairs Down`;
+          roomType = 'entrance to lower level';
+        } else if (room.id === 'entrance') {
+          roomTitle = `${roomTitle} - Entrance`;
+          roomType = 'dungeon entrance';
+        } else if (room.tags) {
+          // Use tags to identify the special feature
+          if (room.tags.includes('stairs') && room.tags.includes('up')) {
+            roomTitle = `${roomTitle} - Stairs Up`;
+            roomType = 'exit to upper level';
+          } else if (room.tags.includes('stairs') && room.tags.includes('down')) {
+            roomTitle = `${roomTitle} - Stairs Down`;
+            roomType = 'entrance to lower level';
+          } else if (room.tags.includes('entrance')) {
+            roomTitle = `${roomTitle} - Entrance`;
+            roomType = 'dungeon entrance';
+          } else {
+            roomType = `special (${room.tags.join(', ')})`;
+          }
+        }
+      }
+      
+      const parts: string[] = [`<section class="room"><h3>${roomTitle}</h3>`];
+      
+      // Add room type as a subtitle for special rooms
+      if (room.kind === 'special') {
+        parts.push(`<p><em>${roomType}</em></p>`);
+      } else {
+        parts.push(`<p><em>${roomType}</em></p>`);
+      }
       
       // Display room description if present
       if (room.description) {
@@ -151,7 +190,32 @@ export function htmlRoomDetails(d: Dungeon, details: Record<ID, RoomDetail>): st
         parts.push(`<p><strong>Tags:</strong> ${tagHtml}</p>`);
       }
       
-      if (safeFeatures.length) {
+      // Features section - for special rooms, prioritize their special function
+      if (room.kind === 'special') {
+        const specialFeatures: string[] = [];
+        
+        // Add specific special features based on room type
+        if (room.id === 'stairs-up' || (room.tags?.includes('stairs') && room.tags?.includes('up'))) {
+          specialFeatures.push('stone staircase leading upward');
+        } else if (room.id === 'stairs-down' || (room.tags?.includes('stairs') && room.tags?.includes('down'))) {
+          specialFeatures.push('stone staircase leading downward');
+        } else if (room.id === 'entrance' || room.tags?.includes('entrance')) {
+          if (room.tags?.includes('periphery')) {
+            specialFeatures.push('entrance from outside');
+          } else {
+            specialFeatures.push('dungeon entrance');
+          }
+        }
+        
+        // Add any additional features
+        if (safeFeatures.length) {
+          specialFeatures.push(...safeFeatures);
+        }
+        
+        if (specialFeatures.length) {
+          parts.push(`<p><strong>Features:</strong> ${specialFeatures.join(', ')}</p>`);
+        }
+      } else if (safeFeatures.length) {
         parts.push(`<p><strong>Features:</strong> ${safeFeatures.join(', ')}</p>`);
       }
       if (safeMonsters.length) {
