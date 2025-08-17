@@ -1,12 +1,17 @@
-import { Dungeon } from "../core/types";
+import { Dungeon, Room } from "../core/types";
 
 export interface FoundryWall {
+  c: [number, number, number, number];
+}
+
+export interface FoundryDoor {
   c: [number, number, number, number];
 }
 
 export interface FoundryScene {
   name: string;
   walls: FoundryWall[];
+  doors: FoundryDoor[];
   width: number;
   height: number;
   grid: number;
@@ -14,8 +19,9 @@ export interface FoundryScene {
 
 /**
  * Convert a dungeon into a simple FoundryVTT Scene JSON. Each room and
- * corridor tile becomes floor space with surrounding walls. Doors are not
- * currently exported. The scene uses a fixed grid size.
+ * corridor tile becomes floor space with surrounding walls. Door segments are
+ * exported separately so virtual tabletops can render openable passages. The
+ * scene uses a fixed grid size.
  */
 export function exportFoundry(d: Dungeon, grid = 100): FoundryScene {
   const cells: { x: number; y: number }[] = [];
@@ -49,6 +55,38 @@ export function exportFoundry(d: Dungeon, grid = 100): FoundryScene {
     addEdge(x, y + 1, x, y);
   }
 
+  const doorEdge = (room: Room, tile: { x: number; y: number }) => {
+    if (tile.x < room.x) return [room.x, tile.y, room.x, tile.y + 1] as const;
+    if (tile.x >= room.x + room.w)
+      return [room.x + room.w, tile.y, room.x + room.w, tile.y + 1] as const;
+    if (tile.y < room.y) return [tile.x, room.y, tile.x + 1, room.y] as const;
+    if (tile.y >= room.y + room.h)
+      return [tile.x, room.y + room.h, tile.x + 1, room.y + room.h] as const;
+    return null;
+  };
+
+  const doorSegments: [number, number, number, number][] = [];
+  for (const c of d.corridors) {
+    if (c.path.length > 0) {
+      const start = c.path[0];
+      const end = c.path[c.path.length - 1];
+      const fromRoom = d.rooms.find((r) => r.id === c.from);
+      const toRoom = d.rooms.find((r) => r.id === c.to);
+      if (fromRoom) {
+        const seg = doorEdge(fromRoom, start);
+        if (seg) doorSegments.push(seg);
+      }
+      if (toRoom) {
+        const seg = doorEdge(toRoom, end);
+        if (seg) doorSegments.push(seg);
+      }
+    }
+  }
+
+  const doors = doorSegments.map(([x1, y1, x2, y2]) => ({
+    c: [x1 * grid, y1 * grid, x2 * grid, y2 * grid],
+  }));
+
   const walls: FoundryWall[] = Array.from(edges).map((e) => {
     const [x1, y1, x2, y2] = e.split(",").map(Number);
     return { c: [x1 * grid, y1 * grid, x2 * grid, y2 * grid] };
@@ -57,6 +95,7 @@ export function exportFoundry(d: Dungeon, grid = 100): FoundryScene {
   return {
     name: "Generated Dungeon",
     walls,
+    doors,
     width: maxX * grid,
     height: maxY * grid,
     grid,
