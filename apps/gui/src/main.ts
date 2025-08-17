@@ -1,6 +1,6 @@
 import { systemLoader } from '@src/services/system-loader';
 import { renderSvg } from '@src/services/render';
-import { htmlRoomDetails, populateRooms } from '@src/services/room-key';
+import { htmlRoomDetails, populateRooms, getWanderingMonstersHtml } from '@src/services/room-key';
 import { ImportWizardComponent } from './import-wizard';
 import { tagSystem } from '@src/services/tag-system';
 import { mapGenerator, MapGenerationOptions } from '@src/services/map-generator';
@@ -216,7 +216,12 @@ async function generate(): Promise<void> {
     // Generate room details using populateRooms to get proper format with features
     const details = populateRooms(enriched, enriched.rng ?? Math.random, system);
     const roomDetails = htmlRoomDetails(enriched, details);
-    roomKeyEl.innerHTML = `<h2>Room Key</h2>${roomDetails}`;
+    
+    // Add wandering monsters if available
+    const wanderingMonstersHtml = getWanderingMonstersHtml(enriched);
+    const fullRoomKey = `<h2>Room Key</h2>${roomDetails}${wanderingMonstersHtml}`;
+    
+    roomKeyEl.innerHTML = fullRoomKey;
 
     // Update download link
     const blob = new Blob([svg], { type: 'image/svg+xml' });

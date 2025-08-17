@@ -10,6 +10,7 @@ import { DFRPGEncounterGenerator } from './DFRPGEncounterGenerator';
 import { LockService, type LockGenerationOptions } from '../../services/locks';
 import { createKeyItemService, type KeyPlacementOptions } from '../../services/key-items';
 import { validateDungeonSolvability } from '../../services/pathfinder';
+import { WanderingMonsterService } from '../../services/wandering-monster-service';
 
 interface RawMonster {
   Description: string;
@@ -17,6 +18,7 @@ interface RawMonster {
   SM?: number | null;
   Subclass?: string;
   Source1?: string;
+  Page1?: string | null;
   CER?: number;
 }
 
@@ -125,6 +127,7 @@ export const dfrpg: SystemModule = {
     const enhancedTrapSystem = new DFRPGEnhancedTrapSystem(R);
     const environmentalSystem = new DFRPGEnvironmentalSystem(R);
     const encounterGenerator = new DFRPGEncounterGenerator(R);
+    const wanderingMonsterService = new WanderingMonsterService(R);
 
     // Use custom monsters if available, otherwise use default data
     let MONSTERS: Monster[];
@@ -148,6 +151,7 @@ export const dfrpg: SystemModule = {
           cls: m.Class,
           subclass: m.Subclass,
           source: m.Source1,
+          reference: m.Page1 ? `${m.Source1} p.${m.Page1}` : m.Source1,
           tags: getMonsterTags(m), // Add tags based on monster data
           cer: cer, // Challenge Equivalent Rating
           challenge_level: getChallengeLevel(cer),
@@ -280,6 +284,12 @@ export const dfrpg: SystemModule = {
       encounters[r.id] = { monsters, traps, treasure };
     });
 
+    // Generate wandering monsters based on monsters placed in the dungeon
+    const wanderingMonsters = wanderingMonsterService.generateWanderingMonsters(d);
+    if (wanderingMonsters.length > 0) {
+      console.log(`DFRPG: Generated ${wanderingMonsters.length} wandering monster entries`);
+    }
+
     // Add environmental challenges to rooms
     const modifiedRooms = d.rooms.map((room) => {
       const newTags = [...(room.tags || [])];
@@ -357,7 +367,7 @@ export const dfrpg: SystemModule = {
     const lockService = new LockService(R);
     const keyItemService = createKeyItemService(R);
 
-    let enrichedDungeon = { ...d, rooms: modifiedRooms, encounters };
+    let enrichedDungeon = { ...d, rooms: modifiedRooms, encounters, wanderingMonsters };
 
     // Generate locks for doors
     const locks = lockService.generateLocks(enrichedDungeon, lockGenerationOptions);
