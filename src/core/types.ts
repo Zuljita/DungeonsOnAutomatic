@@ -148,8 +148,36 @@ export interface Dungeon {
   defaults?: DungeonDefaults;
 }
 
+export interface PluginAuthor {
+  name: string;
+  email?: string;
+  url?: string;
+}
+
+export interface PluginDependencies {
+  core: string; // Required DOA core version (semver range)
+  systems?: string[]; // Required system plugin dependencies
+  plugins?: string[]; // Other plugin dependencies
+}
+
+export interface PluginMetadata {
+  id: string; // Unique plugin identifier (namespace.name)
+  version: string; // Plugin version (semver)
+  name?: string; // Human-readable name (fallback to id)
+  description?: string; // Plugin description
+  author: PluginAuthor; // Author information
+  license: string; // Plugin license
+  compatibility: string; // DOA version compatibility (semver range)
+  dependencies: PluginDependencies; // Plugin dependencies
+  tags?: string[]; // Searchable tags
+  homepage?: string; // Plugin homepage URL
+  repository?: string; // Source code repository URL
+  bugs?: string; // Bug report URL
+}
+
 export interface SystemModule {
   id: string;
   label: string;
   enrich(d: Dungeon, opts?: Record<string, unknown>): Promise<Dungeon> | Dungeon;
+  metadata?: PluginMetadata;
 }

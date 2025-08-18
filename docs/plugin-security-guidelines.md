@@ -75,7 +75,7 @@ interface FileSystemAccess {
   allowedPaths: {
     read: [
       './plugin-directory/**/*', // Plugin's own files
-      './data/**/*.json', // DOA data files  
+      './data/**/*.json', // DOA data files
       './node_modules/@doa/**/*' // DOA dependencies only
     ];
     write: []; // No write access
@@ -91,6 +91,13 @@ interface FileSystemAccess {
   ];
 }
 ```
+
+## Safe Loading and Error Handling
+
+- Plugins are loaded in isolated contexts to prevent failures from affecting the host
+- Metadata and signatures are verified before execution
+- All plugin initialization and runtime calls are wrapped in try/catch blocks
+- Errors are logged with plugin identifiers and sanitized messages
 
 ## Code Signing and Distribution
 
@@ -127,6 +134,14 @@ interface TrustedPublisher {
 - **Manual Review**: High-risk plugins undergo manual code review
 - **Reputation System**: User ratings and security reports
 - **Takedown Process**: Rapid removal of malicious plugins
+
+## Community Plugin Review Guidelines
+
+- All community submissions occur via pull requests
+- At least one core maintainer must approve changes
+- Static analysis and tests run in CI for every submission
+- Reviewers check for restricted APIs, excessive resource usage, and proper error handling
+- Plugin metadata and dependencies must be validated before merging
 
 ## Best Practices for Plugin Developers
 

@@ -9,10 +9,14 @@ This document defines the configuration system for DOA plugins, including CLI in
 Plugins can receive configuration from multiple sources, with the following priority order (highest to lowest):
 
 1. **CLI Arguments** (--plugin-option=value)
-2. **Environment Variables** (DOA_PLUGIN_OPTION=value)  
+2. **Environment Variables** (DOA_PLUGIN_OPTION=value)
 3. **Plugin Configuration File** (plugin.config.js)
 4. **Plugin Defaults** (getDefaultConfig() method)
 5. **System Defaults**
+
+### Conflict Resolution
+
+When the same option appears in multiple sources, the value from the highest-priority source overrides lower-priority values. Primitive values are replaced, while object values are shallow-merged.
 
 ## Plugin Configuration File
 
