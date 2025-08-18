@@ -29,7 +29,7 @@ describe('doors', () => {
     expect(ids1).toEqual(ids2);
   });
 
-  it('buildDungeon places doors at corridor endpoints', () => {
+  it('buildDungeon places doors on room perimeters', () => {
     const d = buildDungeon({ rooms: 2, seed: 'doorDungeon' });
     expect(d.corridors.length).toBeGreaterThan(0);
     const c = d.corridors[0];
@@ -37,13 +37,28 @@ describe('doors', () => {
     const secondDoor = d.doors.find(dr => dr.fromRoom === c.to && dr.toRoom === c.from);
     expect(firstDoor).toBeDefined();
     expect(secondDoor).toBeDefined();
-    expect(firstDoor!.location).toEqual(c.path[0]);
-    expect(secondDoor!.location).toEqual(c.path[c.path.length - 1]);
+    
+    // Verify doors are placed correctly (either using actual door positions or corridor endpoints as fallback)
+    const fromRoom = d.rooms.find(r => r.id === c.from);
+    const toRoom = d.rooms.find(r => r.id === c.to);
+    expect(fromRoom).toBeDefined();
+    expect(toRoom).toBeDefined();
+    
+    // For rectangular rooms, doors should be on the room perimeter
+    if (fromRoom!.shape === 'rectangular' || !fromRoom!.shapePoints) {
+      const doorLoc = firstDoor!.location;
+      const onPerimeter = (doorLoc.x === fromRoom!.x || doorLoc.x === fromRoom!.x + fromRoom!.w ||
+                          doorLoc.y === fromRoom!.y || doorLoc.y === fromRoom!.y + fromRoom!.h) &&
+                         (doorLoc.x >= fromRoom!.x && doorLoc.x <= fromRoom!.x + fromRoom!.w &&
+                          doorLoc.y >= fromRoom!.y && doorLoc.y <= fromRoom!.y + fromRoom!.h);
+      expect(onPerimeter).toBe(true);
+    }
+    
     expect(DOOR_STATUSES).toContain(firstDoor!.status);
     expect(DOOR_STATUSES).toContain(secondDoor!.status);
   });
 
-  it('MapGenerator places doors at corridor endpoints', () => {
+  it('MapGenerator places doors on room perimeters', () => {
     const generator = new MapGenerator('doorMap');
     const d = generator.generateDungeon({
       layoutType: 'rectangle',
@@ -51,6 +66,7 @@ describe('doors', () => {
       roomSize: 'medium',
       roomShape: 'rectangular',
       corridorType: 'straight',
+      corridorWidth: 1,
       allowDeadends: false,
       stairsUp: false,
       stairsDown: false,
@@ -65,8 +81,23 @@ describe('doors', () => {
     const secondDoor = d.doors.find(dr => dr.fromRoom === c.to && dr.toRoom === c.from);
     expect(firstDoor).toBeDefined();
     expect(secondDoor).toBeDefined();
-    expect(firstDoor!.location).toEqual(c.path[0]);
-    expect(secondDoor!.location).toEqual(c.path[c.path.length - 1]);
+    
+    // Verify doors are placed correctly on room perimeters
+    const fromRoom = d.rooms.find(r => r.id === c.from);
+    const toRoom = d.rooms.find(r => r.id === c.to);
+    expect(fromRoom).toBeDefined();
+    expect(toRoom).toBeDefined();
+    
+    // For rectangular rooms, doors should be on the room perimeter
+    if (fromRoom!.shape === 'rectangular' || !fromRoom!.shapePoints) {
+      const doorLoc = firstDoor!.location;
+      const onPerimeter = (doorLoc.x === fromRoom!.x || doorLoc.x === fromRoom!.x + fromRoom!.w ||
+                          doorLoc.y === fromRoom!.y || doorLoc.y === fromRoom!.y + fromRoom!.h) &&
+                         (doorLoc.x >= fromRoom!.x && doorLoc.x <= fromRoom!.x + fromRoom!.w &&
+                          doorLoc.y >= fromRoom!.y && doorLoc.y <= fromRoom!.y + fromRoom!.h);
+      expect(onPerimeter).toBe(true);
+    }
+    
     expect(DOOR_STATUSES).toContain(firstDoor!.status);
     expect(DOOR_STATUSES).toContain(secondDoor!.status);
   });

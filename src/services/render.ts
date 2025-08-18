@@ -103,7 +103,13 @@ export function renderAscii(d: Dungeon): string {
  * string sized to the dungeon's extents.
  */
 function doorEdge(room: Room, tile: { x: number; y: number }) {
-  // Handle case where corridor point is outside room (original logic)
+  // For non-rectangular rooms, use shape-aware door rendering
+  if (room.shape !== 'rectangular' && room.shapePoints) {
+    return renderShapedRoomDoor(room, tile);
+  }
+  
+  // Handle rectangular rooms with the original logic
+  // Handle case where corridor point is outside room
   if (tile.x < room.x)
     return { x1: room.x, y1: tile.y, x2: room.x, y2: tile.y + 1 };
   if (tile.x >= room.x + room.w)
@@ -142,6 +148,64 @@ function doorEdge(room: Room, tile: { x: number; y: number }) {
   }
   
   return null;
+}
+
+function renderShapedRoomDoor(room: Room, doorPosition: { x: number; y: number }) {
+  // Find the edge segment containing the door position
+  const shapePoints = room.shapePoints!;
+  
+  for (let i = 0; i < shapePoints.length; i++) {
+    const p1 = shapePoints[i];
+    const p2 = shapePoints[(i + 1) % shapePoints.length];
+    
+    // Check if the door position lies on or near this edge segment
+    if (isPointOnLineSegment(doorPosition, p1, p2)) {
+      // Calculate the perpendicular direction for the door line
+      const edgeVectorX = p2.x - p1.x;
+      const edgeVectorY = p2.y - p1.y;
+      const edgeLength = Math.sqrt(edgeVectorX * edgeVectorX + edgeVectorY * edgeVectorY);
+      
+      if (edgeLength > 0) {
+        // Get the perpendicular vector (rotated 90 degrees)
+        const perpX = -edgeVectorY / edgeLength;
+        const perpY = edgeVectorX / edgeLength;
+        
+        // Create a door line of standard length (0.8 units)
+        const doorLength = 0.8;
+        const halfLength = doorLength / 2;
+        
+        return {
+          x1: doorPosition.x - perpX * halfLength,
+          y1: doorPosition.y - perpY * halfLength,
+          x2: doorPosition.x + perpX * halfLength,
+          y2: doorPosition.y + perpY * halfLength,
+        };
+      }
+    }
+  }
+  
+  // Fallback: create a simple vertical door line at the door position
+  return {
+    x1: doorPosition.x,
+    y1: doorPosition.y - 0.4,
+    x2: doorPosition.x,
+    y2: doorPosition.y + 0.4,
+  };
+}
+
+function isPointOnLineSegment(point: { x: number; y: number }, p1: { x: number; y: number }, p2: { x: number; y: number }, tolerance: number = 0.5): boolean {
+  const d1 = distance(point, p1);
+  const d2 = distance(point, p2);
+  const lineLength = distance(p1, p2);
+  
+  // Check if the point is approximately on the line segment
+  return Math.abs(d1 + d2 - lineLength) < tolerance;
+}
+
+function distance(p1: { x: number; y: number }, p2: { x: number; y: number }): number {
+  const dx = p2.x - p1.x;
+  const dy = p2.y - p1.y;
+  return Math.sqrt(dx * dx + dy * dy);
 }
 
 export function renderSvg(
@@ -183,14 +247,18 @@ export function renderSvg(
       const fromRoom = d.rooms.find((r) => r.id === c.from);
       const toRoom = d.rooms.find((r) => r.id === c.to);
       if (fromRoom) {
-        const edge = doorEdge(fromRoom, start);
+        // Use the actual door position if available, otherwise fall back to corridor start
+        const doorPosition = c.doorStart || start;
+        const edge = doorEdge(fromRoom, doorPosition);
         if (edge)
           parts.push(
             `<line x1="${edge.x1 * cell}" y1="${edge.y1 * cell}" x2="${edge.x2 * cell}" y2="${edge.y2 * cell}" stroke="${theme.roomStroke}" stroke-width="${cell * 0.2}"/>`,
           );
       }
       if (toRoom) {
-        const edge = doorEdge(toRoom, end);
+        // Use the actual door position if available, otherwise fall back to corridor end
+        const doorPosition = c.doorEnd || end;
+        const edge = doorEdge(toRoom, doorPosition);
         if (edge)
           parts.push(
             `<line x1="${edge.x1 * cell}" y1="${edge.y1 * cell}" x2="${edge.x2 * cell}" y2="${edge.y2 * cell}" stroke="${theme.roomStroke}" stroke-width="${cell * 0.2}"/>`,
