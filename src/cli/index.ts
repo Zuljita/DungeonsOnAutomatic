@@ -5,6 +5,7 @@ import { loadSystemModule } from "../services/system-loader";
 import type { SystemModule } from "../core/types";
 import { renderAscii, renderSvg } from "../services/render";
 import { exportFoundry } from "../services/foundry";
+import { dungeonTemplateService } from "../services/dungeon-templates";
 
 const program = new Command();
 program.name("doa").description("DungeonsOnAutomatic – modular dungeon generator").version("0.1.0");
@@ -28,6 +29,18 @@ program
     "--corridor-width <width>",
     "corridor width in tiles (1, 2, or 3)",
     (v) => parseInt(v, 10)
+  )
+  .option(
+    "--room-layout <layout>",
+    "room layout style (sparse, scattered, dense, symmetric)"
+  )
+  .option(
+    "--room-shape <shape>",
+    "room shape preference (rectangular, diverse, hex-preference, circular-preference, mixed)"
+  )
+  .option(
+    "--template <id>",
+    "apply a dungeon template (use 'doa templates' to see available options)"
   )
   .option("--stairs-up", "include stairs up to upper level")
   .option("--stairs-down", "include stairs down to lower level")
@@ -62,9 +75,12 @@ program
         seed: opts.seed,
         width: opts.width,
         height: opts.height,
+        template: opts.template,
         layoutType: opts.layoutType,
+        roomLayout: opts.roomLayout,
         corridorType: opts.corridorType,
         corridorWidth: opts.corridorWidth,
+        roomShape: opts.roomShape,
         stairsUp: opts.stairsUp,
         stairsDown: opts.stairsDown,
         entranceFromPeriphery: opts.entranceFromPeriphery,
@@ -97,5 +113,52 @@ program
         process.stdout.write(JSON.stringify(enriched, null, 2) + "\n");
       }
     });
+
+program
+  .command("templates")
+  .description("List available dungeon templates")
+  .option("--category <cat>", "filter by category (classic, natural, fortress, maze, special)")
+  .action((opts) => {
+    const categories = dungeonTemplateService.getCategories();
+    const templates = opts.category 
+      ? dungeonTemplateService.getTemplatesByCategory(opts.category)
+      : dungeonTemplateService.getAllTemplates();
+
+    if (opts.category) {
+      const category = categories.find(c => c.id === opts.category);
+      console.log(`\n${category?.name || 'Unknown Category'} Templates:\n`);
+    } else {
+      console.log("\nAvailable Dungeon Templates:\n");
+      
+      // Show categories first
+      console.log("Categories:");
+      categories.forEach(cat => {
+        const count = dungeonTemplateService.getTemplatesByCategory(cat.id).length;
+        console.log(`  ${cat.id}: ${cat.name} (${count} templates)`);
+      });
+      console.log("\nTemplates:\n");
+    }
+
+    templates.forEach(template => {
+      console.log(`${template.id}:`);
+      console.log(`  Name: ${template.name}`);
+      console.log(`  Category: ${template.category}`);
+      console.log(`  Description: ${template.description}`);
+      console.log(`  Rooms: ${template.mapOptions.rooms || 'default'}`);
+      console.log(`  Size: ${template.mapOptions.width || 'default'}x${template.mapOptions.height || 'default'}`);
+      console.log(`  Layout: ${template.mapOptions.layoutType || 'default'}`);
+      if (template.recommendedSystem) {
+        console.log(`  Recommended System: ${template.recommendedSystem}`);
+      }
+      console.log("");
+    });
+
+    if (templates.length === 0) {
+      console.log("No templates found.");
+    } else {
+      console.log(`Use --template <id> with the generate command to apply a template.`);
+      console.log(`Example: pnpm doa generate --template ${templates[0].id} --ascii`);
+    }
+  });
 
 program.parseAsync(process.argv);

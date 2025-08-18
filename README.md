@@ -24,6 +24,9 @@ pnpm doa generate --rooms=15 --foundry > foundry.json
 pnpm doa generate --rooms=8 --ascii
 pnpm doa generate --rooms=5 --width=40 --height=30
 pnpm doa generate --rooms=5 --theme=generic-undead --monster-tag=undead --trap-tag=mechanical --treasure-tag=coins
+pnpm doa generate --rooms=8 --room-shape=diverse --corridor-width=2
+pnpm doa generate --rooms=6 --room-shape=hex-preference --corridor-type=winding
+pnpm doa generate --rooms=4 --room-shape=circular-preference --layout-type=round
 ```
 
 Use `--width` and `--height` to control the overall map dimensions.
@@ -34,6 +37,15 @@ Tag options allow more control over generated content:
 * `--monster-tag <tag>` – require monsters to include the tag (repeatable)
 * `--trap-tag <tag>` – require traps to include the tag (repeatable)
 * `--treasure-tag <tag>` – require treasure to include the tag (repeatable)
+
+Room shape options control the variety and style of room layouts:
+
+* `--room-shape diverse` – maximum variety with all 8 shape types (rectangular, circular, hexagonal, octagonal, irregular, L-shaped, T-shaped, cross)
+* `--room-shape hex-preference` – emphasis on hexagonal and geometric shapes for structured dungeons
+* `--room-shape circular-preference` – emphasis on circular and irregular shapes for natural cave systems
+* `--room-shape small-preference` – preference for smaller, more complex shapes
+* `--room-shape mixed` – balanced variety with slight rectangular preference
+* `--room-shape rectangular` – primarily rectangular with occasional variety (default)
 
 4. GUI:
 

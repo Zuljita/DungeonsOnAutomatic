@@ -1,12 +1,16 @@
 export type ID = string;
 
+export type RoomShape = 'rectangular' | 'circular' | 'hexagonal' | 'octagonal' | 'irregular' | 'L-shaped' | 'T-shaped' | 'cross';
+
 export interface Room {
   id: ID;
   kind: 'chamber' | 'hall' | 'cavern' | 'lair' | 'special' | 'exit to upper level' | 'entrance to lower level' | 'dungeon entrance';
-  x: number;  // top-left x in grid units
-  y: number;  // top-left y in grid units
-  w: number;  // width in grid units
-  h: number;  // height in grid units
+  x: number;  // center x for non-rectangular shapes, top-left x for rectangular
+  y: number;  // center y for non-rectangular shapes, top-left y for rectangular
+  w: number;  // width in grid units (radius for circular, distance for hexagonal)
+  h: number;  // height in grid units (same as w for circular/hexagonal)
+  shape: RoomShape; // Shape of the room
+  shapePoints?: { x: number; y: number }[]; // Explicit shape points for irregular rooms
   tags?: string[];
   description?: string; // Environmental and thematic description
 }

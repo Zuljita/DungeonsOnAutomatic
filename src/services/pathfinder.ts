@@ -272,4 +272,107 @@ export function validateDungeonSolvability(dungeon: Dungeon): {
   };
 }
 
+/**
+ * Attempt to fix dungeon solvability by relocating keys to accessible rooms
+ */
+export function fixDungeonSolvability(dungeon: Dungeon): boolean {
+  const validation = validateDungeonSolvability(dungeon);
+  if (validation.solvable) {
+    return true; // Already solvable
+  }
+
+  const startRoom = findEntranceRoom(dungeon);
+  if (!startRoom) {
+    return false; // Can't fix without a start room
+  }
+
+  // Get all locked doors and their keys
+  const lockedDoors = dungeon.doors.filter(door => door.status === 'locked');
+  const keys = dungeon.keyItems || [];
+  
+  // For each locked door, try to place its key in an accessible room
+  for (const door of lockedDoors) {
+    const key = keys.find(k => k.doorId === door.id);
+    if (!key) continue;
+
+    // Find rooms accessible without this key
+    const accessibleRooms = findAccessibleRooms(dungeon, startRoom.id, [door.id]);
+    
+    if (accessibleRooms.length > 0) {
+      // Move key to a random accessible room
+      const targetRoom = accessibleRooms[Math.floor(Math.random() * accessibleRooms.length)];
+      key.locationId = targetRoom;
+    }
+  }
+
+  // Check if it's solvable now
+  return validateDungeonSolvability(dungeon).solvable;
+}
+
+/**
+ * Find all rooms accessible from start without using specified locked doors
+ */
+function findAccessibleRooms(dungeon: Dungeon, startRoomId: ID, excludeLockedDoors: ID[] = []): ID[] {
+  const accessible = new Set<ID>();
+  const queue = [startRoomId];
+  const graph = buildPathGraph(dungeon);
+
+  while (queue.length > 0) {
+    const roomId = queue.shift()!;
+    if (accessible.has(roomId)) continue;
+    accessible.add(roomId);
+
+    const edges = graph[roomId] || [];
+    for (const edge of edges) {
+      const door = edge.door;
+      
+      // Skip if this door is locked and in our exclude list
+      if (door && door.status === 'locked' && excludeLockedDoors.includes(door.id)) {
+        continue;
+      }
+      
+      // Skip if this door is locked and we don't have a key for it
+      if (door && door.status === 'locked') {
+        const hasKey = (dungeon.keyItems || []).some(key => 
+          key.doorId === door.id && accessible.has(key.locationId || '')
+        );
+        if (!hasKey) continue;
+      }
+
+      queue.push(edge.to);
+    }
+  }
+
+  return Array.from(accessible);
+}
+
+/**
+ * Create fallback solutions for unsolvable dungeons
+ */
+export function createFallbackSolutions(dungeon: Dungeon): void {
+  // Add master key that unlocks any door
+  const masterKey = {
+    id: 'master-key',
+    doorId: 'all', // Special marker for master key
+    name: 'Master Key',
+    type: 'key' as const,
+    placementRule: 'REQUIRED' as const,
+    placementTarget: 'ROOM_FEATURE' as const,
+    description: 'A mysterious key that seems to fit any lock',
+    locationId: dungeon.rooms[0]?.id // Place in first room
+  };
+
+  // Add alternative solutions like breakable doors
+  for (const door of dungeon.doors.filter(d => d.status === 'locked')) {
+    // Add chance for locked doors to be breakable
+    if (Math.random() < 0.3) {
+      door.status = 'barred'; // Barred doors can be broken down
+    }
+  }
+
+  // Ensure master key is in keyItems
+  if (!dungeon.keyItems) dungeon.keyItems = [];
+  dungeon.keyItems.push(masterKey);
+}
+
 export type { PathGraph as Graph, PathEdge as Edge };
