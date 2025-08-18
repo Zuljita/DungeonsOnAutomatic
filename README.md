@@ -61,6 +61,17 @@ pnpm gui:preview # then open http://localhost:3000/
 pnpm test
 ```
 
+## Plugin Commands
+
+The CLI includes helper commands for discovering and managing plugins. Examples:
+
+```bash
+pnpm doa plugins list --json          # list available plugins
+pnpm doa plugins info test.valid      # show details for a plugin
+pnpm doa plugins validate test.valid  # validate a plugin without loading
+pnpm doa generate --list-systems      # list built-in and plugin systems
+```
+
 ---
 
 This repo follows a layered structure:
