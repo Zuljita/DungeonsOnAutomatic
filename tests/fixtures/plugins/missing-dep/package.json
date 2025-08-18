@@ -1,0 +1,14 @@
+{
+  "name": "doa-missing-dep",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "index.js",
+  "doaPlugin": {
+    "id": "test.missingdep",
+    "type": "system",
+    "compatibility": "^0.1.0",
+    "author": { "name": "Tester" },
+    "license": "MIT",
+    "dependencies": { "core": "^0.1.0", "systems": ["unknown.sys"] }
+  }
+}
