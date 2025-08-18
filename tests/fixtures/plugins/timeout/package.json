@@ -1,0 +1,14 @@
+{
+  "name": "doa-timeout-plugin",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "index.js",
+  "doaPlugin": {
+    "id": "test.timeout",
+    "type": "system",
+    "compatibility": "^0.1.0",
+    "author": { "name": "Delay" },
+    "license": "MIT",
+    "dependencies": { "core": "^0.1.0" }
+  }
+}

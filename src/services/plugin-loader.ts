@@ -4,6 +4,12 @@ import { pathToFileURL } from 'node:url';
 import semver from 'semver';
 import type { BasePlugin, PluginInfo, PluginType } from '../core/plugin-types';
 import { validatePluginMetadata } from '../core/plugin-types';
+import {
+  analyzePluginCode,
+  loadPluginSandboxed,
+  executePluginFunction,
+  validatePluginCapabilities,
+} from './plugin-security';
 import pkg from '../../package.json' assert { type: 'json' };
 
 const CORE_VERSION = pkg.version as string;
@@ -81,13 +87,15 @@ export class PluginLoader {
    * Load a plugin by id. Performs compatibility and dependency checks
    * and caches loaded plugins for reuse.
    */
-  async load(id: string): Promise<BasePlugin> {
+  async load(id: string, opts: { sandbox?: boolean; timeout?: number } = {}): Promise<BasePlugin> {
     if (this.cache.has(id)) return this.cache.get(id)!;
     if (!this.discovered) await this.discover();
     const info = this.registry.get(id);
     if (!info || !info.loadPath) {
       throw new Error(`Plugin not found: ${id}`);
     }
+    const sandbox = opts.sandbox !== false;
+    const timeout = opts.timeout ?? 3000;
     // Check core compatibility
     if (!semver.satisfies(CORE_VERSION, info.metadata.compatibility)) {
       throw new Error(
@@ -110,18 +118,27 @@ export class PluginLoader {
         }
       }
     }
-    let mod: any;
+    let plugin: BasePlugin;
     try {
-      const url = pathToFileURL(info.loadPath).href;
-      mod = await import(url);
+      if (sandbox) {
+        await analyzePluginCode(info.loadPath);
+        plugin = await loadPluginSandboxed(info.loadPath, { timeout });
+      } else {
+        const mod: any = await import(pathToFileURL(info.loadPath).href);
+        plugin = mod.default || mod;
+      }
     } catch (err) {
       throw new Error(`Failed to load plugin module at ${info.loadPath}: ${err}`);
     }
-    const plugin: BasePlugin = mod.default || mod;
     plugin.metadata = plugin.metadata || info.metadata;
+    try {
+      validatePluginCapabilities(plugin, info.type);
+    } catch (err) {
+      throw new Error((err as Error).message);
+    }
     if (typeof plugin.initialize === 'function') {
       try {
-        await plugin.initialize(plugin.getDefaultConfig?.());
+        await executePluginFunction(plugin, 'initialize', [plugin.getDefaultConfig?.()], timeout);
       } catch (err) {
         throw new Error(`Plugin ${id} failed to initialize: ${err}`);
       }
