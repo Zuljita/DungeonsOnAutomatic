@@ -159,7 +159,7 @@ export class DFRPGMonsterGenerator {
 
     if (potentialLeaders.length > 0 && potentialMinions.length > 0 && this.rng() < 0.6) {
       // 60% chance for leader + minions
-      const leader = potentialLeaders[Math.floor(this.rng() * potentialLeaders.length)];
+      const leader = this.selectWeightedMonster(potentialLeaders);
       monsters.push(this.convertToMonster(leader));
       totalCER += leader.cer;
 
@@ -180,6 +180,39 @@ export class DFRPGMonsterGenerator {
   }
 
   /**
+   * Select a monster from a list using frequency-based weighting
+   */
+  private selectWeightedMonster(monsters: DFRPGMonster[]): DFRPGMonster {
+    if (monsters.length === 0) throw new Error('Cannot select from empty monster list');
+    if (monsters.length === 1) return monsters[0];
+
+    // Frequency weights: very_common = 5, common = 4, uncommon = 3, rare = 2, very_rare = 1
+    const frequencyWeights: Record<string, number> = {
+      'very_common': 5,
+      'common': 4,
+      'uncommon': 3,
+      'rare': 2,
+      'very_rare': 1
+    };
+
+    const totalWeight = monsters.reduce((sum, monster) => 
+      sum + (frequencyWeights[monster.frequency] || 1), 0);
+    
+    let randomValue = this.rng() * totalWeight;
+    
+    for (const monster of monsters) {
+      const weight = frequencyWeights[monster.frequency] || 1;
+      randomValue -= weight;
+      if (randomValue <= 0) {
+        return monster;
+      }
+    }
+    
+    // Fallback to last monster if rounding issues
+    return monsters[monsters.length - 1];
+  }
+
+  /**
    * Add minions to fill remaining CER budget
    */
   private addMinions(minions: DFRPGMonster[], remainingCER: number, monsters: Monster[]): number {
@@ -190,7 +223,7 @@ export class DFRPGMonsterGenerator {
       const affordableMinions = minions.filter(m => m.cer <= (remainingCER - addedCER));
       if (affordableMinions.length === 0) break;
 
-      const minion = affordableMinions[Math.floor(this.rng() * affordableMinions.length)];
+      const minion = this.selectWeightedMonster(affordableMinions);
       monsters.push(this.convertToMonster(minion));
       addedCER += minion.cer;
     }
@@ -220,7 +253,7 @@ export class DFRPGMonsterGenerator {
       
       if (affordableMonsters.length === 0) break;
 
-      const selected = affordableMonsters[Math.floor(this.rng() * affordableMonsters.length)];
+      const selected = this.selectWeightedMonster(affordableMonsters);
       result.push(this.convertToMonster(selected));
       totalCER += selected.cer;
     }
@@ -256,11 +289,11 @@ export class DFRPGMonsterGenerator {
         const fallbackMonsters = sortedMonsters.filter(m => m.cer <= remainingCER);
         if (fallbackMonsters.length === 0) break;
         
-        const selected = fallbackMonsters[Math.floor(this.rng() * fallbackMonsters.length)];
+        const selected = this.selectWeightedMonster(fallbackMonsters);
         result.push(this.convertToMonster(selected));
         totalCER += selected.cer;
       } else {
-        const selected = affordableMonsters[Math.floor(this.rng() * affordableMonsters.length)];
+        const selected = this.selectWeightedMonster(affordableMonsters);
         result.push(this.convertToMonster(selected));
         totalCER += selected.cer;
       }

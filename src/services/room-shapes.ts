@@ -410,11 +410,11 @@ class RoomShapeServiceImpl implements RoomShapeService {
         case 'top':
           return { x: Math.floor(Math.max(room.x, Math.min(room.x + room.w - 1, targetPoint.x))), y: room.y };
         case 'bottom':
-          return { x: Math.floor(Math.max(room.x, Math.min(room.x + room.w - 1, targetPoint.x))), y: room.y + room.h - 1 };
+          return { x: Math.floor(Math.max(room.x, Math.min(room.x + room.w - 1, targetPoint.x))), y: room.y + room.h };
         case 'left':
           return { x: room.x, y: Math.floor(Math.max(room.y, Math.min(room.y + room.h - 1, targetPoint.y))) };
         case 'right':
-          return { x: room.x + room.w - 1, y: Math.floor(Math.max(room.y, Math.min(room.y + room.h - 1, targetPoint.y))) };
+          return { x: room.x + room.w, y: Math.floor(Math.max(room.y, Math.min(room.y + room.h - 1, targetPoint.y))) };
       }
     } else {
       // For shaped rooms, find the actual closest point ON the wall edge

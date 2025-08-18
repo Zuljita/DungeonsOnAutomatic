@@ -58,7 +58,67 @@ function trimPath(
 ): { x: number; y: number }[] {
   const inside = (p: { x: number; y: number }, r: Room): boolean =>
     p.x >= r.x && p.x < r.x + r.w && p.y >= r.y && p.y < r.y + r.h;
+  
+  // Remove points inside rooms
   while (path.length && inside(path[0], a)) path.shift();
   while (path.length && inside(path[path.length - 1], b)) path.pop();
+  
+  if (path.length === 0) return path;
+  
+  // Ensure start point is on room A's edge
+  const start = path[0];
+  const startEdgePoint = getClosestEdgePoint(start, a);
+  path[0] = startEdgePoint;
+  
+  // Ensure end point is on room B's edge
+  const end = path[path.length - 1];
+  const endEdgePoint = getClosestEdgePoint(end, b);
+  path[path.length - 1] = endEdgePoint;
+  
   return path;
+}
+
+function getClosestEdgePoint(point: { x: number; y: number }, room: Room): { x: number; y: number } {
+  const { x, y } = point;
+  const { x: rx, y: ry, w: rw, h: rh } = room;
+  
+  // Calculate distances to each edge
+  const distToLeft = Math.abs(x - rx);
+  const distToRight = Math.abs(x - (rx + rw));
+  const distToTop = Math.abs(y - ry);
+  const distToBottom = Math.abs(y - (ry + rh));
+  
+  const minDist = Math.min(distToLeft, distToRight, distToTop, distToBottom);
+  
+  // Return point on the closest edge
+  if (minDist === distToLeft && y >= ry && y < ry + rh) {
+    return { x: rx, y };
+  } else if (minDist === distToRight && y >= ry && y < ry + rh) {
+    return { x: rx + rw, y };
+  } else if (minDist === distToTop && x >= rx && x < rx + rw) {
+    return { x, y: ry };
+  } else if (minDist === distToBottom && x >= rx && x < rx + rw) {
+    return { x, y: ry + rh };
+  } else {
+    // Point is at a corner, pick closest corner
+    const corners = [
+      { x: rx, y: ry },           // Top-left
+      { x: rx + rw, y: ry },      // Top-right
+      { x: rx, y: ry + rh },      // Bottom-left
+      { x: rx + rw, y: ry + rh }  // Bottom-right
+    ];
+    
+    let closestCorner = corners[0];
+    let minCornerDist = Math.abs(x - corners[0].x) + Math.abs(y - corners[0].y);
+    
+    for (const corner of corners.slice(1)) {
+      const dist = Math.abs(x - corner.x) + Math.abs(y - corner.y);
+      if (dist < minCornerDist) {
+        minCornerDist = dist;
+        closestCorner = corner;
+      }
+    }
+    
+    return closestCorner;
+  }
 }
