@@ -37,4 +37,16 @@ describe('PluginLoader', () => {
   it('rejects plugins with missing dependencies', async () => {
     await expect(loader.load('test.missingdep')).rejects.toThrow(/missing required system dependency/);
   });
+
+  it('rejects plugins using restricted APIs', async () => {
+    await expect(loader.load('test.maliciousfs')).rejects.toThrow(/Forbidden API usage/);
+  });
+
+  it('enforces execution timeout', async () => {
+    await expect(loader.load('test.timeout', { timeout: 100 })).rejects.toThrow(/timed out/);
+  });
+
+  it('validates plugin capabilities for declared type', async () => {
+    await expect(loader.load('test.invalidtype')).rejects.toThrow(/missing required capability/);
+  });
 });
