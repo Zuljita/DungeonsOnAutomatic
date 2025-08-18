@@ -1,4 +1,4 @@
-import { Door, ID, Dungeon, KeyItem } from '../core/types';
+import { Door, ID, Dungeon, KeyItem, PlacementRule, PlacementTarget } from '../core/types';
 import { keyItemService } from './key-items';
 
 export interface PathEdge {
@@ -356,8 +356,8 @@ export function createFallbackSolutions(dungeon: Dungeon): void {
     doorId: 'all', // Special marker for master key
     name: 'Master Key',
     type: 'key' as const,
-    placementRule: 'REQUIRED' as const,
-    placementTarget: 'ROOM_FEATURE' as const,
+    placementRule: PlacementRule.REQUIRED,
+    placementTarget: PlacementTarget.ROOM_FEATURE,
     description: 'A mysterious key that seems to fit any lock',
     locationId: dungeon.rooms[0]?.id // Place in first room
   };

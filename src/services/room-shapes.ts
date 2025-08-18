@@ -15,6 +15,7 @@ export interface RoomShapeService {
   generateRoomShape: (preferences?: ShapePreferences, roomKind?: string, rng?: () => number) => RoomShape;
   generateShapePoints: (shape: RoomShape, centerX: number, centerY: number, width: number, height: number, rng?: () => number) => { x: number; y: number }[];
   isPointInRoom: (room: Room, x: number, y: number) => boolean;
+  isPointOnRoomEdge: (room: Room, x: number, y: number) => boolean;
   getRoomBounds: (room: Room) => { minX: number, maxX: number, minY: number, maxY: number };
   findClosestEdgePoint: (room: Room, direction: 'top' | 'bottom' | 'left' | 'right', targetPoint: { x: number; y: number }) => { x: number; y: number };
 }
@@ -125,6 +126,46 @@ class RoomShapeServiceImpl implements RoomShapeService {
     // Fallback to rectangular check
     const bounds = this.getRoomBounds(room);
     return x >= bounds.minX && x <= bounds.maxX && y >= bounds.minY && y <= bounds.maxY;
+  }
+
+  /**
+   * Check if a point is ON a room's edge (wall), not inside
+   */
+  isPointOnRoomEdge(room: Room, x: number, y: number): boolean {
+    if (room.shape === 'rectangular') {
+      // For rectangular rooms, check if point is on any of the four walls (within room bounds)
+      const onLeftWall = x === room.x && y >= room.y && y < room.y + room.h;
+      const onRightWall = x === room.x + room.w - 1 && y >= room.y && y < room.y + room.h;
+      const onTopWall = y === room.y && x >= room.x && x < room.x + room.w;
+      const onBottomWall = y === room.y + room.h - 1 && x >= room.x && x < room.x + room.w;
+      
+      return onLeftWall || onRightWall || onTopWall || onBottomWall;
+    }
+    
+    if (room.shapePoints) {
+      // For shaped rooms, check if point lies on any edge of the polygon
+      const point = { x, y };
+      
+      for (let i = 0; i < room.shapePoints.length; i++) {
+        const start = room.shapePoints[i];
+        const end = room.shapePoints[(i + 1) % room.shapePoints.length];
+        
+        // Check if point lies on this edge segment
+        if (this.isPointOnLineSegment(point, start, end)) {
+          return true;
+        }
+      }
+      return false;
+    }
+    
+    // Fallback: use rectangular edge check
+    const bounds = this.getRoomBounds(room);
+    const onLeftWall = x === bounds.minX && y >= bounds.minY && y <= bounds.maxY;
+    const onRightWall = x === bounds.maxX && y >= bounds.minY && y <= bounds.maxY;
+    const onTopWall = y === bounds.minY && x >= bounds.minX && x <= bounds.maxX;
+    const onBottomWall = y === bounds.maxY && x >= bounds.minX && x <= bounds.maxX;
+    
+    return onLeftWall || onRightWall || onTopWall || onBottomWall;
   }
 
   /**
@@ -530,6 +571,22 @@ class RoomShapeServiceImpl implements RoomShapeService {
     const dx = point1.x - point2.x;
     const dy = point1.y - point2.y;
     return Math.sqrt(dx * dx + dy * dy);
+  }
+
+  /**
+   * Check if a point lies exactly on a line segment
+   */
+  private isPointOnLineSegment(
+    point: { x: number; y: number },
+    segmentStart: { x: number; y: number }, 
+    segmentEnd: { x: number; y: number }
+  ): boolean {
+    // Calculate the distance from point to the line segment
+    const closestPoint = this.getClosestPointOnLineSegment(segmentStart, segmentEnd, point);
+    
+    // Check if the closest point is very close to the original point (accounting for floating point precision)
+    const distance = this.getDistance(point, closestPoint);
+    return distance < 1; // Allow 1 unit tolerance for integer coordinates
   }
 
   /**

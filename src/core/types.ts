@@ -20,6 +20,8 @@ export interface Corridor {
   from: ID;
   to: ID;
   path: { x: number; y: number; }[]; // polyline grid path
+  doorStart?: { x: number; y: number; }; // door position on from room
+  doorEnd?: { x: number; y: number; }; // door position on to room
 }
 
 export interface Door {

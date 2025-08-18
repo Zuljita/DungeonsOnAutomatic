@@ -661,15 +661,17 @@ export class MapGenerator {
       const room1 = rooms[a];
       const room2 = rooms[b];
       const corridorType = pickType();
-      const basePath = this.createPath(corridorType, room1, room2, rooms);
-      if (basePath.length > 0) {
+      const pathResult = this.createPath(corridorType, room1, room2, rooms);
+      if (pathResult.path.length > 0) {
         // Expand path to desired width for battle map compatibility
-        const path = this.expandCorridorToWidth(basePath, width);
+        const path = this.expandCorridorToWidth(pathResult.path, width);
         corridors.push({
           id: `corridor-${i}`,
           from: room1.id,
           to: room2.id,
-          path
+          path,
+          doorStart: pathResult.doorStart,
+          doorEnd: pathResult.doorEnd
         });
       }
     });
@@ -786,7 +788,11 @@ export class MapGenerator {
   /**
    * Create a path between two rooms based on corridor type
    */
-  private createPath(type: string, room1: Room, room2: Room, allRooms: Room[]): { x: number; y: number }[] {
+  private createPath(type: string, room1: Room, room2: Room, allRooms: Room[]): { 
+    path: { x: number; y: number }[]; 
+    doorStart: { x: number; y: number }; 
+    doorEnd: { x: number; y: number }; 
+  } {
     // Calculate door connection points on room edges instead of room centers
     const connectionPoints = this.calculateConnectionPoints(room1, room2);
     const startPoint = connectionPoints.start;
@@ -810,7 +816,7 @@ export class MapGenerator {
         break;
     }
 
-    return path;
+    return { path, doorStart: connectionPoints.doorStart, doorEnd: connectionPoints.doorEnd };
   }
 
   /**
@@ -819,6 +825,8 @@ export class MapGenerator {
   private calculateConnectionPoints(room1: Room, room2: Room): {
     start: { x: number; y: number };
     end: { x: number; y: number };
+    doorStart: { x: number; y: number };
+    doorEnd: { x: number; y: number };
   } {
     // Handle shaped rooms using room shape service
     const center1 = this.getRoomCenter(room1);
@@ -836,6 +844,7 @@ export class MapGenerator {
     let endDoor: { x: number; y: number };
     let startDirection: 'top' | 'bottom' | 'left' | 'right';
     let endDirection: 'top' | 'bottom' | 'left' | 'right';
+    
 
     if (Math.abs(dx) > Math.abs(dy)) {
       // Horizontal connection
@@ -869,11 +878,11 @@ export class MapGenerator {
       }
     }
 
-    // Create corridor endpoints adjacent to the door positions
-    start = this.getAdjacentPoint(startDoor, startDirection);
-    end = this.getAdjacentPoint(endDoor, endDirection);
+    // Use door positions directly for corridor pathfinding (ON the walls)
+    start = startDoor;
+    end = endDoor;
     
-    return { start, end };
+    return { start, end, doorStart: startDoor, doorEnd: endDoor };
   }
 
   /**
@@ -900,17 +909,7 @@ export class MapGenerator {
     return roomShapeService.findClosestEdgePoint(room, edge, targetPoint);
   }
 
-  /**
-   * Get a point adjacent to a door position for corridor connection
-   */
-  private getAdjacentPoint(doorPosition: { x: number; y: number }, direction: 'top' | 'bottom' | 'left' | 'right'): { x: number; y: number } {
-    switch (direction) {
-      case 'top': return { x: doorPosition.x, y: doorPosition.y - 1 };
-      case 'bottom': return { x: doorPosition.x, y: doorPosition.y + 1 };
-      case 'left': return { x: doorPosition.x - 1, y: doorPosition.y };
-      case 'right': return { x: doorPosition.x + 1, y: doorPosition.y };
-    }
-  }
+
 
   /**
    * Create a maze-like path between two points
@@ -1083,6 +1082,24 @@ export class MapGenerator {
   }
 
   /**
+   * Check if a point is ON a room wall (edge), not inside the room
+   */
+  private isPointOnRoomWall(room: Room, x: number, y: number): boolean {
+    if (room.shape === 'rectangular' || !room.shapePoints) {
+      // For rectangular rooms, check if point is on any of the four walls (within room bounds)
+      const onLeftWall = x === room.x && y >= room.y && y < room.y + room.h;
+      const onRightWall = x === room.x + room.w - 1 && y >= room.y && y < room.y + room.h;
+      const onTopWall = y === room.y && x >= room.x && x < room.x + room.w;
+      const onBottomWall = y === room.y + room.h - 1 && x >= room.x && x < room.x + room.w;
+      
+      return onLeftWall || onRightWall || onTopWall || onBottomWall;
+    } else {
+      // For shaped rooms, use room shape service to check if point is on the edge
+      return roomShapeService.isPointOnRoomEdge(room, x, y);
+    }
+  }
+
+  /**
    * Check if a point collides with any room interior (corridors should go around rooms, not through them)
    */
   private isRoomCollision(x: number, y: number, rooms: Room[], allowedEdgePoints: { x: number; y: number }[] = []): boolean {
@@ -1096,6 +1113,12 @@ export class MapGenerator {
         if (isAllowedEdgePoint) {
           return false; // This is an allowed door connection point
         }
+        
+        // Check if this point is ON a room wall (not inside)
+        if (this.isPointOnRoomWall(room, x, y)) {
+          return false; // Allow corridor points on room walls (door connections)
+        }
+        
         return true; // Collision detected - corridor should not go through room interior
       }
     }
@@ -1233,6 +1256,7 @@ export class MapGenerator {
         y: Math.floor(boundary.y + boundary.height * 0.3),
         w: 2,
         h: 2,
+        shape: 'rectangular',
         tags: ['stairs', 'up', 'exit']
       });
     }
@@ -1246,6 +1270,7 @@ export class MapGenerator {
         y: Math.floor(boundary.y + boundary.height * 0.6),
         w: 2,
         h: 2,
+        shape: 'rectangular',
         tags: ['stairs', 'down', 'entrance']
       });
     }
@@ -1259,6 +1284,7 @@ export class MapGenerator {
         y: Math.floor(boundary.y),
         w: 3,
         h: 3,
+        shape: 'rectangular',
         tags: ['entrance', 'periphery']
       });
     }
@@ -1272,11 +1298,14 @@ export class MapGenerator {
   private generateDoors(corridors: Corridor[]): Door[] {
     return corridors.flatMap((corridor) => {
       if (corridor.path.length === 0) return [];
-      const start = corridor.path[0];
-      const end = corridor.path[corridor.path.length - 1];
+      
+      // Use the actual door positions if available, otherwise fall back to path endpoints
+      const startLocation = corridor.doorStart || corridor.path[0];
+      const endLocation = corridor.doorEnd || corridor.path[corridor.path.length - 1];
+      
       return [
-        generateDoor(this.R, { fromRoom: corridor.from, toRoom: corridor.to, location: start }),
-        generateDoor(this.R, { fromRoom: corridor.to, toRoom: corridor.from, location: end }),
+        generateDoor(this.R, { fromRoom: corridor.from, toRoom: corridor.to, location: startLocation }),
+        generateDoor(this.R, { fromRoom: corridor.to, toRoom: corridor.from, location: endLocation }),
       ];
     });
   }
