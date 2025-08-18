@@ -3,9 +3,9 @@ import { buildDungeon } from '../src/services/assembler.js';
 import { dfrpg } from '../src/systems/dfrpg/index.js';
 
 describe('wandering monsters', () => {
-  it('generates a wandering monster table when encounters have monsters', () => {
+  it('generates a wandering monster table when encounters have monsters', async () => {
     const dungeon = buildDungeon({ rooms: 3, seed: 'wandering' });
-    const enriched = dfrpg.enrich(dungeon, { rng: () => 0 });
+    const enriched = await dfrpg.enrich(dungeon, { rng: () => 0 });
 
     const totalMonsters = Object.values(enriched.encounters)
       .flatMap(e => e.monsters)

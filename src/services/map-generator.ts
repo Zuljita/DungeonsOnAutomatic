@@ -869,9 +869,9 @@ export class MapGenerator {
       }
     }
 
-    // Create corridor endpoints adjacent to the door positions
-    start = this.getAdjacentPoint(startDoor, startDirection);
-    end = this.getAdjacentPoint(endDoor, endDirection);
+    // Use door positions directly as corridor endpoints (on room edges)
+    start = startDoor;
+    end = endDoor;
     
     return { start, end };
   }
