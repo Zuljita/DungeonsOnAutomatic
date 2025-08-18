@@ -6,7 +6,7 @@ import { tagSystem } from '@src/services/tag-system';
 import { buildDungeon } from '@src/services/assembler';
 import { dungeonTemplateService } from '@src/services/dungeon-templates';
 
-let importWizard: ImportWizardComponent;
+let importWizard: ImportWizardComponent | null = null;
 const STORAGE_KEY = 'doa-generator-settings';
 
 // Real-time preview state
@@ -47,6 +47,15 @@ function showTab(tabName: string) {
   const selectedTab = document.querySelector(`[onclick*="${tabName}"]`);
   if (selectedTab) {
     selectedTab.classList.add('active');
+  }
+
+  // Initialize import wizard lazily when data manager tab is accessed
+  if (tabName === 'data-manager' && !importWizard) {
+    try {
+      importWizard = new ImportWizardComponent();
+    } catch (error) {
+      console.error('Failed to initialize ImportWizardComponent:', error);
+    }
   }
 }
 
@@ -420,7 +429,6 @@ document.addEventListener('DOMContentLoaded', () => {
   populateSystemSelector();
   initializeThemeSelector();
   loadGeneratorSettings();
-  importWizard = new ImportWizardComponent();
   
   const generateBtn = document.getElementById('generate');
   if (generateBtn) {
@@ -439,4 +447,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Make showTab and importWizard available globally for onclick handlers
 (window as any).showTab = showTab;
-(window as any).importWizard = importWizard;
+(window as any).importWizard = {
+  deleteDataset: (moduleId: string, dataType: string) => {
+    if (importWizard) {
+      importWizard.deleteDataset(moduleId, dataType);
+    }
+  }
+};
