@@ -1,34 +1,15 @@
 import { z } from 'zod';
-import type { Dungeon, Room, Monster, Trap, Treasure, SystemModule, RNG, RoomShape } from './types';
-
-// === Plugin Metadata ===
-
-export interface PluginAuthor {
-  name: string;
-  email?: string;
-  url?: string;
-}
-
-export interface PluginDependencies {
-  core: string; // Semver range for DOA core
-  systems?: string[]; // Required system plugin dependencies
-  plugins?: string[]; // Other plugin dependencies
-}
-
-export interface PluginMetadata {
-  id: string; // Unique plugin identifier (namespace.name)
-  version: string; // Plugin version (semver)
-  name?: string; // Human-readable name (fallback to id)
-  description?: string; // Plugin description
-  author: PluginAuthor; // Author information
-  license: string; // Plugin license
-  compatibility: string; // DOA version compatibility (semver range)
-  dependencies: PluginDependencies; // Plugin dependencies
-  tags?: string[]; // Searchable tags
-  homepage?: string; // Plugin homepage URL
-  repository?: string; // Source code repository URL
-  bugs?: string; // Bug report URL
-}
+import type {
+  Dungeon,
+  Room,
+  Monster,
+  Trap,
+  Treasure,
+  SystemModule,
+  RNG,
+  RoomShape,
+  PluginMetadata,
+} from './types';
 
 // === Validation Result ===
 
@@ -92,7 +73,7 @@ export interface SystemOptions extends Record<string, unknown> {
   };
 }
 
-export interface SystemPlugin extends BasePlugin, SystemModule {
+export interface SystemPlugin extends BasePlugin, Omit<SystemModule, 'metadata'> {
   // Enhanced metadata (already covered by BasePlugin)
   
   // Optional validation
@@ -233,13 +214,13 @@ export interface PluginSandbox {
   };
   
   // Restricted environment
-  environment: {
-    random: RNG;
-    console: Pick<Console, 'log' | 'warn' | 'error'>;
-    setTimeout: (fn: Function, ms: number) => NodeJS.Timeout;
-    clearTimeout: (id: NodeJS.Timeout) => void;
-    // No access to: fs, process, network, etc.
-  };
+    environment: {
+      random: RNG;
+      console: Pick<Console, 'log' | 'warn' | 'error'>;
+      setTimeout: (fn: () => void, ms: number) => NodeJS.Timeout;
+      clearTimeout: (id: NodeJS.Timeout) => void;
+      // No access to: fs, process, network, etc.
+    };
   
   // Resource monitoring
   limits: {
