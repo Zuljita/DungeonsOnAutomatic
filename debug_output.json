@@ -1,0 +1,321 @@
+
+> dungeons-on-automatic@0.1.0 doa /home/knorton/DungeonsOnAutomatic/DungeonsOnAutomatic
+> tsx src/cli/index.ts generate --rooms=3 --seed=debug123
+
+{
+  "seed": "debug123",
+  "rooms": [
+    {
+      "id": "room-0",
+      "kind": "chamber",
+      "x": 33,
+      "y": 26,
+      "w": 5,
+      "h": 8,
+      "shape": "rectangular",
+      "tags": [
+        "rectangular",
+        "chamber"
+      ]
+    },
+    {
+      "id": "room-1",
+      "kind": "chamber",
+      "x": 7,
+      "y": 38,
+      "w": 7,
+      "h": 7,
+      "shape": "rectangular",
+      "tags": [
+        "rectangular",
+        "chamber"
+      ]
+    },
+    {
+      "id": "room-2",
+      "kind": "chamber",
+      "x": 11,
+      "y": 18,
+      "w": 8,
+      "h": 5,
+      "shape": "rectangular",
+      "tags": [
+        "rectangular",
+        "chamber"
+      ]
+    }
+  ],
+  "corridors": [
+    {
+      "id": "corridor-0",
+      "from": "room-1",
+      "to": "room-2",
+      "path": [
+        {
+          "x": 10,
+          "y": 38
+        },
+        {
+          "x": 10,
+          "y": 37
+        },
+        {
+          "x": 10,
+          "y": 36
+        },
+        {
+          "x": 10,
+          "y": 35
+        },
+        {
+          "x": 10,
+          "y": 34
+        },
+        {
+          "x": 10,
+          "y": 33
+        },
+        {
+          "x": 10,
+          "y": 32
+        },
+        {
+          "x": 10,
+          "y": 31
+        },
+        {
+          "x": 10,
+          "y": 30
+        },
+        {
+          "x": 10,
+          "y": 29
+        },
+        {
+          "x": 10,
+          "y": 28
+        },
+        {
+          "x": 10,
+          "y": 27
+        },
+        {
+          "x": 10,
+          "y": 26
+        },
+        {
+          "x": 10,
+          "y": 25
+        },
+        {
+          "x": 10,
+          "y": 24
+        },
+        {
+          "x": 10,
+          "y": 23
+        },
+        {
+          "x": 11,
+          "y": 23
+        },
+        {
+          "x": 12,
+          "y": 23
+        },
+        {
+          "x": 13,
+          "y": 23
+        },
+        {
+          "x": 14,
+          "y": 23
+        },
+        {
+          "x": 15,
+          "y": 23
+        }
+      ]
+    },
+    {
+      "id": "corridor-1",
+      "from": "room-0",
+      "to": "room-2",
+      "path": [
+        {
+          "x": 33,
+          "y": 30
+        },
+        {
+          "x": 32,
+          "y": 30
+        },
+        {
+          "x": 31,
+          "y": 30
+        },
+        {
+          "x": 30,
+          "y": 30
+        },
+        {
+          "x": 29,
+          "y": 30
+        },
+        {
+          "x": 28,
+          "y": 30
+        },
+        {
+          "x": 27,
+          "y": 30
+        },
+        {
+          "x": 26,
+          "y": 30
+        },
+        {
+          "x": 25,
+          "y": 30
+        },
+        {
+          "x": 24,
+          "y": 30
+        },
+        {
+          "x": 23,
+          "y": 30
+        },
+        {
+          "x": 22,
+          "y": 30
+        },
+        {
+          "x": 21,
+          "y": 30
+        },
+        {
+          "x": 20,
+          "y": 30
+        },
+        {
+          "x": 19,
+          "y": 30
+        },
+        {
+          "x": 19,
+          "y": 29
+        },
+        {
+          "x": 19,
+          "y": 28
+        },
+        {
+          "x": 19,
+          "y": 27
+        },
+        {
+          "x": 19,
+          "y": 26
+        },
+        {
+          "x": 19,
+          "y": 25
+        },
+        {
+          "x": 19,
+          "y": 24
+        },
+        {
+          "x": 19,
+          "y": 23
+        },
+        {
+          "x": 19,
+          "y": 22
+        },
+        {
+          "x": 19,
+          "y": 21
+        },
+        {
+          "x": 19,
+          "y": 20
+        }
+      ]
+    }
+  ],
+  "doors": [
+    {
+      "id": "door-kwrhy7nv",
+      "type": "normal",
+      "status": "warded",
+      "fromRoom": "room-1",
+      "toRoom": "room-2",
+      "location": {
+        "x": 10,
+        "y": 38
+      }
+    },
+    {
+      "id": "door-pijbpo4p",
+      "type": "arch",
+      "status": "secret",
+      "fromRoom": "room-2",
+      "toRoom": "room-1",
+      "location": {
+        "x": 15,
+        "y": 23
+      }
+    },
+    {
+      "id": "door-j0tcmas0",
+      "type": "arch",
+      "status": "barred",
+      "fromRoom": "room-0",
+      "toRoom": "room-2",
+      "location": {
+        "x": 33,
+        "y": 30
+      }
+    },
+    {
+      "id": "door-x5vwg3dg",
+      "type": "hole",
+      "status": "trapped",
+      "fromRoom": "room-2",
+      "toRoom": "room-0",
+      "location": {
+        "x": 19,
+        "y": 20
+      }
+    }
+  ],
+  "encounters": {
+    "room-0": {
+      "monsters": [
+        {
+          "name": "Orc",
+          "cls": "Humanoid",
+          "tags": [
+            "orc",
+            "humanoid",
+            "brutal"
+          ]
+        }
+      ],
+      "traps": [],
+      "treasure": []
+    },
+    "room-1": {
+      "monsters": [],
+      "traps": [],
+      "treasure": []
+    },
+    "room-2": {
+      "monsters": [],
+      "traps": [],
+      "treasure": []
+    }
+  }
+}

@@ -1,0 +1,126 @@
+
+> dungeons-on-automatic@0.1.0 doa /home/knorton/DungeonsOnAutomatic/DungeonsOnAutomatic
+> tsx src/cli/index.ts generate --rooms=2 --room-shape=diverse --seed=debug_shapes --width=30 --height=30
+
+{
+  "seed": "debug_shapes",
+  "rooms": [
+    {
+      "id": "room-0",
+      "kind": "chamber",
+      "x": 12,
+      "y": 4,
+      "w": 5,
+      "h": 5,
+      "shape": "rectangular",
+      "tags": [
+        "rectangular",
+        "chamber"
+      ]
+    },
+    {
+      "id": "room-1",
+      "kind": "chamber",
+      "x": 16,
+      "y": 15,
+      "w": 8,
+      "h": 8,
+      "shape": "hexagonal",
+      "shapePoints": [
+        {
+          "x": 20,
+          "y": 15
+        },
+        {
+          "x": 18,
+          "y": 18
+        },
+        {
+          "x": 14,
+          "y": 18
+        },
+        {
+          "x": 12,
+          "y": 15
+        },
+        {
+          "x": 14,
+          "y": 12
+        },
+        {
+          "x": 18,
+          "y": 12
+        }
+      ],
+      "tags": [
+        "hexagonal",
+        "chamber"
+      ]
+    }
+  ],
+  "corridors": [
+    {
+      "id": "corridor-0",
+      "from": "room-0",
+      "to": "room-1",
+      "path": [
+        {
+          "x": 16,
+          "y": 9
+        },
+        {
+          "x": 15,
+          "y": 9
+        },
+        {
+          "x": 14,
+          "y": 9
+        },
+        {
+          "x": 14,
+          "y": 10
+        },
+        {
+          "x": 14,
+          "y": 11
+        }
+      ]
+    }
+  ],
+  "doors": [
+    {
+      "id": "door-il8rizpz",
+      "type": "portcullis",
+      "status": "secret",
+      "fromRoom": "room-0",
+      "toRoom": "room-1",
+      "location": {
+        "x": 16,
+        "y": 9
+      }
+    },
+    {
+      "id": "door-yx4ormfw",
+      "type": "arch",
+      "status": "locked",
+      "fromRoom": "room-1",
+      "toRoom": "room-0",
+      "location": {
+        "x": 14,
+        "y": 11
+      }
+    }
+  ],
+  "encounters": {
+    "room-0": {
+      "monsters": [],
+      "traps": [],
+      "treasure": []
+    },
+    "room-1": {
+      "monsters": [],
+      "traps": [],
+      "treasure": []
+    }
+  }
+}

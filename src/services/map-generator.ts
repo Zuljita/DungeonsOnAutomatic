@@ -1,7 +1,8 @@
-import { Dungeon, Room, Corridor, Door } from '../core/types';
+import { Dungeon, Room, Corridor, Door, RoomShape } from '../core/types';
 import { rng } from './random';
 import Delaunator from 'delaunator';
 import { generateDoor } from './doors';
+import { roomShapeService, ShapePreferences } from './room-shapes';
 
 export interface MapGenerationOptions {
   // Layout Types
@@ -10,7 +11,7 @@ export interface MapGenerationOptions {
   // Room Configuration
   roomLayout: 'sparse' | 'scattered' | 'dense' | 'symmetric';
   roomSize: 'small' | 'medium' | 'large' | 'mixed';
-  roomShape: 'rectangular' | 'round' | 'hexagonal' | 'mixed';
+  roomShape: 'rectangular' | 'round' | 'hexagonal' | 'mixed' | 'diverse' | 'small-preference' | 'hex-preference' | 'circular-preference';
   
   // Corridor Configuration
   corridorType: 'maze' | 'winding' | 'straight' | 'mixed';
@@ -259,13 +260,23 @@ export class MapGenerator {
     const maxAttempts = roomCount * 50; // Same as rooms.ts
     let attempts = 0;
 
-    const overlaps = (a: LayoutBoundary, b: LayoutBoundary): boolean => {
-      // Same logic as rooms.ts - includes 1-tile padding
+    const getMinSpacing = (layout: string): number => {
+      switch (layout) {
+        case 'sparse': return 4; // Wider spacing for sparse layouts
+        case 'scattered': return 2; // Standard spacing
+        case 'dense': return 1; // Minimal spacing for dense layouts
+        case 'symmetric': return 3; // Clean spacing for symmetrical layouts
+        default: return 2;
+      }
+    };
+
+    const overlaps = (a: LayoutBoundary, b: LayoutBoundary, customSpacing?: number): boolean => {
+      const spacing = customSpacing ?? getMinSpacing(layout);
       return !(
-        a.x + a.width + 1 <= b.x ||
-        b.x + b.width + 1 <= a.x ||
-        a.y + a.height + 1 <= b.y ||
-        b.y + b.height + 1 <= a.y
+        a.x + a.width + spacing <= b.x ||
+        b.x + b.width + spacing <= a.x ||
+        a.y + a.height + spacing <= b.y ||
+        b.y + b.height + spacing <= a.y
       );
     };
 
@@ -448,54 +459,180 @@ export class MapGenerator {
   /**
    * Create actual rooms from boundaries
    */
-  private createRooms(boundaries: LayoutBoundary[], shape: string): Room[] {
+  private createRooms(boundaries: LayoutBoundary[], shapePreference: string): Room[] {
     return boundaries.map((boundary, index) => {
-      const roomShape = shape === 'mixed' ? this.getRandomShape() : shape;
-      return this.createRoom(boundary, roomShape, index);
+      return this.createRoom(boundary, shapePreference, index);
     });
   }
 
   /**
-   * Create a single room with the specified shape
+   * Create a single room with the specified shape preference
    */
-  private createRoom(boundary: LayoutBoundary, shape: string, index: number): Room {
-    const id = `room-${index}`;
+  private createRoom(boundary: LayoutBoundary, shapePreference: string, index: number): Room {
+    const roomId = `room-${index}`;
     
-    switch (shape) {
-      case 'round':
-        // Approximate circle with room kind
+    // Get shape preferences based on configuration
+    const shapePrefs = this.getShapePreferences(shapePreference);
+    
+    // Generate a room shape based on preferences
+    const roomShape = roomShapeService.generateRoomShape(shapePrefs, 'chamber', this.R);
+    
+    // Calculate center point for the boundary
+    const centerX = Math.floor(boundary.x + boundary.width / 2);
+    const centerY = Math.floor(boundary.y + boundary.height / 2);
+    const width = Math.floor(boundary.width);
+    const height = Math.floor(boundary.height);
+    
+    // Generate shape points if needed
+    let shapePoints: { x: number; y: number }[] | undefined;
+    if (roomShape !== 'rectangular') {
+      shapePoints = roomShapeService.generateShapePoints(
+        roomShape, 
+        centerX, 
+        centerY, 
+        width, 
+        height, 
+        this.R
+      );
+    }
+    
+    // For rectangular rooms, use top-left coordinates
+    const x = roomShape === 'rectangular' ? Math.floor(boundary.x) : centerX;
+    const y = roomShape === 'rectangular' ? Math.floor(boundary.y) : centerY;
+    
+    return {
+      id: roomId,
+      kind: 'chamber',
+      x,
+      y,
+      w: width,
+      h: height,
+      shape: roomShape,
+      shapePoints,
+      tags: [roomShape, 'chamber']
+    };
+  }
+
+  /**
+   * Get shape preferences based on user selection
+   */
+  private getShapePreferences(shapePreference: string): ShapePreferences {
+    switch (shapePreference) {
+      case 'diverse':
+        // Equal weight to all shapes for maximum variety
         return {
-          id,
-          kind: 'chamber',
-          x: Math.floor(boundary.x),
-          y: Math.floor(boundary.y),
-          w: Math.floor(boundary.width),
-          h: Math.floor(boundary.height),
-          tags: ['round', 'chamber']
+          rectangular: 12,
+          circular: 12,
+          hexagonal: 12,
+          octagonal: 12,
+          irregular: 12,
+          'L-shaped': 12,
+          'T-shaped': 12,
+          cross: 12
         };
       
-      case 'hexagonal':
-        // Approximate hexagon
+      case 'small-preference':
+        // Preference for smaller, more complex shapes
         return {
-          id,
-          kind: 'chamber',
-          x: Math.floor(boundary.x),
-          y: Math.floor(boundary.y),
-          w: Math.floor(boundary.width),
-          h: Math.floor(boundary.height),
-          tags: ['hexagonal', 'chamber']
+          rectangular: 10,
+          circular: 15,
+          hexagonal: 15,
+          octagonal: 15,
+          irregular: 8,
+          'L-shaped': 12,
+          'T-shaped': 12,
+          cross: 8
+        };
+      
+      case 'hex-preference':
+        // Preference for hexagonal and geometric shapes
+        return {
+          rectangular: 15,
+          circular: 8,
+          hexagonal: 25,
+          octagonal: 20,
+          irregular: 5,
+          'L-shaped': 10,
+          'T-shaped': 10,
+          cross: 7
+        };
+      
+      case 'circular-preference':
+        // Preference for round and natural shapes
+        return {
+          rectangular: 12,
+          circular: 25,
+          hexagonal: 8,
+          octagonal: 15,
+          irregular: 20,
+          'L-shaped': 8,
+          'T-shaped': 8,
+          cross: 4
+        };
+      
+      case 'mixed':
+        // Balanced mix with slight rectangular preference
+        return {
+          rectangular: 20,
+          circular: 15,
+          hexagonal: 15,
+          octagonal: 12,
+          irregular: 12,
+          'L-shaped': 10,
+          'T-shaped': 10,
+          cross: 6
         };
       
       case 'rectangular':
-      default:
+        // Primarily rectangular with occasional variety
         return {
-          id,
-          kind: 'chamber',
-          x: Math.floor(boundary.x),
-          y: Math.floor(boundary.y),
-          w: Math.floor(boundary.width),
-          h: Math.floor(boundary.height),
-          tags: ['rectangular', 'chamber']
+          rectangular: 70,
+          circular: 5,
+          hexagonal: 8,
+          octagonal: 7,
+          irregular: 3,
+          'L-shaped': 4,
+          'T-shaped': 2,
+          cross: 1
+        };
+      
+      case 'round':
+        // Primarily circular with natural variations
+        return {
+          rectangular: 10,
+          circular: 50,
+          hexagonal: 5,
+          octagonal: 10,
+          irregular: 20,
+          'L-shaped': 3,
+          'T-shaped': 1,
+          cross: 1
+        };
+      
+      case 'hexagonal':
+        // Primarily hexagonal with geometric variations
+        return {
+          rectangular: 15,
+          circular: 5,
+          hexagonal: 50,
+          octagonal: 20,
+          irregular: 3,
+          'L-shaped': 4,
+          'T-shaped': 2,
+          cross: 1
+        };
+      
+      default:
+        // Default to balanced variety
+        return {
+          rectangular: 25,
+          circular: 15,
+          hexagonal: 15,
+          octagonal: 12,
+          irregular: 12,
+          'L-shaped': 10,
+          'T-shaped': 8,
+          cross: 3
         };
     }
   }
@@ -524,7 +661,7 @@ export class MapGenerator {
       const room1 = rooms[a];
       const room2 = rooms[b];
       const corridorType = pickType();
-      const basePath = this.createPath(corridorType, room1, room2);
+      const basePath = this.createPath(corridorType, room1, room2, rooms);
       if (basePath.length > 0) {
         // Expand path to desired width for battle map compatibility
         const path = this.expandCorridorToWidth(basePath, width);
@@ -649,24 +786,27 @@ export class MapGenerator {
   /**
    * Create a path between two rooms based on corridor type
    */
-  private createPath(type: string, room1: Room, room2: Room): { x: number; y: number }[] {
+  private createPath(type: string, room1: Room, room2: Room, allRooms: Room[]): { x: number; y: number }[] {
     // Calculate door connection points on room edges instead of room centers
     const connectionPoints = this.calculateConnectionPoints(room1, room2);
     const startPoint = connectionPoints.start;
     const endPoint = connectionPoints.end;
+    
+    // Exclude the connecting rooms from collision detection (corridors can enter their doors)
+    const excludeRooms = [room1.id, room2.id];
 
     let path: { x: number; y: number }[] = [];
     switch (type) {
       case 'maze':
-        path = this.createMazePathBetweenPoints(startPoint, endPoint);
+        path = this.createMazePathWithCollisionDetection(startPoint, endPoint, allRooms, excludeRooms);
         break;
       case 'winding':
-        path = this.createWindingPathBetweenPoints(startPoint, endPoint);
+        path = this.createWindingPathWithCollisionDetection(startPoint, endPoint, allRooms, excludeRooms);
         break;
       case 'straight':
       default:
-        // Use battle-map friendly L-shaped paths for straight corridors
-        path = this.createBattleMapPath(startPoint, endPoint);
+        // Use battle-map friendly L-shaped paths for straight corridors with collision avoidance
+        path = this.createBattleMapPath(startPoint, endPoint, allRooms, excludeRooms);
         break;
     }
 
@@ -680,9 +820,9 @@ export class MapGenerator {
     start: { x: number; y: number };
     end: { x: number; y: number };
   } {
-    // Calculate room centers for direction finding
-    const center1 = { x: room1.x + room1.w / 2, y: room1.y + room1.h / 2 };
-    const center2 = { x: room2.x + room2.w / 2, y: room2.y + room2.h / 2 };
+    // Handle shaped rooms using room shape service
+    const center1 = this.getRoomCenter(room1);
+    const center2 = this.getRoomCenter(room2);
     
     // Determine the best edge for each room based on the direction to the other room
     const dx = center2.x - center1.x;
@@ -691,32 +831,85 @@ export class MapGenerator {
     let start: { x: number; y: number };
     let end: { x: number; y: number };
     
-    // Find connection point on room1's edge facing room2
+    // Find door positions ON the room walls
+    let startDoor: { x: number; y: number };
+    let endDoor: { x: number; y: number };
+    let startDirection: 'top' | 'bottom' | 'left' | 'right';
+    let endDirection: 'top' | 'bottom' | 'left' | 'right';
+
     if (Math.abs(dx) > Math.abs(dy)) {
       // Horizontal connection
       if (dx > 0) {
         // room2 is to the right of room1
-        start = { x: room1.x + room1.w, y: Math.floor(room1.y + room1.h / 2) };
-        end = { x: room2.x, y: Math.floor(room2.y + room2.h / 2) };
+        startDirection = 'right';
+        endDirection = 'left';
+        startDoor = this.findClosestPointOnRoomEdge(room1, 'right', center2);
+        endDoor = this.findClosestPointOnRoomEdge(room2, 'left', center1);
       } else {
         // room2 is to the left of room1
-        start = { x: room1.x, y: Math.floor(room1.y + room1.h / 2) };
-        end = { x: room2.x + room2.w, y: Math.floor(room2.y + room2.h / 2) };
+        startDirection = 'left';
+        endDirection = 'right';
+        startDoor = this.findClosestPointOnRoomEdge(room1, 'left', center2);
+        endDoor = this.findClosestPointOnRoomEdge(room2, 'right', center1);
       }
     } else {
       // Vertical connection
       if (dy > 0) {
         // room2 is below room1
-        start = { x: Math.floor(room1.x + room1.w / 2), y: room1.y + room1.h };
-        end = { x: Math.floor(room2.x + room2.w / 2), y: room2.y };
+        startDirection = 'bottom';
+        endDirection = 'top';
+        startDoor = this.findClosestPointOnRoomEdge(room1, 'bottom', center2);
+        endDoor = this.findClosestPointOnRoomEdge(room2, 'top', center1);
       } else {
         // room2 is above room1
-        start = { x: Math.floor(room1.x + room1.w / 2), y: room1.y };
-        end = { x: Math.floor(room2.x + room2.w / 2), y: room2.y + room2.h };
+        startDirection = 'top';
+        endDirection = 'bottom';
+        startDoor = this.findClosestPointOnRoomEdge(room1, 'top', center2);
+        endDoor = this.findClosestPointOnRoomEdge(room2, 'bottom', center1);
       }
     }
+
+    // Create corridor endpoints adjacent to the door positions
+    start = this.getAdjacentPoint(startDoor, startDirection);
+    end = this.getAdjacentPoint(endDoor, endDirection);
     
     return { start, end };
+  }
+
+  /**
+   * Get the center point of a room, accounting for different shapes
+   */
+  private getRoomCenter(room: Room): { x: number; y: number } {
+    if (room.shape === 'rectangular' || !room.shapePoints) {
+      return { x: room.x + room.w / 2, y: room.y + room.h / 2 };
+    } else {
+      // For shaped rooms, use the room bounds center
+      const bounds = roomShapeService.getRoomBounds(room);
+      return { 
+        x: (bounds.minX + bounds.maxX) / 2, 
+        y: (bounds.minY + bounds.maxY) / 2 
+      };
+    }
+  }
+
+  /**
+   * Find the closest point on a room's edge in the specified direction
+   */
+  private findClosestPointOnRoomEdge(room: Room, edge: 'top' | 'bottom' | 'left' | 'right', targetPoint: { x: number; y: number }): { x: number; y: number } {
+    // Use the room shape service to find the actual closest edge point
+    return roomShapeService.findClosestEdgePoint(room, edge, targetPoint);
+  }
+
+  /**
+   * Get a point adjacent to a door position for corridor connection
+   */
+  private getAdjacentPoint(doorPosition: { x: number; y: number }, direction: 'top' | 'bottom' | 'left' | 'right'): { x: number; y: number } {
+    switch (direction) {
+      case 'top': return { x: doorPosition.x, y: doorPosition.y - 1 };
+      case 'bottom': return { x: doorPosition.x, y: doorPosition.y + 1 };
+      case 'left': return { x: doorPosition.x - 1, y: doorPosition.y };
+      case 'right': return { x: doorPosition.x + 1, y: doorPosition.y };
+    }
   }
 
   /**
@@ -793,6 +986,40 @@ export class MapGenerator {
   }
 
   /**
+   * Create a maze path between two points with collision detection
+   */
+  private createMazePathWithCollisionDetection(start: { x: number; y: number }, end: { x: number; y: number }, rooms: Room[], excludeRooms: string[]): { x: number; y: number }[] {
+    // First try the original maze path
+    const originalPath = this.createMazePathBetweenPoints(start, end);
+    const allowedEdgePoints = [start, end];
+    const collisions = this.countRoomCollisions(originalPath, rooms, allowedEdgePoints);
+    
+    if (collisions === 0) {
+      return originalPath; // Use original if no collisions
+    }
+    
+    // If there are collisions, fall back to battle map path which has collision avoidance
+    return this.createBattleMapPath(start, end, rooms, excludeRooms);
+  }
+
+  /**
+   * Create a winding path between two points with collision detection
+   */
+  private createWindingPathWithCollisionDetection(start: { x: number; y: number }, end: { x: number; y: number }, rooms: Room[], excludeRooms: string[]): { x: number; y: number }[] {
+    // First try the original winding path
+    const originalPath = this.createWindingPathBetweenPoints(start, end);
+    const allowedEdgePoints = [start, end];
+    const collisions = this.countRoomCollisions(originalPath, rooms, allowedEdgePoints);
+    
+    if (collisions === 0) {
+      return originalPath; // Use original if no collisions
+    }
+    
+    // If there are collisions, fall back to battle map path which has collision avoidance
+    return this.createBattleMapPath(start, end, rooms, excludeRooms);
+  }
+
+  /**
    * Expand a single-width corridor path to the specified width for battle map compatibility
    */
   private expandCorridorToWidth(path: { x: number; y: number }[], width: number): { x: number; y: number }[] {
@@ -856,14 +1083,66 @@ export class MapGenerator {
   }
 
   /**
-   * Create a more battle-map friendly path with proper rectilinear segments
+   * Check if a point collides with any room interior (corridors should go around rooms, not through them)
    */
-  private createBattleMapPath(start: { x: number; y: number }, end: { x: number; y: number }): { x: number; y: number }[] {
+  private isRoomCollision(x: number, y: number, rooms: Room[], allowedEdgePoints: { x: number; y: number }[] = []): boolean {
+    for (const room of rooms) {
+      // Use room shape service for accurate collision detection
+      const insideRoom = roomShapeService.isPointInRoom(room, x, y);
+      
+      if (insideRoom) {
+        // Allow specific edge points (door connections)
+        const isAllowedEdgePoint = allowedEdgePoints.some(point => point.x === x && point.y === y);
+        if (isAllowedEdgePoint) {
+          return false; // This is an allowed door connection point
+        }
+        return true; // Collision detected - corridor should not go through room interior
+      }
+    }
+    return false; // No collision with room interiors
+  }
+
+  /**
+   * Create a more battle-map friendly path with proper wall avoidance
+   */
+  private createBattleMapPath(start: { x: number; y: number }, end: { x: number; y: number }, rooms?: Room[], excludeRooms?: string[]): { x: number; y: number }[] {
+    // If no rooms provided for collision detection, fall back to simple L-shaped path
+    if (!rooms) {
+      return this.createSimpleLShapedPath(start, end);
+    }
+    
+    // Define allowed edge points (start and end door connections)
+    const allowedEdgePoints = [start, end];
+    
+    // Try both horizontal-first and vertical-first approaches
+    const horizontalFirstPath = this.createLShapedPathWithCollisionAvoidance(start, end, true, rooms, allowedEdgePoints);
+    const verticalFirstPath = this.createLShapedPathWithCollisionAvoidance(start, end, false, rooms, allowedEdgePoints);
+    
+    // Choose the path with fewer room collisions
+    const horizontalCollisions = this.countRoomCollisions(horizontalFirstPath, rooms, allowedEdgePoints);
+    const verticalCollisions = this.countRoomCollisions(verticalFirstPath, rooms, allowedEdgePoints);
+    
+    if (horizontalCollisions === 0 && verticalCollisions === 0) {
+      // Both paths are clean, choose randomly for variety
+      return this.R() < 0.5 ? horizontalFirstPath : verticalFirstPath;
+    } else if (horizontalCollisions === 0) {
+      return horizontalFirstPath;
+    } else if (verticalCollisions === 0) {
+      return verticalFirstPath;
+    } else {
+      // Both have collisions, choose the one with fewer
+      return horizontalCollisions <= verticalCollisions ? horizontalFirstPath : verticalFirstPath;
+    }
+  }
+
+  /**
+   * Create simple L-shaped path without collision detection
+   */
+  private createSimpleLShapedPath(start: { x: number; y: number }, end: { x: number; y: number }): { x: number; y: number }[] {
     const path: { x: number; y: number }[] = [];
     let currentX = start.x;
     let currentY = start.y;
     
-    // Create an L-shaped path: horizontal first, then vertical (or vice versa based on random choice)
     const horizontalFirst = this.R() < 0.5;
     
     if (horizontalFirst) {
@@ -890,6 +1169,53 @@ export class MapGenerator {
     
     path.push({ x: end.x, y: end.y });
     return path;
+  }
+
+  /**
+   * Create L-shaped path with collision avoidance
+   */
+  private createLShapedPathWithCollisionAvoidance(start: { x: number; y: number }, end: { x: number; y: number }, horizontalFirst: boolean, rooms: Room[], allowedEdgePoints: { x: number; y: number }[]): { x: number; y: number }[] {
+    const path: { x: number; y: number }[] = [];
+    let currentX = start.x;
+    let currentY = start.y;
+    
+    if (horizontalFirst) {
+      // Move horizontally first, then vertically
+      while (currentX !== end.x) {
+        path.push({ x: currentX, y: currentY });
+        currentX += currentX < end.x ? 1 : -1;
+      }
+      while (currentY !== end.y) {
+        path.push({ x: currentX, y: currentY });
+        currentY += currentY < end.y ? 1 : -1;
+      }
+    } else {
+      // Move vertically first, then horizontally  
+      while (currentY !== end.y) {
+        path.push({ x: currentX, y: currentY });
+        currentY += currentY < end.y ? 1 : -1;
+      }
+      while (currentX !== end.x) {
+        path.push({ x: currentX, y: currentY });
+        currentX += currentX < end.x ? 1 : -1;
+      }
+    }
+    
+    path.push({ x: end.x, y: end.y });
+    return path;
+  }
+
+  /**
+   * Count room collisions in a path
+   */
+  private countRoomCollisions(path: { x: number; y: number }[], rooms: Room[], allowedEdgePoints: { x: number; y: number }[]): number {
+    let collisions = 0;
+    for (const point of path) {
+      if (this.isRoomCollision(point.x, point.y, rooms, allowedEdgePoints)) {
+        collisions++;
+      }
+    }
+    return collisions;
   }
 
   /**

@@ -115,7 +115,7 @@ function getThreatRating(cer: number): 'fodder' | 'worthy' | 'boss' {
 export const dfrpg: SystemModule = {
   id: 'dfrpg',
   label: 'GURPS Dungeon Fantasy',
-  enrich(d: Dungeon, opts?: { sources?: string[]; rng?: () => number; level?: number; useDFRPGTreasure?: boolean; useEnhancedTraps?: boolean; useEnvironmentalChallenges?: boolean; environmentComplexity?: 'minimal' | 'moderate' | 'challenging' | 'extreme'; tags?: TaggedSelectionOptions }): Dungeon {
+  async enrich(d: Dungeon, opts?: { sources?: string[]; rng?: () => number; level?: number; useDFRPGTreasure?: boolean; useEnhancedTraps?: boolean; useEnvironmentalChallenges?: boolean; environmentComplexity?: 'minimal' | 'moderate' | 'challenging' | 'extreme'; tags?: TaggedSelectionOptions }): Promise<Dungeon> {
     const R = opts?.rng ?? Math.random;
     const encounters = { ...d.encounters };
     const dungeonLevel = opts?.level ?? 1;
@@ -446,24 +446,29 @@ export const dfrpg: SystemModule = {
       const validation = validateDungeonSolvability(enrichedDungeon);
       
       if (!validation.solvable) {
-        console.warn(`DFRPG: ${validation.message} - Attempting key replacement`);
+        console.warn(`DFRPG: ${validation.message} - Attempting smart key relocation`);
         
-        // Try to fix by placing all keys in accessible rooms
-        const fallbackOptions: KeyPlacementOptions = {
-          ...keyPlacementOptions,
-          ensureAccessibility: false // Disable strict accessibility to allow more placement options
-        };
+        // Import the new fix functions
+        const { fixDungeonSolvability, createFallbackSolutions } = await import('../../services/pathfinder');
         
-        // Clear previous placement and try again
-        keys.forEach(key => key.locationId = undefined);
-        keyItemService.placeKeys(enrichedDungeon, keys, fallbackOptions);
+        // First attempt: smart key relocation
+        const fixed = fixDungeonSolvability(enrichedDungeon);
         
-        // Validate again
-        const secondValidation = validateDungeonSolvability(enrichedDungeon);
-        if (secondValidation.solvable) {
-          console.log('DFRPG: Successfully fixed dungeon solvability');
+        if (fixed) {
+          console.log('DFRPG: Successfully fixed dungeon solvability with key relocation');
         } else {
-          console.warn('DFRPG: Could not ensure dungeon solvability - players may need alternate solutions');
+          console.warn('DFRPG: Key relocation failed - adding fallback solutions');
+          
+          // Second attempt: add fallback solutions (master key, breakable doors)
+          createFallbackSolutions(enrichedDungeon);
+          
+          // Final validation
+          const finalValidation = validateDungeonSolvability(enrichedDungeon);
+          if (finalValidation.solvable) {
+            console.log('DFRPG: Dungeon made solvable with fallback solutions');
+          } else {
+            console.warn('DFRPG: Could not ensure dungeon solvability - manual intervention may be needed');
+          }
         }
       } else {
         console.log('DFRPG: Dungeon is solvable with key placement');

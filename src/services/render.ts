@@ -1,4 +1,5 @@
 import { Dungeon, Room } from "../core/types";
+import { roomShapeService } from "./room-shapes";
 
 export interface RenderTheme {
   /** Color of the SVG background */
@@ -38,7 +39,13 @@ export const darkTheme: RenderTheme = {
 export function renderAscii(d: Dungeon): string {
   const points: { x: number; y: number }[] = [];
   for (const r of d.rooms) {
-    points.push({ x: r.x + r.w, y: r.y + r.h });
+    if (r.shape === 'rectangular' || !r.shapePoints) {
+      points.push({ x: r.x + r.w, y: r.y + r.h });
+    } else {
+      // For shaped rooms, use the room bounds
+      const bounds = roomShapeService.getRoomBounds(r);
+      points.push({ x: Math.ceil(bounds.maxX), y: Math.ceil(bounds.maxY) });
+    }
   }
   for (const c of d.corridors) {
     for (const p of c.path) points.push(p);
@@ -48,10 +55,30 @@ export function renderAscii(d: Dungeon): string {
   const grid: string[][] = Array.from({ length: maxY }, () => Array(maxX).fill(" "));
 
   for (const r of d.rooms) {
-    for (let y = r.y; y < r.y + r.h; y++) {
-      for (let x = r.x; x < r.x + r.w; x++) {
-        const border = x === r.x || x === r.x + r.w - 1 || y === r.y || y === r.y + r.h - 1;
-        grid[y][x] = border ? "#" : ".";
+    if (r.shape === 'rectangular' || !r.shapePoints) {
+      // Use original rectangular rendering for rectangular rooms
+      for (let y = r.y; y < r.y + r.h; y++) {
+        for (let x = r.x; x < r.x + r.w; x++) {
+          const border = x === r.x || x === r.x + r.w - 1 || y === r.y || y === r.y + r.h - 1;
+          grid[y][x] = border ? "#" : ".";
+        }
+      }
+    } else {
+      // Use shape-aware rendering for non-rectangular rooms
+      const bounds = roomShapeService.getRoomBounds(r);
+      for (let y = Math.floor(bounds.minY); y <= Math.ceil(bounds.maxY); y++) {
+        for (let x = Math.floor(bounds.minX); x <= Math.ceil(bounds.maxX); x++) {
+          if (y >= 0 && y < maxY && x >= 0 && x < maxX) {
+            if (roomShapeService.isPointInRoom(r, x, y)) {
+              // Check if this is a border point by testing adjacent points
+              const isBorder = !roomShapeService.isPointInRoom(r, x-1, y) ||
+                              !roomShapeService.isPointInRoom(r, x+1, y) ||
+                              !roomShapeService.isPointInRoom(r, x, y-1) ||
+                              !roomShapeService.isPointInRoom(r, x, y+1);
+              grid[y][x] = isBorder ? "#" : ".";
+            }
+          }
+        }
       }
     }
   }
@@ -124,7 +151,13 @@ export function renderSvg(
   const cell = 20; // pixel size of a single grid square
   const points: { x: number; y: number }[] = [];
   for (const r of d.rooms) {
-    points.push({ x: r.x + r.w, y: r.y + r.h });
+    if (r.shape === 'rectangular' || !r.shapePoints) {
+      points.push({ x: r.x + r.w, y: r.y + r.h });
+    } else {
+      // For shaped rooms, use the room bounds
+      const bounds = roomShapeService.getRoomBounds(r);
+      points.push({ x: Math.ceil(bounds.maxX), y: Math.ceil(bounds.maxY) });
+    }
   }
   for (const c of d.corridors) {
     for (const p of c.path) points.push(p);
@@ -167,14 +200,29 @@ export function renderSvg(
   }
 
   d.rooms.forEach((r, i) => {
-    parts.push(
-      `<rect x="${r.x * cell}" y="${r.y * cell}" width="${r.w * cell}" height="${r.h * cell}" fill="${theme.roomFill}" stroke="${theme.roomStroke}"/>`,
-    );
-    const cx = (r.x + r.w / 2) * cell;
-    const cy = (r.y + r.h / 2) * cell;
-    parts.push(
-      `<text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" font-size="${cell * 0.6}" fill="${theme.textFill}">${i + 1}</text>`,
-    );
+    if (r.shape === 'rectangular' || !r.shapePoints) {
+      // Render rectangular rooms as before
+      parts.push(
+        `<rect x="${r.x * cell}" y="${r.y * cell}" width="${r.w * cell}" height="${r.h * cell}" fill="${theme.roomFill}" stroke="${theme.roomStroke}"/>`,
+      );
+      const cx = (r.x + r.w / 2) * cell;
+      const cy = (r.y + r.h / 2) * cell;
+      parts.push(
+        `<text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" font-size="${cell * 0.6}" fill="${theme.textFill}">${i + 1}</text>`,
+      );
+    } else {
+      // Render shaped rooms as polygons
+      const points = r.shapePoints!.map(p => `${p.x * cell},${p.y * cell}`).join(' ');
+      parts.push(
+        `<polygon points="${points}" fill="${theme.roomFill}" stroke="${theme.roomStroke}"/>`,
+      );
+      // Place text at the center of the room
+      const cx = r.x * cell;
+      const cy = r.y * cell;
+      parts.push(
+        `<text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" font-size="${cell * 0.6}" fill="${theme.textFill}">${i + 1}</text>`,
+      );
+    }
   });
 
   parts.push("</svg>");

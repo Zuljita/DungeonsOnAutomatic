@@ -318,6 +318,53 @@
       padding: 6px 12px;
       font-size: 12px;
     }
+    
+    /* Real-time preview styles */
+    .preview-controls {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin-bottom: 20px;
+      padding: 15px;
+      background: #e8f4fd;
+      border-radius: 4px;
+      border: 1px solid #bee5eb;
+    }
+    .preview-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .preview-toggle input[type="checkbox"] {
+      width: auto;
+    }
+    .preview-toggle label {
+      margin-bottom: 0;
+      font-weight: normal;
+    }
+    .loading-indicator {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      color: #0066cc;
+      font-size: 14px;
+    }
+    .loading-spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid #e3f2fd;
+      border-top: 2px solid #0066cc;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .map-container.loading {
+      opacity: 0.6;
+      pointer-events: none;
+    }
   </style>
 </head>
 <body>
@@ -331,6 +378,12 @@
       <div class="map-options">
         <div class="option-group">
           <h3>Basic Settings</h3>
+          <div class="form-group">
+            <label>Template:</label>
+            <select id="template">
+              <option value="">No Template (Custom)</option>
+            </select>
+          </div>
           <div class="form-group">
             <label>System:</label>
             <select id="system">
@@ -404,8 +457,10 @@
             <label>Room Shape:</label>
             <select id="room-shape">
               <option value="rectangular">Rectangular</option>
-              <option value="round">Round</option>
-              <option value="hexagonal">Hexagonal</option>
+              <option value="diverse">Diverse (All shapes)</option>
+              <option value="hex-preference">Hex Preference</option>
+              <option value="circular-preference">Circular Preference</option>
+              <option value="small-preference">Small Preference</option>
               <option value="mixed">Mixed</option>
             </select>
           </div>
@@ -453,8 +508,18 @@
         </div>
       </div>
 
-      <button id="generate">Generate Dungeon</button>
-      <a id="download-svg" download="dungeon.svg" class="download-link">Download SVG</a>
+      <div class="preview-controls">
+        <div class="preview-toggle">
+          <input type="checkbox" id="real-time-preview" checked>
+          <label for="real-time-preview">Real-time Preview</label>
+        </div>
+        <div class="loading-indicator" id="loading-indicator">
+          <div class="loading-spinner"></div>
+          <span>Generating...</span>
+        </div>
+        <button id="generate">Generate Dungeon</button>
+        <a id="download-svg" download="dungeon.svg" class="download-link">Download SVG</a>
+      </div>
 
       <div id="map" class="map-container"></div>
       <div id="room-key" class="room-key"></div>

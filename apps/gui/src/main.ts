@@ -3,10 +3,16 @@ import { renderSvg } from '@src/services/render';
 import { htmlRoomDetails, populateRooms, getDungeonMetaHtml } from '@src/services/room-key';
 import { ImportWizardComponent } from './import-wizard';
 import { tagSystem } from '@src/services/tag-system';
-import { mapGenerator, MapGenerationOptions } from '@src/services/map-generator';
+import { buildDungeon } from '@src/services/assembler';
+import { dungeonTemplateService } from '@src/services/dungeon-templates';
 
 let importWizard: ImportWizardComponent;
 const STORAGE_KEY = 'doa-generator-settings';
+
+// Real-time preview state
+let isGenerating = false;
+let generateTimeout: number | null = null;
+const DEBOUNCE_DELAY = 500; // 500ms delay for real-time updates
 
 function initializeTabs() {
   const tabs = document.querySelectorAll('.tab');
@@ -80,11 +86,130 @@ function populateSystemSelector() {
   });
 }
 
+function populateTemplateSelector() {
+  const templateSelect = document.getElementById('template') as HTMLSelectElement;
+  const categories = dungeonTemplateService.getCategories();
+  
+  templateSelect.innerHTML = '<option value="">No Template (Custom)</option>';
+  
+  categories.forEach(category => {
+    const optgroup = document.createElement('optgroup');
+    optgroup.label = category.name;
+    
+    const templates = dungeonTemplateService.getTemplatesByCategory(category.id);
+    templates.forEach(template => {
+      const option = document.createElement('option');
+      option.value = template.id;
+      option.textContent = template.name;
+      option.title = template.description;
+      optgroup.appendChild(option);
+    });
+    
+    templateSelect.appendChild(optgroup);
+  });
+}
+
+function applyTemplate(templateId: string) {
+  if (!templateId) return;
+  
+  const template = dungeonTemplateService.getTemplate(templateId);
+  if (!template) return;
+  
+  console.log(`Applying template: ${template.name}`);
+  
+  // Get form elements
+  const roomsInput = document.getElementById('rooms') as HTMLInputElement;
+  const widthInput = document.getElementById('width') as HTMLInputElement;
+  const heightInput = document.getElementById('height') as HTMLInputElement;
+  const layoutTypeInput = document.getElementById('layout-type') as HTMLSelectElement;
+  const roomLayoutInput = document.getElementById('room-layout') as HTMLSelectElement;
+  const roomSizeInput = document.getElementById('room-size') as HTMLSelectElement;
+  const roomShapeInput = document.getElementById('room-shape') as HTMLSelectElement;
+  const corridorTypeInput = document.getElementById('corridor-type') as HTMLSelectElement;
+  const corridorWidthInput = document.getElementById('corridor-width') as HTMLSelectElement;
+  const allowDeadendsInput = document.getElementById('allow-deadends') as HTMLInputElement;
+  const stairsUpInput = document.getElementById('stairs-up') as HTMLInputElement;
+  const stairsDownInput = document.getElementById('stairs-down') as HTMLInputElement;
+  const entrancePeripheryInput = document.getElementById('entrance-periphery') as HTMLInputElement;
+  const systemInput = document.getElementById('system') as HTMLSelectElement;
+  
+  // Apply template values
+  const options = template.mapOptions;
+  
+  if (options.rooms !== undefined) roomsInput.value = String(options.rooms);
+  if (options.width !== undefined) widthInput.value = String(options.width);
+  if (options.height !== undefined) heightInput.value = String(options.height);
+  if (options.layoutType) layoutTypeInput.value = options.layoutType;
+  if (options.roomLayout) roomLayoutInput.value = options.roomLayout;
+  if (options.roomSize) roomSizeInput.value = options.roomSize;
+  if (options.roomShape) roomShapeInput.value = options.roomShape;
+  if (options.corridorType) corridorTypeInput.value = options.corridorType;
+  if (options.corridorWidth !== undefined) corridorWidthInput.value = String(options.corridorWidth);
+  if (options.allowDeadends !== undefined) allowDeadendsInput.checked = options.allowDeadends;
+  if (options.stairsUp !== undefined) stairsUpInput.checked = options.stairsUp;
+  if (options.stairsDown !== undefined) stairsDownInput.checked = options.stairsDown;
+  if (options.entranceFromPeriphery !== undefined) entrancePeripheryInput.checked = options.entranceFromPeriphery;
+  
+  // Apply recommended system
+  if (template.recommendedSystem) {
+    systemInput.value = template.recommendedSystem;
+    systemInput.dispatchEvent(new Event('change')); // Trigger theme update
+  }
+}
+
+function showLoadingState() {
+  const loadingIndicator = document.getElementById('loading-indicator');
+  const mapContainer = document.getElementById('map');
+  
+  if (loadingIndicator) {
+    loadingIndicator.style.display = 'flex';
+  }
+  if (mapContainer) {
+    mapContainer.classList.add('loading');
+  }
+  isGenerating = true;
+}
+
+function hideLoadingState() {
+  const loadingIndicator = document.getElementById('loading-indicator');
+  const mapContainer = document.getElementById('map');
+  
+  if (loadingIndicator) {
+    loadingIndicator.style.display = 'none';
+  }
+  if (mapContainer) {
+    mapContainer.classList.remove('loading');
+  }
+  isGenerating = false;
+}
+
+function debounceGenerate() {
+  const realtimePreview = document.getElementById('real-time-preview') as HTMLInputElement;
+  
+  // Only auto-generate if real-time preview is enabled
+  if (!realtimePreview?.checked) return;
+  
+  // Clear existing timeout
+  if (generateTimeout) {
+    clearTimeout(generateTimeout);
+  }
+  
+  // Don't start new generation if already generating
+  if (isGenerating) return;
+  
+  // Set new timeout
+  generateTimeout = window.setTimeout(() => {
+    generate().catch(console.error);
+    generateTimeout = null;
+  }, DEBOUNCE_DELAY);
+}
+
 function loadGeneratorSettings() {
   const stored = localStorage.getItem(STORAGE_KEY);
   if (!stored) return;
   try {
     const settings = JSON.parse(stored);
+    const templateInput = document.getElementById('template') as HTMLSelectElement;
     const roomsInput = document.getElementById('rooms') as HTMLInputElement;
     const seedInput = document.getElementById('seed') as HTMLInputElement;
     const systemInput = document.getElementById('system') as HTMLSelectElement;
@@ -102,6 +227,7 @@ function loadGeneratorSettings() {
     const stairsDownInput = document.getElementById('stairs-down') as HTMLInputElement;
     const entrancePeripheryInput = document.getElementById('entrance-periphery') as HTMLInputElement;
 
+    templateInput.value = settings.template ?? '';
     roomsInput.value =
       settings.rooms !== undefined ? String(settings.rooms) : '';
     seedInput.value = settings.seed ?? '';
@@ -128,6 +254,10 @@ function loadGeneratorSettings() {
 }
 
 async function generate(): Promise<void> {
+  // Show loading state
+  showLoadingState();
+
+  const templateInput = document.getElementById('template') as HTMLSelectElement;
   const roomsInput = document.getElementById('rooms') as HTMLInputElement;
   const seedInput = document.getElementById('seed') as HTMLInputElement;
   const systemInput = document.getElementById('system') as HTMLSelectElement;
@@ -145,6 +275,7 @@ async function generate(): Promise<void> {
   const stairsDownInput = document.getElementById('stairs-down') as HTMLInputElement;
   const entrancePeripheryInput = document.getElementById('entrance-periphery') as HTMLInputElement;
 
+  const template = templateInput.value || undefined;
   const rooms = parseInt(roomsInput.value) || 8;
   const seed = seedInput.value || undefined;
   const system = systemInput.value || 'generic';
@@ -167,15 +298,19 @@ async function generate(): Promise<void> {
   const inputEl = document.getElementById('inputs');
   const downloadEl = document.getElementById('download-svg') as HTMLAnchorElement;
 
-  if (!mapEl || !roomKeyEl || !inputEl) return;
+  if (!mapEl || !roomKeyEl || !inputEl) {
+    hideLoadingState();
+    return;
+  }
 
   try {
-    // Create map generation options
-    const mapOptions: MapGenerationOptions = {
+    // Create dungeon generation options
+    const dungeonOptions = {
       rooms,
       width,
       height,
       seed,
+      template,
       layoutType,
       roomLayout,
       roomSize,
@@ -187,17 +322,18 @@ async function generate(): Promise<void> {
       stairsDown,
       entranceFromPeriphery
     };
+    
     const generatorSettings = {
-      ...mapOptions,
+      ...dungeonOptions,
       system,
       theme
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(generatorSettings));
 
-    console.log('Map generation options:', mapOptions);
+    console.log('Dungeon generation options:', dungeonOptions);
 
-    // Generate the dungeon using the new map generator
-    const dungeon = mapGenerator.generateDungeon(mapOptions);
+    // Generate the dungeon using buildDungeon (includes all improvements)
+    const dungeon = buildDungeon(dungeonOptions);
     console.log('Generated dungeon:', dungeon);
 
     // Enrich with system-specific content
@@ -208,7 +344,7 @@ async function generate(): Promise<void> {
 
     // Display input parameters
     const inputParams = {
-      ...mapOptions,
+      ...dungeonOptions,
       system,
       theme: theme || 'none'
     };
@@ -236,12 +372,51 @@ async function generate(): Promise<void> {
   } catch (error) {
     console.error('Error generating dungeon:', error);
     mapEl.innerHTML = `<p style="color: red;">Error generating dungeon: ${error}</p>`;
+  } finally {
+    // Always hide loading state
+    hideLoadingState();
+  }
+}
+
+function setupRealTimePreview() {
+  // Get all form elements that should trigger real-time updates
+  const formElements = [
+    'rooms', 'width', 'height', 'seed',
+    'layout-type', 'room-layout', 'room-size', 'room-shape',
+    'corridor-type', 'corridor-width', 'system', 'theme',
+    'allow-deadends', 'stairs-up', 'stairs-down', 'entrance-periphery'
+  ];
+
+  formElements.forEach(id => {
+    const element = document.getElementById(id);
+    if (element) {
+      if (element.type === 'checkbox') {
+        element.addEventListener('change', debounceGenerate);
+      } else {
+        element.addEventListener('input', debounceGenerate);
+        element.addEventListener('change', debounceGenerate);
+      }
+    }
+  });
+
+  // Special handling for template selector
+  const templateSelect = document.getElementById('template') as HTMLSelectElement;
+  if (templateSelect) {
+    templateSelect.addEventListener('change', (e) => {
+      const target = e.target as HTMLSelectElement;
+      if (target.value) {
+        applyTemplate(target.value);
+        // Trigger real-time update after applying template
+        debounceGenerate();
+      }
+    });
   }
 }
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
   initializeTabs();
+  populateTemplateSelector();
   populateSystemSelector();
   initializeThemeSelector();
   loadGeneratorSettings();
@@ -249,8 +424,14 @@ document.addEventListener('DOMContentLoaded', () => {
   
   const generateBtn = document.getElementById('generate');
   if (generateBtn) {
-    generateBtn.addEventListener('click', generate);
+    generateBtn.addEventListener('click', () => {
+      // Force generation even if real-time is disabled
+      generate().catch(console.error);
+    });
   }
+
+  // Setup real-time preview listeners
+  setupRealTimePreview();
 
   // Initial generation
   generate().catch(console.error);
