@@ -877,8 +877,6 @@ export class MapGenerator {
         endDoor = this.findClosestPointOnRoomEdge(room2, 'bottom', center1);
       }
     }
-
-    // Use door positions directly for corridor pathfinding (ON the walls)
     start = startDoor;
     end = endDoor;
     
