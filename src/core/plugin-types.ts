@@ -21,9 +21,9 @@ export interface PluginMetadata {
   name?: string; // Human-readable name (fallback to id)
   description?: string; // Plugin description
   author: PluginAuthor; // Author information
-  license: string; // Plugin license
+  license?: string; // Plugin license
   compatibility: string; // DOA version compatibility (semver range)
-  dependencies: PluginDependencies; // Plugin dependencies
+  dependencies?: PluginDependencies; // Plugin dependencies
   tags?: string[]; // Searchable tags
   homepage?: string; // Plugin homepage URL
   repository?: string; // Source code repository URL
@@ -208,8 +208,8 @@ export interface PluginInfo {
   installed: boolean;
   enabled: boolean;
   loadPath?: string;
+  source?: string; // Where it was installed from (GitHub URL, npm package, etc.)
   installDate?: Date;
-  updateDate?: Date;
 }
 
 export interface PluginQuery {
@@ -217,41 +217,31 @@ export interface PluginQuery {
   tags?: string[];
   author?: string;
   search?: string; // Text search in name/description
-  minRating?: number;
-  sortBy?: 'downloads' | 'rating' | 'updated' | 'name';
+  sortBy?: 'name' | 'installed' | 'updated';
   limit?: number;
   offset?: number;
 }
 
-// === Plugin Sandbox Interfaces ===
+// === Plugin Environment ===
 
-export interface PluginSandbox {
-  // Allowed DOA APIs
+export interface PluginEnvironment {
+  // DOA APIs
   core: {
     types: typeof import('./types');
-    // Remove utils reference for now - will be added when utils service exists
   };
   
-  // Restricted environment
-  environment: {
-    random: RNG;
-    console: Pick<Console, 'log' | 'warn' | 'error'>;
-    setTimeout: (fn: Function, ms: number) => NodeJS.Timeout;
-    clearTimeout: (id: NodeJS.Timeout) => void;
-    // No access to: fs, process, network, etc.
-  };
+  // Standard environment
+  console: Console;
+  random: RNG;
   
-  // Resource monitoring
-  limits: {
-    maxMemoryMB: number;
-    maxExecutionTimeMs: number;
-    maxFileSize: number;
+  // Helper functions for common tasks
+  helpers: {
+    readJsonFile: (path: string) => Promise<unknown>;
+    writeJsonFile: (path: string, data: unknown) => Promise<void>;
   };
 }
 
 export interface PluginLoadOptions {
-  sandbox?: boolean;
-  timeout?: number;
   enableValidation?: boolean;
   configPath?: string;
 }
@@ -276,9 +266,9 @@ export const PluginMetadataSchema = z.object({
   name: z.string().optional(),
   description: z.string().optional(),
   author: PluginAuthorSchema,
-  license: z.string().min(1),
+  license: z.string().optional(),
   compatibility: z.string().min(1),
-  dependencies: PluginDependenciesSchema,
+  dependencies: PluginDependenciesSchema.optional(),
   tags: z.array(z.string()).optional(),
   homepage: z.string().url().optional(),
   repository: z.string().url().optional(),

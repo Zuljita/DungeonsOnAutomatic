@@ -1,230 +1,218 @@
-# Plugin Security and Safety Guidelines
+# Plugin Safety Guidelines
 
 ## Version 1.0
 
-This document outlines security requirements, safety guidelines, and best practices for DOA plugin development and distribution.
+This document outlines practical safety considerations and best practices for DOA plugin development and usage.
 
-## Security Threat Model
+## Reality Check: What We're Actually Protecting
 
-### Attack Vectors
+DOA is a **local hobbyist tool** for generating fantasy dungeons. The realistic concerns are:
 
-| Vector | Risk Level | Mitigation |
-|--------|------------|------------|
-| **Malicious Code Execution** | High | Sandboxing, code review |
-| **Data Exfiltration** | High | Network restrictions, file system limits |
-| **Resource Exhaustion** | Medium | CPU/memory limits, timeouts |
-| **Dependency Vulnerabilities** | Medium | Automated scanning, trusted sources |
-| **Configuration Injection** | Medium | Input validation, sanitization |
-| **Supply Chain Attacks** | High | Code signing, trusted registries |
+- **Accidental infinite loops**: User can kill the process
+- **Plugin crashes**: User restarts DOA
+- **Bad file operations**: Operating system permissions handle this
+- **Dependency conflicts**: Standard npm/node issues
 
-### Asset Protection
+**Not realistic concerns for this use case:**
+- Malicious actors targeting DOA users
+- Corporate espionage via dungeon plugins
+- Large-scale supply chain attacks
+- Compliance or regulatory requirements
 
-- **User Data**: Generated dungeons, configuration files, custom data
-- **System Resources**: CPU, memory, disk space, network  
-- **DOA Core**: Application integrity, core functionality
-- **Host System**: File system, environment variables, system processes
+## Practical Safety Approach
 
-## Plugin Sandboxing Architecture
+### Plugin Isolation
 
-All plugins run in a restricted sandbox with limited access to system resources:
+Keep it simple - just prevent plugins from doing obviously problematic things:
 
 ```typescript
-interface PluginSandbox {
-  // Allowed DOA APIs
-  core: {
-    types: typeof import('../core/types');
-  };
-  
-  // Controlled environment  
-  environment: {
-    random: () => number; // Seeded RNG only
-    console: Pick<Console, 'log' | 'warn' | 'error'>;
-    setTimeout: (fn: Function, ms: number) => NodeJS.Timeout;
-    clearTimeout: (id: NodeJS.Timeout) => void;
-  };
-  
-  // Blocked APIs (undefined in sandbox)
-  blocked: {
-    fs: undefined;
-    process: undefined;
-    http: undefined;
-    net: undefined;
-    crypto: undefined; // Use provided random() instead
-  };
+// Basic isolation - prevent dangerous Node.js APIs
+const blockedAPIs = [
+  'child_process',  // No spawning other processes
+  'cluster',        // No process clustering
+  'worker_threads'  // No worker threads
+];
+
+// Everything else is fair game for a local tool
+```
+
+### Error Handling
+
+Focus on graceful degradation:
+
+```typescript
+async function loadPlugin(path: string): Promise<Plugin | null> {
+  try {
+    const plugin = await import(path);
+    return plugin;
+  } catch (error) {
+    console.error(`Plugin failed to load: ${path}`);
+    console.error(error.message);
+    return null; // Continue without this plugin
+  }
 }
 ```
 
-### Resource Limits
+### Source Tracking
 
-```typescript
-interface ResourceLimits {
-  maxMemoryMB: 64; // Maximum memory usage
-  maxExecutionTimeMs: 30000; // 30 second timeout  
-  maxFileSize: 1024 * 1024; // 1MB for data files
-  maxCallStackDepth: 100; // Prevent stack overflow
-  maxIterations: 100000; // Prevent infinite loops
+Just track where plugins came from for easy removal:
+
+```json
+{
+  "installedPlugins": {
+    "community.dnd5e": {
+      "source": "https://github.com/user/dnd5e-plugin",
+      "installDate": "2024-01-15T10:30:00Z",
+      "version": "1.2.0"
+    }
+  }
 }
 ```
-
-### File System Access
-
-Plugins have read-only access to their own directory and DOA's data directories:
-
-```typescript
-interface FileSystemAccess {
-  allowedPaths: {
-    read: [
-      './plugin-directory/**/*', // Plugin's own files
-      './data/**/*.json', // DOA data files  
-      './node_modules/@doa/**/*' // DOA dependencies only
-    ];
-    write: []; // No write access
-  };
-  
-  blockedPaths: [
-    '/',
-    '/home/**/*',
-    '/etc/**/*',
-    '../**/*', // No parent directory access
-    '.env',
-    '.env.*'
-  ];
-}
-```
-
-## Code Signing and Distribution
-
-### Plugin Signing Requirements
-
-All community plugins must be cryptographically signed:
-
-```typescript
-interface PluginSignature {
-  algorithm: 'RSA-PSS' | 'ECDSA-P256';
-  publicKey: string; // PEM format
-  signature: string; // Base64 encoded signature
-  timestamp: string; // RFC 3339 timestamp
-  codeHash: string; // SHA-256 hash of plugin code
-}
-```
-
-### Trusted Publishers
-
-```typescript
-interface TrustedPublisher {
-  id: string; // Publisher identifier
-  name: string; // Display name  
-  publicKey: string; // Verification key
-  verified: boolean; // Verified by DOA team
-  trustLevel: 'community' | 'verified' | 'official';
-  maxPermissions: PluginPermissions;
-}
-```
-
-### Plugin Registry Security
-
-- **Automated Scanning**: All uploaded plugins are scanned for malware
-- **Manual Review**: High-risk plugins undergo manual code review
-- **Reputation System**: User ratings and security reports
-- **Takedown Process**: Rapid removal of malicious plugins
 
 ## Best Practices for Plugin Developers
 
-### Secure Coding Guidelines
+### Write Robust Code
 
-#### Input Validation
-```typescript
-// DO: Validate all inputs
-function generateEncounter(options: EncounterOptions): Encounter {
-  const validatedOptions = EncounterOptionsSchema.parse(options);
-  // ... implementation
-}
-
-// DON'T: Trust input data
-function generateEncounter(options: any): Encounter {
-  if (options.level > 100) { // What if options.level is a string?
-    // ... potentially unsafe
-  }
-}
-```
-
-#### Error Handling
 ```typescript
 // DO: Handle errors gracefully
-try {
-  const result = riskyOperation();
-  return result;
-} catch (error) {
-  // Log error without exposing sensitive information
-  console.error('Operation failed:', error.message);
-  return defaultValue;
+function generateMonster(options: MonsterOptions): Monster | null {
+  try {
+    if (!options.level || options.level < 1) {
+      console.warn('Invalid monster level, using default');
+      options.level = 1;
+    }
+    return createMonster(options);
+  } catch (error) {
+    console.error('Monster generation failed:', error.message);
+    return null; // Let the system continue
+  }
 }
 
-// DON'T: Expose internal details
-catch (error) {
-  throw new Error(`Database connection failed: ${dbConnectionString}`);
+// DON'T: Let errors crash everything
+function generateMonster(options: any): Monster {
+  return createMonster(options); // What if options is null?
 }
 ```
 
-#### Resource Management
+### Validate Inputs
+
 ```typescript
-// DO: Clean up resources
-function processLargeDataset(data: unknown[]): Result {
-  const processedItems: Result[] = [];
-  
-  try {
-    for (const item of data.slice(0, MAX_ITEMS)) { // Limit processing
-      processedItems.push(processItem(item));
-    }
-  } finally {
-    // Clean up any resources
-    cleanup();
+// Use Zod or similar for input validation
+const MonsterOptionsSchema = z.object({
+  level: z.number().min(1).max(20),
+  type: z.enum(['humanoid', 'undead', 'dragon']),
+  difficulty: z.enum(['easy', 'medium', 'hard']).optional()
+});
+
+function generateMonster(options: unknown): Monster | null {
+  const parsed = MonsterOptionsSchema.safeParse(options);
+  if (!parsed.success) {
+    console.warn('Invalid monster options:', parsed.error.message);
+    return null;
   }
   
-  return processedItems;
+  return createMonster(parsed.data);
 }
 ```
 
-### Dependency Security
+### Be a Good Citizen
 
-#### Safe Dependencies
+```typescript
+// DO: Clean up after yourself
+class MySystemPlugin {
+  private cache = new Map();
+  
+  cleanup() {
+    this.cache.clear();
+    // Clean up any timers, file handles, etc.
+  }
+}
+
+// DO: Provide helpful error messages
+throw new Error('Unable to load monster data: monsters.json not found in plugin directory');
+
+// DON'T: Expose internal details that don't help users
+throw new Error('Database connection failed at line 247 in internal module');
+```
+
+### Dependencies
+
 ```json
 {
   "dependencies": {
     "lodash": "^4.17.21",
     "zod": "^3.20.0"
-  },
-  "devDependencies": {
-    "@types/node": "^18.0.0"
   }
 }
 ```
 
-#### Avoid Risky Packages
-- Packages with known vulnerabilities
-- Unmaintained packages (no updates > 2 years)
-- Packages with suspicious behavior
-- Native binaries without source code
+Stick to well-maintained, popular packages. Avoid:
+- Packages with known security issues
+- Abandoned packages (no updates in 2+ years)
+- Packages that seem unnecessarily complex for simple tasks
 
-### Configuration Security
+## Installation Safety
 
-```typescript
-// DO: Use environment-specific defaults
-const config = {
-  apiEndpoint: process.env.NODE_ENV === 'development' 
-    ? 'http://localhost:3000/api'
-    : 'https://api.example.com',
-  
-  // Don't hardcode secrets
-  apiKey: process.env.API_KEY || '',
-  
-  // Validate configuration
-  timeout: Math.min(Number(process.env.TIMEOUT) || 5000, 30000)
-};
+### Trust Your Sources
 
-// DON'T: Hardcode sensitive information  
-const config = {
-  apiKey: 'sk_live_abcd1234', // Never do this
-  databaseUrl: 'postgresql://user:password@host/db' // Never do this
-};
+```bash
+# GitHub repos you can inspect
+doa plugin install https://github.com/trusted-user/plugin
+
+# Published npm packages
+doa plugin install @doa-plugins/pathfinder
+
+# Local development
+doa plugin install ./my-plugin/
 ```
+
+If you don't trust the source, don't install it. It's that simple.
+
+### Easy Removal
+
+```bash
+# Remove plugins that cause problems
+doa plugin remove community.dnd5e
+doa plugin list  # See what's installed
+```
+
+## When Things Go Wrong
+
+### Plugin Won't Load
+- Check the error message
+- Verify the plugin is compatible with your DOA version
+- Try reinstalling: `doa plugin remove X && doa plugin install X`
+
+### Plugin Crashes DOA
+- Remove the problematic plugin
+- Report the issue to the plugin author
+- Check DOA logs for details
+
+### Performance Issues
+- Some plugins might be slow with large dungeons
+- Kill the process if it hangs
+- Consider simpler plugins or smaller dungeons
+
+## For DOA Maintainers
+
+Keep the plugin system simple:
+
+1. **Basic validation** of plugin structure
+2. **Error isolation** so bad plugins don't crash DOA  
+3. **Clear error messages** to help users debug
+4. **Easy installation/removal** workflow
+
+Don't over-engineer security for a hobbyist tool. The main goal is **not breaking the user experience**, not protecting against sophisticated attacks.
+
+## Summary
+
+The DOA plugin system should be **simple, practical, and user-friendly**. Focus on:
+
+- ✅ **Preventing accidents** (infinite loops, crashes)
+- ✅ **Clear error messages** when things go wrong
+- ✅ **Easy plugin management** (install/remove)
+- ❌ ~~Enterprise security theater~~
+- ❌ ~~Complex permission systems~~
+- ❌ ~~Artificial resource limits~~
+
+**Remember**: We're generating fantasy dungeons for fun, not running a bank. Keep it simple!

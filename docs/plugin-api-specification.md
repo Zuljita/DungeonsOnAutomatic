@@ -278,122 +278,113 @@ pnpm doa generate --export=community.roll20 --include-lighting --grid-size=70
 4. Plugin defaults
 5. System defaults (lowest priority)
 
-## 7. Security and Sandboxing
+## 7. Plugin Loading and Safety
 
-### 7.1 Security Requirements
+### 7.1 Basic Safety Requirements
 
-- **Code Signing**: Community plugins must be signed by trusted authors
-- **Dependency Scanning**: Plugin dependencies are scanned for vulnerabilities
-- **Resource Limits**: Plugins have CPU/memory usage limits
-- **File System Access**: Plugins have restricted file system access
-- **Network Access**: Network access is disabled by default
+- **Error Isolation**: Plugin crashes shouldn't break DOA
+- **Source Attribution**: Track where plugins came from for easy removal
+- **Graceful Failures**: Plugin errors should be logged and handled cleanly
+- **Simple Installation**: Easy install/uninstall process
 
-### 7.2 Sandboxing Strategy
+### 7.2 Plugin Environment
 
 ```typescript
-interface PluginSandbox {
-  // Allowed DOA APIs
+interface PluginEnvironment {
+  // DOA APIs
   core: {
     types: typeof import('../core/types');
   };
   
-  // Restricted environment
-  environment: {
-    random: RNG;
-    console: Pick<Console, 'log' | 'warn' | 'error'>;
-    // No access to: fs, process, network, etc.
-  };
+  // Standard environment
+  console: Console;
+  random: RNG;
   
-  // Resource monitoring
-  limits: {
-    maxMemoryMB: number;
-    maxExecutionTimeMs: number;
-    maxFileSize: number;
+  // Helper functions for common tasks
+  helpers: {
+    readJsonFile: (path: string) => Promise<unknown>;
+    writeJsonFile: (path: string, data: unknown) => Promise<void>;
   };
 }
 ```
 
-### 7.3 Safe Loading
+### 7.3 Simple Loading
 
 ```typescript
-async function loadPluginSafely(pluginPath: string): Promise<Plugin> {
-  // Validate plugin package.json
-  const metadata = await validatePluginMetadata(pluginPath);
-  
-  // Create sandboxed environment
-  const sandbox = createPluginSandbox(metadata);
-  
-  // Load plugin in sandbox with timeout
-  const plugin = await loadWithTimeout(pluginPath, sandbox, 5000);
-  
-  // Validate plugin implementation
-  await validatePluginImplementation(plugin, metadata);
-  
-  return plugin;
+async function loadPlugin(pluginPath: string): Promise<Plugin> {
+  try {
+    // Basic validation
+    const metadata = await validatePluginMetadata(pluginPath);
+    
+    // Load and instantiate
+    const plugin = await import(pluginPath);
+    
+    // Initialize if needed
+    if (plugin.initialize) {
+      await plugin.initialize();
+    }
+    
+    return plugin;
+  } catch (error) {
+    console.error(`Failed to load plugin ${pluginPath}:`, error.message);
+    throw error;
+  }
 }
 ```
 
 ## 8. Version Compatibility
 
-### 8.1 Semantic Versioning
+### 8.1 Simple Versioning
 
 - **MAJOR**: Breaking changes to plugin API
 - **MINOR**: New features, backward compatible
 - **PATCH**: Bug fixes, backward compatible
 
-### 8.2 Compatibility Matrix
+### 8.2 Compatibility
 
-| Plugin API | DOA Core | Breaking Changes |
-|------------|----------|------------------|
-| 1.0.x | 1.0.x - 1.x.x | None |
-| 1.1.x | 1.1.x - 1.x.x | None |
-| 2.0.x | 2.0.x - 2.x.x | Major interface changes |
-
-### 8.3 Migration Strategy
-
-- **Deprecation Warnings**: Old APIs marked deprecated before removal
-- **Migration Guides**: Step-by-step upgrade instructions
-- **Compatibility Layer**: Temporary support for legacy plugins
-
-## 9. Plugin Registry and Distribution
-
-### 9.1 Official Plugin Registry
-
-```typescript
-interface PluginRegistry {
-  searchPlugins(query: PluginQuery): Promise<PluginInfo[]>;
-  getPlugin(id: string): Promise<PluginInfo>;
-  installPlugin(id: string, version?: string): Promise<void>;
-  updatePlugin(id: string): Promise<void>;
-  uninstallPlugin(id: string): Promise<void>;
-}
-
-interface PluginQuery {
-  type?: PluginType;
-  tags?: string[];
-  author?: string;
-  minRating?: number;
-  sortBy?: 'downloads' | 'rating' | 'updated';
+Plugins specify their DOA compatibility in package.json:
+```json
+{
+  "doaPlugin": {
+    "compatibility": "^1.0.0"
+  }
 }
 ```
+
+DOA will warn about version mismatches but still attempt to load plugins.
+
+## 9. Plugin Distribution
+
+### 9.1 Simple Distribution
+
+No centralized registry needed - plugins can be distributed via:
+- **GitHub repositories** (most common for open source)
+- **npm packages** (for published plugins)
+- **Local directories** (for development)
+- **Direct URLs** (for quick sharing)
+
+Users discover plugins through:
+- Community recommendations
+- GitHub topics/tags
+- DOA documentation examples
 
 ### 9.2 Plugin Installation
 
 ```bash
-# Install from registry
-pnpm doa plugin install community.dnd5e
+# Install from GitHub
+pnpm doa plugin install https://github.com/user/dnd5e-plugin
 
-# Install specific version
-pnpm doa plugin install community.dnd5e@1.2.0
+# Install from local directory
+pnpm doa plugin install ./my-plugin/
 
-# Install from URL
-pnpm doa plugin install https://github.com/user/doa-plugin
+# Install from npm
+pnpm doa plugin install @doa-plugins/pathfinder
 
 # List installed plugins
 pnpm doa plugin list
 
-# Update plugins
-pnpm doa plugin update
+# Remove plugin
+pnpm doa plugin remove community.dnd5e
 ```
 
 ## 10. Examples
@@ -478,18 +469,17 @@ const rollTwentyExport: ExportPlugin = {
 export default rollTwentyExport;
 ```
 
-## 11. Future Considerations
+## 10. Future Considerations
 
-### 11.1 Planned Features
+### 10.1 Potential Enhancements
 
-- **Hot Reloading**: Development mode plugin reloading
-- **Plugin Marketplace**: Web-based plugin discovery and ratings
-- **Visual Plugin Editor**: GUI for creating simple plugins
-- **Plugin Templates**: Scaffolding for common plugin types
+- **Hot Reloading**: Reload plugins during development without restarting
+- **Plugin Templates**: Simple scaffolding for common plugin types
+- **Better Error Messages**: More helpful debugging information
+- **Plugin Dependencies**: Allow plugins to depend on other plugins
 
-### 11.2 API Evolution
+### 10.2 Community Growth
 
-- **GraphQL Integration**: Query-based plugin data access
-- **Event System**: Plugin-to-plugin communication
-- **Workflow Plugins**: Multi-step dungeon generation pipelines
-- **AI Integration**: LLM-powered content generation plugins
+- **Example Gallery**: Showcase interesting community plugins
+- **Documentation**: More tutorials and guides
+- **Integration Examples**: Show how to work with popular RPG systems
