@@ -2,7 +2,7 @@
   "name": "@doa/ascii-export",
   "version": "1.0.0",
   "description": "ASCII text export plugin for Dungeons on Automatic",
-  "main": "index.js",
+  "main": "index.ts",
   "type": "module",
   "doaPlugin": {
     "id": "ascii-export",
