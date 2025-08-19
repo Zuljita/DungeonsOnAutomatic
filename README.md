@@ -1,5 +1,9 @@
 # DungeonsOnAutomatic (DOA)
 
+<div align="center">
+  <img src="assets/logo/logo.svg" alt="DungeonsOnAutomatic Logo" width="200" height="200">
+</div>
+
 Modular dungeon generation tool with a simple web GUI for configuring runs and viewing results. System-agnostic core with an included DFRPG module; other system modules are stretch goals.
 
 The included `dfrpg` system module adds random monsters, traps, and treasure to each room when enriching a dungeon.
@@ -100,3 +104,8 @@ scripts before submitting a pull request:
 pnpm lint
 pnpm test
 ```
+
+## Attribution
+
+### Logo
+The DungeonsOnAutomatic logo uses icons from [game-icons.net](https://game-icons.net) by Delapouite and Lorc, licensed under [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/).
