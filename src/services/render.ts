@@ -102,94 +102,192 @@ export function renderAscii(d: Dungeon): string {
  * as short lines on corridor-room boundaries. The output is a standalone SVG
  * string sized to the dungeon's extents.
  */
-function doorEdge(room: Room, tile: { x: number; y: number }) {
+function doorEdge(room: Room, doorPosition: { x: number; y: number }) {
   // For non-rectangular rooms, use shape-aware door rendering
   if (room.shape !== 'rectangular' && room.shapePoints) {
-    return renderShapedRoomDoor(room, tile);
+    return renderShapedRoomDoor(room, doorPosition);
   }
   
-  // Handle rectangular rooms with the original logic
-  // Handle case where corridor point is outside room
-  if (tile.x < room.x)
-    return { x1: room.x, y1: tile.y, x2: room.x, y2: tile.y + 1 };
-  if (tile.x >= room.x + room.w)
-    return { x1: room.x + room.w, y1: tile.y, x2: room.x + room.w, y2: tile.y + 1 };
-  if (tile.y < room.y)
-    return { x1: tile.x, y1: room.y, x2: tile.x + 1, y2: room.y };
-  if (tile.y >= room.y + room.h)
-    return {
-      x1: tile.x,
-      y1: room.y + room.h,
-      x2: tile.x + 1,
-      y2: room.y + room.h,
-    };
+  // For rectangular rooms, find the closest wall edge and snap the door exactly to that edge
+  const roomLeft = room.x;
+  const roomRight = room.x + room.w;
+  const roomTop = room.y;
+  const roomBottom = room.y + room.h;
   
-  // Handle case where corridor point is inside room
-  // Find the closest edge of the room to place the door
-  const distToLeft = tile.x - room.x;
-  const distToRight = (room.x + room.w - 1) - tile.x;
-  const distToTop = tile.y - room.y;
-  const distToBottom = (room.y + room.h - 1) - tile.y;
+  const doorWidth = 0.8; // Width of door opening
+  const halfDoorWidth = doorWidth / 2;
+  
+  // Calculate distances to each edge
+  const distToLeft = Math.abs(doorPosition.x - roomLeft);
+  const distToRight = Math.abs(doorPosition.x - roomRight);
+  const distToTop = Math.abs(doorPosition.y - roomTop);
+  const distToBottom = Math.abs(doorPosition.y - roomBottom);
   
   const minDist = Math.min(distToLeft, distToRight, distToTop, distToBottom);
   
-  if (minDist === distToLeft && distToLeft >= 0) {
-    // Door on left edge
-    return { x1: room.x, y1: tile.y, x2: room.x, y2: tile.y + 1 };
-  } else if (minDist === distToRight && distToRight >= 0) {
-    // Door on right edge
-    return { x1: room.x + room.w, y1: tile.y, x2: room.x + room.w, y2: tile.y + 1 };
-  } else if (minDist === distToTop && distToTop >= 0) {
-    // Door on top edge
-    return { x1: tile.x, y1: room.y, x2: tile.x + 1, y2: room.y };
-  } else if (minDist === distToBottom && distToBottom >= 0) {
-    // Door on bottom edge
-    return { x1: tile.x, y1: room.y + room.h, x2: tile.x + 1, y2: room.y + room.h };
+  // Snap door exactly to the closest wall edge
+  if (minDist === distToLeft) {
+    // Door on left edge - ensure door stays within room height bounds
+    const y1 = Math.max(roomTop, doorPosition.y - halfDoorWidth);
+    const y2 = Math.min(roomBottom, doorPosition.y + halfDoorWidth);
+    // If door would be too small, center it within available space
+    if (y2 - y1 < doorWidth) {
+      const centerY = (roomTop + roomBottom) / 2;
+      return { 
+        x1: roomLeft, 
+        y1: centerY - halfDoorWidth, 
+        x2: roomLeft, 
+        y2: centerY + halfDoorWidth 
+      };
+    }
+    return { 
+      x1: roomLeft, 
+      y1: y1, 
+      x2: roomLeft, 
+      y2: y2 
+    };
+  } else if (minDist === distToRight) {
+    // Door on right edge - ensure door stays within room height bounds
+    const y1 = Math.max(roomTop, doorPosition.y - halfDoorWidth);
+    const y2 = Math.min(roomBottom, doorPosition.y + halfDoorWidth);
+    if (y2 - y1 < doorWidth) {
+      const centerY = (roomTop + roomBottom) / 2;
+      return { 
+        x1: roomRight, 
+        y1: centerY - halfDoorWidth, 
+        x2: roomRight, 
+        y2: centerY + halfDoorWidth 
+      };
+    }
+    return { 
+      x1: roomRight, 
+      y1: y1, 
+      x2: roomRight, 
+      y2: y2 
+    };
+  } else if (minDist === distToTop) {
+    // Door on top edge - ensure door stays within room width bounds
+    const x1 = Math.max(roomLeft, doorPosition.x - halfDoorWidth);
+    const x2 = Math.min(roomRight, doorPosition.x + halfDoorWidth);
+    if (x2 - x1 < doorWidth) {
+      const centerX = (roomLeft + roomRight) / 2;
+      return { 
+        x1: centerX - halfDoorWidth, 
+        y1: roomTop, 
+        x2: centerX + halfDoorWidth, 
+        y2: roomTop 
+      };
+    }
+    return { 
+      x1: x1, 
+      y1: roomTop, 
+      x2: x2, 
+      y2: roomTop 
+    };
+  } else {
+    // Door on bottom edge - ensure door stays within room width bounds
+    const x1 = Math.max(roomLeft, doorPosition.x - halfDoorWidth);
+    const x2 = Math.min(roomRight, doorPosition.x + halfDoorWidth);
+    if (x2 - x1 < doorWidth) {
+      const centerX = (roomLeft + roomRight) / 2;
+      return { 
+        x1: centerX - halfDoorWidth, 
+        y1: roomBottom, 
+        x2: centerX + halfDoorWidth, 
+        y2: roomBottom 
+      };
+    }
+    return { 
+      x1: x1, 
+      y1: roomBottom, 
+      x2: x2, 
+      y2: roomBottom 
+    };
   }
-  
-  return null;
 }
 
 function renderShapedRoomDoor(room: Room, doorPosition: { x: number; y: number }) {
-  // Find the edge segment containing the door position
+  // Find the closest edge segment and snap door to it
   const shapePoints = room.shapePoints!;
+  
+  let closestEdge = null;
+  let closestDistance = Infinity;
+  let closestPointOnEdge = { x: doorPosition.x, y: doorPosition.y };
   
   for (let i = 0; i < shapePoints.length; i++) {
     const p1 = shapePoints[i];
     const p2 = shapePoints[(i + 1) % shapePoints.length];
     
-    // Check if the door position lies on or near this edge segment
-    if (isPointOnLineSegment(doorPosition, p1, p2)) {
-      // Calculate the perpendicular direction for the door line
-      const edgeVectorX = p2.x - p1.x;
-      const edgeVectorY = p2.y - p1.y;
-      const edgeLength = Math.sqrt(edgeVectorX * edgeVectorX + edgeVectorY * edgeVectorY);
+    // Calculate distance from door position to this line segment
+    const distanceToSegment = distanceFromPointToLineSegment(doorPosition, p1, p2);
+    
+    if (distanceToSegment < closestDistance) {
+      closestDistance = distanceToSegment;
+      closestEdge = { p1, p2 };
       
-      if (edgeLength > 0) {
-        // Get the perpendicular vector (rotated 90 degrees)
-        const perpX = -edgeVectorY / edgeLength;
-        const perpY = edgeVectorX / edgeLength;
-        
-        // Create a door line of standard length (0.8 units)
-        const doorLength = 0.8;
-        const halfLength = doorLength / 2;
-        
-        return {
-          x1: doorPosition.x - perpX * halfLength,
-          y1: doorPosition.y - perpY * halfLength,
-          x2: doorPosition.x + perpX * halfLength,
-          y2: doorPosition.y + perpY * halfLength,
+      // Find the closest point on this edge segment
+      const dx = p2.x - p1.x;
+      const dy = p2.y - p1.y;
+      const length = dx * dx + dy * dy;
+      
+      if (length > 0) {
+        let t = ((doorPosition.x - p1.x) * dx + (doorPosition.y - p1.y) * dy) / length;
+        t = Math.max(0, Math.min(1, t));
+        closestPointOnEdge = {
+          x: p1.x + t * dx,
+          y: p1.y + t * dy
         };
       }
     }
   }
   
-  // Fallback: create a simple vertical door line at the door position
+  if (closestEdge) {
+    // Calculate the direction ALONG the wall edge (parallel to the wall)
+    const edgeVectorX = closestEdge.p2.x - closestEdge.p1.x;
+    const edgeVectorY = closestEdge.p2.y - closestEdge.p1.y;
+    const edgeLength = Math.sqrt(edgeVectorX * edgeVectorX + edgeVectorY * edgeVectorY);
+    
+    if (edgeLength > 0) {
+      // Normalize the edge vector (direction along the wall)
+      const edgeDirX = edgeVectorX / edgeLength;
+      const edgeDirY = edgeVectorY / edgeLength;
+      
+      // Create a door line ALONG the wall edge, ensuring it stays within the edge segment
+      const doorWidth = 0.8;
+      const halfWidth = doorWidth / 2;
+      
+      // Calculate initial door endpoints
+      let x1 = closestPointOnEdge.x - edgeDirX * halfWidth;
+      let y1 = closestPointOnEdge.y - edgeDirY * halfWidth;
+      let x2 = closestPointOnEdge.x + edgeDirX * halfWidth;
+      let y2 = closestPointOnEdge.y + edgeDirY * halfWidth;
+      
+      // Clamp door to stay within the edge segment bounds
+      const segmentMinX = Math.min(closestEdge.p1.x, closestEdge.p2.x);
+      const segmentMaxX = Math.max(closestEdge.p1.x, closestEdge.p2.x);
+      const segmentMinY = Math.min(closestEdge.p1.y, closestEdge.p2.y);
+      const segmentMaxY = Math.max(closestEdge.p1.y, closestEdge.p2.y);
+      
+      x1 = Math.max(segmentMinX, Math.min(segmentMaxX, x1));
+      y1 = Math.max(segmentMinY, Math.min(segmentMaxY, y1));
+      x2 = Math.max(segmentMinX, Math.min(segmentMaxX, x2));
+      y2 = Math.max(segmentMinY, Math.min(segmentMaxY, y2));
+      
+      return {
+        x1: x1,
+        y1: y1,
+        x2: x2,
+        y2: y2,
+      };
+    }
+  }
+  
+  // Fallback: create a simple horizontal door line at the door position
   return {
-    x1: doorPosition.x,
-    y1: doorPosition.y - 0.4,
-    x2: doorPosition.x,
-    y2: doorPosition.y + 0.4,
+    x1: doorPosition.x - 0.4,
+    y1: doorPosition.y,
+    x2: doorPosition.x + 0.4,
+    y2: doorPosition.y,
   };
 }
 
@@ -206,6 +304,30 @@ function distance(p1: { x: number; y: number }, p2: { x: number; y: number }): n
   const dx = p2.x - p1.x;
   const dy = p2.y - p1.y;
   return Math.sqrt(dx * dx + dy * dy);
+}
+
+function distanceFromPointToLineSegment(point: { x: number; y: number }, p1: { x: number; y: number }, p2: { x: number; y: number }): number {
+  const dx = p2.x - p1.x;
+  const dy = p2.y - p1.y;
+  const length = dx * dx + dy * dy;
+  
+  if (length === 0) {
+    // p1 and p2 are the same point
+    return distance(point, p1);
+  }
+  
+  // Calculate the parameter t for the closest point on the line
+  let t = ((point.x - p1.x) * dx + (point.y - p1.y) * dy) / length;
+  
+  // Clamp t to the line segment [0, 1]
+  t = Math.max(0, Math.min(1, t));
+  
+  // Calculate the closest point on the line segment
+  const closestX = p1.x + t * dx;
+  const closestY = p1.y + t * dy;
+  
+  // Return distance from point to closest point on segment
+  return distance(point, { x: closestX, y: closestY });
 }
 
 export function renderSvg(
