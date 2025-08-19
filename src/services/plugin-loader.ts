@@ -170,9 +170,10 @@ export class PluginLoader {
 /** Utility to create default plugin loader using standard paths */
 export function createDefaultPluginLoader(): PluginLoader {
   const corePluginsDir = path.resolve(process.cwd(), 'src/plugins');
+  const distPluginsDir = path.resolve(process.cwd(), 'dist/plugins');
   const pluginDir = path.resolve(process.cwd(), 'plugins');
   const nodeModules = path.resolve(process.cwd(), 'node_modules');
-  return new PluginLoader([corePluginsDir, pluginDir, nodeModules]);
+  return new PluginLoader([distPluginsDir, corePluginsDir, pluginDir, nodeModules]);
 }
 
 export type { PluginInfo };

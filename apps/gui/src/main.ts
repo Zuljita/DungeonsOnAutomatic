@@ -5,6 +5,7 @@ import { ImportWizardComponent } from './import-wizard';
 import { tagSystem } from '@src/services/tag-system';
 import { buildDungeon } from '@src/services/assembler';
 import { dungeonTemplateService } from '@src/services/dungeon-templates';
+import { roomShapeService } from '@src/services/room-shapes';
 
 let importWizard: ImportWizardComponent | null = null;
 const STORAGE_KEY = 'doa-generator-settings';
@@ -313,6 +314,9 @@ async function generate(): Promise<void> {
   }
 
   try {
+    // Initialize the room shape plugin before generation to ensure it's loaded
+    await roomShapeService.initialize();
+    
     // Create dungeon generation options
     const dungeonOptions = {
       rooms,
