@@ -2,17 +2,17 @@
 
 ## Version 1.0
 
-This document defines the configuration system for DOA plugins, including CLI integration, environment variable support, and configuration file formats.
+This document defines the simple configuration system for DOA plugins, focusing on ease of use for hobbyist developers.
 
 ## Configuration Sources
 
 Plugins can receive configuration from multiple sources, with the following priority order (highest to lowest):
 
 1. **CLI Arguments** (--plugin-option=value)
-2. **Environment Variables** (DOA_PLUGIN_OPTION=value)
-3. **Plugin Configuration File** (plugin.config.js)
-4. **Plugin Defaults** (getDefaultConfig() method)
-5. **System Defaults**
+2. **Plugin Configuration File** (plugin.config.js)
+3. **Plugin Defaults** (getDefaultConfig() method)
+
+Keep it simple - most users won't need complex configuration.
 
 ### Conflict Resolution
 
@@ -61,13 +61,6 @@ export default {
     }
   ],
   
-  // Environment variable mappings
-  envVars: {
-    'DOA_PLUGIN_DIFFICULTY': 'difficulty',
-    'DOA_PLUGIN_MAX_ENCOUNTERS': 'max-encounters',
-    'DOA_PLUGIN_ADVANCED': 'enable-advanced',
-    'DOA_PLUGIN_TAGS': 'tags'
-  },
   
   // Validation schema (optional)
   validation: {

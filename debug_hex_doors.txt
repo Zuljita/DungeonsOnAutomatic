@@ -1,0 +1,5 @@
+
+> dungeons-on-automatic@0.1.0 doa /home/knorton/DungeonsOnAutomatic/DungeonsOnAutomatic
+> tsx src/cli/index.ts generate --rooms=3 --system=dfrpg --room-shape=hexagonal --layout-type=rectangle --ascii --debug
+
+ ELIFECYCLE  Command failed with exit code 1.
