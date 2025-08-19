@@ -2,7 +2,7 @@
 
 ## Version 1.0
 
-This document defines the Plugin API for DungeonsOnAutomatic (DOA), enabling extensibility through third-party plugins while maintaining system integrity and security.
+This document defines the simple Plugin API for DungeonsOnAutomatic (DOA), enabling easy extensibility through community plugins with minimal friction.
 
 ## 1. Overview
 
@@ -12,14 +12,16 @@ The Plugin API extends DOA's modular architecture by allowing external plugins t
 - Implement specialized room generation algorithms
 - Extend encounter generation capabilities
 
-### 1.1 Plugin Types
+### 1.1 Plugin Types (Flexible)
 
-| Plugin Type | Purpose | Interface |
-|-------------|---------|-----------|
-| **System Module** | RPG system-specific content generation | `SystemPlugin` |
-| **Export Format** | Custom output formats for generated dungeons | `ExportPlugin` |
-| **Room Generator** | Alternative room placement and generation algorithms | `RoomGeneratorPlugin` |
-| **Encounter Generator** | Custom encounter generation logic | `EncounterPlugin` |
+Plugins can be whatever you want them to be! Common examples:
+
+- **System Plugins**: Add support for different RPG systems (D&D, Pathfinder, etc.)
+- **Export Plugins**: Output dungeons in different formats (Roll20, Foundry, etc.)
+- **Generator Plugins**: Alternative room or encounter generation
+- **Utility Plugins**: Whatever creative idea you have!
+
+No rigid categories - make what you want!
 
 ## 2. Plugin Directory Structure
 
@@ -42,104 +44,93 @@ plugins/
     └── plugin.config.js
 ```
 
-### 2.2 Naming Conventions
+### 2.2 Simple Conventions
 
-- Plugin directories: `kebab-case` (e.g., `dnd5e-system`, `roll20-export`)
-- Plugin IDs: `kebab-case` with namespace prefix (e.g., `community.dnd5e`, `official.pathfinder`)
-- Entry points: Always `index.js` or `index.ts`
-- Configuration: Always `plugin.config.js`
+- Plugin directories: Whatever you want (e.g., `dnd5e`, `my-homebrew`, `cool-exporter`)
+- Plugin IDs: Simple strings (e.g., `dnd5e`, `pathfinder`, `my-system`)
+- Entry points: `index.js` or `index.ts` (or whatever you specify in package.json)
+- Configuration: Optional `plugin.config.js` if you need it
 
 ## 3. Plugin Metadata (package.json)
 
-### 3.1 Required Fields
+### 3.1 Minimal Required Fields
 
 ```json
 {
-  "name": "@doa-plugins/my-system",
+  "name": "my-dnd5e-plugin",
   "version": "1.0.0",
-  "description": "D&D 5e system plugin for DOA",
+  "description": "D&D 5e system for DOA",
   "main": "index.js",
   "doaPlugin": {
-    "id": "community.dnd5e",
-    "type": "system",
-    "compatibility": "^1.0.0",
-    "author": {
-      "name": "Plugin Author",
-      "email": "author@example.com",
-      "url": "https://example.com"
-    },
-    "dependencies": {
-      "core": "^1.0.0",
-      "systems": []
-    },
-    "tags": ["dnd", "5e", "fantasy", "official"],
-    "license": "MIT"
+    "id": "dnd5e"
   }
 }
 ```
 
-### 3.2 Plugin Metadata Schema
+### 3.2 Optional Fields
+
+```json
+{
+  "doaPlugin": {
+    "id": "dnd5e",
+    "version": "1.2.0",
+    "description": "Comprehensive D&D 5e support",
+    "author": "Your Name",
+    "tags": ["dnd", "5e", "fantasy"]
+  }
+}
+```
+
+### 3.3 Simple Metadata Schema
 
 | Field | Required | Type | Description |
 |-------|----------|------|-------------|
-| `id` | Yes | string | Unique plugin identifier (namespace.name) |
-| `type` | Yes | string | Plugin type: `system`, `export`, `room-generator`, `encounter` |
-| `compatibility` | Yes | string | Semver range for DOA compatibility |
-| `author` | Yes | object | Author information |
-| `dependencies.core` | Yes | string | Required DOA core version |
-| `dependencies.systems` | No | string[] | Required system plugin dependencies |
-| `tags` | No | string[] | Searchable tags for plugin discovery |
-| `license` | Yes | string | Plugin license (must be compatible with DOA) |
+| `id` | Yes | string | Simple plugin identifier (e.g., "dnd5e") |
+| `version` | No | string | Plugin version (defaults to "1.0.0") |
+| `description` | No | string | Brief description |
+| `author` | No | string | Author name |
+| `tags` | No | string[] | Tags for discovery |
 
 ## 4. Plugin Types and Interfaces
 
 ### 4.1 System Plugins
 
-System plugins extend the existing `SystemModule` interface with enhanced metadata:
+System plugins add RPG system support. Just implement the essentials:
 
 ```typescript
-interface SystemPlugin extends SystemModule {
-  // Core SystemModule interface
+interface SystemPlugin {
+  metadata: PluginMetadata;
+  
+  // Core functionality
   id: string;
   label: string;
   enrich(dungeon: Dungeon, options?: SystemOptions): Promise<Dungeon> | Dungeon;
   
-  // Enhanced plugin metadata
-  metadata: PluginMetadata;
-  
-  // Optional lifecycle hooks
-  initialize?(config: PluginConfig): Promise<void> | void;
-  validate?(dungeon: Dungeon): ValidationResult;
+  // Optional helpers
+  initialize?(config?: PluginConfig): Promise<void> | void;
   cleanup?(): Promise<void> | void;
-  
-  // Configuration support
-  getConfigSchema?(): JSONSchema;
-  getDefaultConfig?(): Record<string, unknown>;
+  getDefaultConfig?(): PluginConfig;
 }
 ```
 
 ### 4.2 Export Plugins
 
-Export plugins provide custom output formats:
+Export plugins convert dungeons to different formats:
 
 ```typescript
 interface ExportPlugin {
   metadata: PluginMetadata;
-  supportedFormats: string[]; // e.g., ['roll20', 'foundry-v11']
+  supportedFormats: string[]; // e.g., ['roll20', 'foundry']
   
   export(dungeon: Dungeon, format: string, options?: ExportOptions): 
     Promise<ExportResult> | ExportResult;
-    
-  getExportSchema?(format: string): JSONSchema;
-  validateExport?(result: ExportResult): ValidationResult;
 }
 
 interface ExportResult {
   format: string;
-  data: unknown; // Format-specific data
+  data: unknown; // Your format's data
   contentType?: string;
   filename?: string;
-  metadata?: Record<string, unknown>;
 }
 ```
 
@@ -389,39 +380,35 @@ pnpm doa plugin remove community.dnd5e
 
 ## 10. Examples
 
-### 10.1 Simple System Plugin
+### 10.1 Super Simple System Plugin
 
 ```typescript
 // index.ts
 import { SystemPlugin, Dungeon, Monster } from '@doa/core';
 
 const mySystemPlugin: SystemPlugin = {
-  id: 'community.mysystem',
-  label: 'My RPG System',
+  id: 'my-rpg',
+  label: 'My Custom RPG',
   
   metadata: {
-    version: '1.0.0',
-    author: 'Plugin Developer',
-    description: 'Custom RPG system support'
+    id: 'my-rpg',
+    description: 'Adds goblins to dungeons',
+    author: 'Me'
   },
   
-  async enrich(dungeon: Dungeon, options?: SystemOptions): Promise<Dungeon> {
+  enrich(dungeon: Dungeon): Dungeon {
+    // Add a goblin to each room - that's it!
     const encounters = { ...dungeon.encounters };
     
-    // Custom monster generation logic
     for (const room of dungeon.rooms) {
-      if (Math.random() < 0.4) {
-        const monster: Monster = {
-          name: 'Custom Beast',
+      encounters[room.id] = {
+        ...encounters[room.id],
+        monsters: [{
+          name: 'Goblin',
           cls: 'Monster',
-          tags: ['custom', 'beast']
-        };
-        
-        encounters[room.id] = {
-          ...encounters[room.id],
-          monsters: [monster]
-        };
-      }
+          tags: ['goblin']
+        }]
+      };
     }
     
     return { ...dungeon, encounters };
@@ -431,42 +418,36 @@ const mySystemPlugin: SystemPlugin = {
 export default mySystemPlugin;
 ```
 
-### 10.2 Export Plugin Example
+### 10.2 Simple Export Plugin
 
 ```typescript
-// export-plugin.ts
+// index.ts
 import { ExportPlugin, Dungeon } from '@doa/core';
 
-const rollTwentyExport: ExportPlugin = {
+const myExporter: ExportPlugin = {
   metadata: {
-    id: 'community.roll20',
-    version: '1.0.0'
+    id: 'text-export',
+    description: 'Export as simple text'
   },
   
-  supportedFormats: ['roll20-json'],
+  supportedFormats: ['txt'],
   
-  export(dungeon: Dungeon, format: string): ExportResult {
-    if (format !== 'roll20-json') {
-      throw new Error(`Unsupported format: ${format}`);
-    }
-    
-    const roll20Data = {
-      name: `Generated Dungeon`,
-      walls: generateWalls(dungeon),
-      lights: generateLighting(dungeon),
-      tokens: generateTokens(dungeon)
-    };
+  export(dungeon: Dungeon): ExportResult {
+    // Convert dungeon to text format
+    const text = `Dungeon: ${dungeon.rooms.length} rooms\n` +
+                dungeon.rooms.map(r => 
+                  `Room ${r.id}: ${r.w}x${r.h}`
+                ).join('\n');
     
     return {
-      format,
-      data: roll20Data,
-      contentType: 'application/json',
-      filename: `dungeon-${dungeon.seed}.json`
+      format: 'txt',
+      data: text,
+      filename: 'dungeon.txt'
     };
   }
 };
 
-export default rollTwentyExport;
+export default myExporter;
 ```
 
 ## 10. Future Considerations

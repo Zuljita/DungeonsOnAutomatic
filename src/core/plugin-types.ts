@@ -3,67 +3,26 @@ import type { Dungeon, Room, Monster, Trap, Treasure, SystemModule, RNG, RoomSha
 
 // === Plugin Metadata ===
 
-export interface PluginAuthor {
-  name: string;
-  email?: string;
-  url?: string;
-}
-
-export interface PluginDependencies {
-  core: string; // Semver range for DOA core
-  systems?: string[]; // Required system plugin dependencies
-  plugins?: string[]; // Other plugin dependencies
-}
-
 export interface PluginMetadata {
-  id: string; // Unique plugin identifier (namespace.name)
-  version: string; // Plugin version (semver)
-  name?: string; // Human-readable name (fallback to id)
-  description?: string; // Plugin description
-  author: PluginAuthor; // Author information
-  license?: string; // Plugin license
-  compatibility: string; // DOA version compatibility (semver range)
-  dependencies?: PluginDependencies; // Plugin dependencies
-  tags?: string[]; // Searchable tags
-  homepage?: string; // Plugin homepage URL
-  repository?: string; // Source code repository URL
-  bugs?: string; // Bug report URL
+  id: string; // Simple plugin identifier (e.g., "dnd5e", "my-homebrew")
+  version?: string; // Plugin version (defaults to "1.0.0")
+  description?: string; // Brief description
+  author?: string; // Author name
+  tags?: string[]; // Optional tags for discovery
 }
 
-// === Validation Result ===
+// === Simple Error Handling ===
 
-export interface ValidationIssue {
-  level: 'error' | 'warning' | 'info';
-  code: string;
+export interface PluginError {
   message: string;
-  context?: Record<string, unknown>;
-}
-
-export interface ValidationResult {
-  valid: boolean;
-  issues: ValidationIssue[];
+  plugin?: string;
+  cause?: unknown;
 }
 
 // === Plugin Configuration ===
 
 export interface PluginConfig {
-  [key: string]: unknown;
-}
-
-export interface CLIOption {
-  name: string;
-  type: 'string' | 'number' | 'boolean' | 'array';
-  description: string;
-  choices?: string[];
-  default?: unknown;
-  required?: boolean;
-  alias?: string;
-}
-
-export interface PluginConfigSchema {
-  cliOptions?: CLIOption[];
-  envVars?: Record<string, string>; // env var name -> config key mapping
-  schema?: z.ZodSchema; // Zod validation schema
+  [key: string]: unknown; // Whatever the plugin needs
 }
 
 // === Base Plugin Interface ===
@@ -72,11 +31,10 @@ export interface BasePlugin {
   metadata: PluginMetadata;
   
   // Optional lifecycle hooks
-  initialize?(config: PluginConfig): Promise<void> | void;
+  initialize?(config?: PluginConfig): Promise<void> | void;
   cleanup?(): Promise<void> | void;
   
-  // Configuration support
-  getConfigSchema?(): PluginConfigSchema;
+  // Simple configuration
   getDefaultConfig?(): PluginConfig;
 }
 
@@ -93,12 +51,7 @@ export interface SystemOptions extends Record<string, unknown> {
 }
 
 export interface SystemPlugin extends BasePlugin, SystemModule {
-  // Enhanced metadata (already covered by BasePlugin)
-  
-  // Optional validation
-  validate?(dungeon: Dungeon, options?: SystemOptions): ValidationResult;
-  
-  // Enhanced options support
+  // Just the core functionality - keep it simple
   enrich(dungeon: Dungeon, options?: SystemOptions): Promise<Dungeon> | Dungeon;
 }
 
@@ -126,9 +79,6 @@ export interface ExportPlugin extends BasePlugin {
     format: string, 
     options?: ExportOptions
   ): Promise<ExportResult> | ExportResult;
-    
-  getExportSchema?(format: string): z.ZodSchema;
-  validateExport?(result: ExportResult): ValidationResult;
 }
 
 // === Room Generator Plugin Interface ===
@@ -147,9 +97,6 @@ export interface RoomGeneratorPlugin extends BasePlugin {
     config: RoomGenerationConfig, 
     rng: RNG
   ): Promise<Room[]> | Room[];
-  
-  validateLayout?(rooms: Room[]): ValidationResult;
-  getGenerationSchema?(): z.ZodSchema;
 }
 
 // === Encounter Plugin Interface ===
@@ -194,32 +141,27 @@ export interface EncounterPlugin extends BasePlugin {
     options?: EncounterOptions
   ): Promise<Encounter> | Encounter;
   
-  getEncounterTypes(): string[];
-  validateEncounter?(encounter: Encounter, context: EncounterContext): ValidationResult;
+  getEncounterTypes?(): string[]; // Optional
 }
 
-// === Plugin Registry Interfaces ===
+// === Plugin Management ===
 
-export type PluginType = 'system' | 'export' | 'room-generator' | 'encounter';
+export type PluginType = string; // Flexible - plugins can be whatever they want
 
 export interface PluginInfo {
   metadata: PluginMetadata;
-  type: PluginType;
+  type?: PluginType; // Optional categorization
   installed: boolean;
   enabled: boolean;
   loadPath?: string;
-  source?: string; // Where it was installed from (GitHub URL, npm package, etc.)
+  source?: string; // Where it was installed from
   installDate?: Date;
 }
 
 export interface PluginQuery {
-  type?: PluginType;
   tags?: string[];
   author?: string;
-  search?: string; // Text search in name/description
-  sortBy?: 'name' | 'installed' | 'updated';
-  limit?: number;
-  offset?: number;
+  search?: string; // Simple text search
 }
 
 // === Plugin Environment ===
@@ -246,61 +188,14 @@ export interface PluginLoadOptions {
   configPath?: string;
 }
 
-// === Plugin Zod Schemas ===
-
-export const PluginAuthorSchema = z.object({
-  name: z.string().min(1),
-  email: z.string().email().optional(),
-  url: z.string().url().optional(),
-});
-
-export const PluginDependenciesSchema = z.object({
-  core: z.string().min(1), // Should validate semver format
-  systems: z.array(z.string()).optional(),
-  plugins: z.array(z.string()).optional(),
-});
+// === Simple Validation ===
 
 export const PluginMetadataSchema = z.object({
-  id: z.string().regex(/^[a-z0-9-]+\.[a-z0-9-]+$/), // namespace.name format
-  version: z.string().regex(/^\d+\.\d+\.\d+/), // Basic semver validation
-  name: z.string().optional(),
+  id: z.string().min(1), // Just a non-empty string
+  version: z.string().optional(),
   description: z.string().optional(),
-  author: PluginAuthorSchema,
-  license: z.string().optional(),
-  compatibility: z.string().min(1),
-  dependencies: PluginDependenciesSchema.optional(),
+  author: z.string().optional(),
   tags: z.array(z.string()).optional(),
-  homepage: z.string().url().optional(),
-  repository: z.string().url().optional(),
-  bugs: z.string().url().optional(),
-});
-
-export const CLIOptionSchema = z.object({
-  name: z.string().min(1),
-  type: z.enum(['string', 'number', 'boolean', 'array']),
-  description: z.string().min(1),
-  choices: z.array(z.string()).optional(),
-  default: z.unknown().optional(),
-  required: z.boolean().optional(),
-  alias: z.string().optional(),
-});
-
-export const PluginConfigSchemaSchema = z.object({
-  cliOptions: z.array(CLIOptionSchema).optional(),
-  envVars: z.record(z.string()).optional(),
-  schema: z.unknown().optional(), // Can't validate ZodSchema directly
-});
-
-export const ValidationIssueSchema = z.object({
-  level: z.enum(['error', 'warning', 'info']),
-  code: z.string(),
-  message: z.string(),
-  context: z.record(z.unknown()).optional(),
-});
-
-export const ValidationResultSchema = z.object({
-  valid: z.boolean(),
-  issues: z.array(ValidationIssueSchema),
 });
 
 // === Type Guards ===
@@ -323,29 +218,17 @@ export function isEncounterPlugin(plugin: BasePlugin): plugin is EncounterPlugin
 
 // === Utility Functions ===
 
-export function validatePluginMetadata(metadata: unknown): PluginMetadata {
-  return PluginMetadataSchema.parse(metadata);
-}
-
-export function createValidationResult(
-  valid: boolean = true, 
-  issues: ValidationIssue[] = []
-): ValidationResult {
-  return { valid, issues };
-}
-
-export function addValidationIssue(
-  result: ValidationResult, 
-  level: ValidationIssue['level'],
-  code: string,
-  message: string,
-  context?: Record<string, unknown>
-): ValidationResult {
-  result.issues.push({ level, code, message, context });
-  if (level === 'error') {
-    result.valid = false;
+export function parsePluginMetadata(metadata: unknown): PluginMetadata | null {
+  try {
+    return PluginMetadataSchema.parse(metadata);
+  } catch (error) {
+    console.warn('Invalid plugin metadata:', error);
+    return null;
   }
-  return result;
+}
+
+export function createPluginError(message: string, plugin?: string, cause?: unknown): PluginError {
+  return { message, plugin, cause };
 }
 
 // === Legacy Support ===
@@ -359,13 +242,10 @@ export function wrapLegacySystemModule(
   metadata?: Partial<PluginMetadata>
 ): SystemPlugin {
   const defaultMetadata: PluginMetadata = {
-    id: `legacy.${module.id}`,
+    id: module.id,
     version: '1.0.0',
-    author: { name: 'Legacy Module' },
-    license: 'Unknown',
-    compatibility: '^1.0.0',
-    dependencies: { core: '^1.0.0' },
-    description: `Legacy system module: ${module.label}`,
+    description: `Legacy system: ${module.label}`,
+    author: 'DOA Core',
     ...metadata
   };
 
@@ -373,11 +253,9 @@ export function wrapLegacySystemModule(
     ...module,
     metadata: defaultMetadata,
     
-    // Optional enhanced methods with defaults
+    // Optional methods with defaults
     initialize: undefined,
     cleanup: undefined,
-    validate: undefined,
-    getConfigSchema: undefined,
     getDefaultConfig: undefined,
   };
 }
