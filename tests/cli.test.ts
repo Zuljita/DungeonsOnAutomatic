@@ -97,5 +97,31 @@ describe('cli', () => {
     expect(enc?.traps.every((t) => t.tags?.includes('mechanical'))).toBe(true);
     expect(enc?.treasure.every((t) => t.tags?.includes('coins'))).toBe(true);
   });
+
+  it('supports hand-drawn svg output', () => {
+    const result = spawnSync(
+      process.execPath,
+      [
+        '--import',
+        'tsx',
+        cliPath,
+        'generate',
+        '--rooms',
+        '1',
+        '--seed',
+        'cli',
+        '--svg',
+        '--map-style',
+        'hand-drawn',
+        '--palette',
+        'sepia',
+        '--texture',
+        'paper',
+      ],
+      { encoding: 'utf-8' },
+    );
+    expect(result.status).toBe(0);
+    expect(result.stdout).toMatch(/font-family="cursive"/);
+  });
 });
 

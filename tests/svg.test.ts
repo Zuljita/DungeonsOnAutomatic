@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { buildDungeon } from "../src/services/assembler.js";
-import { renderSvg, darkTheme } from "../src/services/render.js";
+import { renderSvg, darkTheme, sepiaTheme } from "../src/services/render.js";
 
 describe("renderSvg", () => {
   it("produces svg markup", () => {
@@ -18,5 +18,16 @@ describe("renderSvg", () => {
     const svg = renderSvg(d, darkTheme);
     expect(svg).toMatch(/fill="#555555"/); // corridor color from dark theme
     expect(svg).toMatch(/fill="#222222"/); // room fill from dark theme
+  });
+
+  it("supports hand-drawn style", () => {
+    const d = buildDungeon({ rooms: 1, seed: "sketch" });
+    const svg = renderSvg(d, sepiaTheme, {
+      style: "hand-drawn",
+      sketchIntensity: 1,
+      texture: "paper",
+    });
+    expect(svg).toMatch(/filter="url\(#paper\)"/);
+    expect(svg).toMatch(/font-family="cursive"/);
   });
 });

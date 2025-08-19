@@ -3,7 +3,7 @@ import { Command } from "commander";
 import { buildDungeon } from "../services/assembler";
 import { loadSystemModule } from "../services/system-loader";
 import type { SystemModule } from "../core/types";
-import { renderAscii, renderSvg } from "../services/render";
+import { renderAscii, renderSvg, lightTheme, darkTheme, sepiaTheme } from "../services/render";
 import { exportFoundry } from "../services/foundry";
 import { dungeonTemplateService } from "../services/dungeon-templates";
 import { createDefaultPluginLoader } from "../services/plugin-loader";
@@ -73,6 +73,27 @@ program
     "require treasure to include tag (repeatable)",
     (v, p) => [...p, v],
     [] as string[],
+  )
+  .option(
+    "--map-style <style>",
+    "map rendering style (classic, hand-drawn)",
+    "classic",
+  )
+  .option(
+    "--sketch-intensity <n>",
+    "hand-drawn sketch intensity",
+    (v) => parseFloat(v),
+    1,
+  )
+  .option(
+    "--texture <name>",
+    "background texture (none, paper)",
+    "none",
+  )
+  .option(
+    "--palette <name>",
+    "color palette (light, dark, sepia)",
+    "light",
   )
   .option("--ascii", "render an ASCII map instead of JSON output")
   .option("--svg", "render an SVG map instead of JSON output")
@@ -144,7 +165,15 @@ program
       
       // Handle exports
       if (opts.svg) {
-        process.stdout.write(renderSvg(enriched) + "\n");
+        let theme = lightTheme;
+        if (opts.palette === "dark") theme = darkTheme;
+        else if (opts.palette === "sepia") theme = sepiaTheme;
+        const svg = renderSvg(enriched, theme, {
+          style: opts.mapStyle,
+          sketchIntensity: opts.sketchIntensity,
+          texture: opts.texture,
+        });
+        process.stdout.write(svg + "\n");
       } else if (opts.ascii) {
         // Use ASCII export plugin
         try {
