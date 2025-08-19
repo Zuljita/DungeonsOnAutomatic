@@ -179,5 +179,5 @@ export interface SystemModule {
   id: string;
   label: string;
   enrich(d: Dungeon, opts?: Record<string, unknown>): Promise<Dungeon> | Dungeon;
-  metadata?: PluginMetadata;
+  metadata?: any; // Use flexible metadata to avoid conflicts
 }
