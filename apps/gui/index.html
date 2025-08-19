@@ -4,28 +4,115 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DungeonsOnAutomatic</title>
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/x-icon" href="/assets/logo/favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/logo/logo-small.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/assets/logo/logo-small.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/logo/logo.png">
+  <link rel="icon" type="image/svg+xml" href="/assets/logo/logo.svg">
   <style>
+    :root {
+      /* Light theme */
+      --bg-primary: #ffffff;
+      --bg-secondary: #f5f5f5;
+      --bg-tertiary: #f8f9fa;
+      --bg-accent: #e8f4fd;
+      --text-primary: #2c3e50;
+      --text-secondary: #495057;
+      --text-muted: #6c757d;
+      --text-inverse: #ffffff;
+      --border-primary: #ddd;
+      --border-secondary: #e9ecef;
+      --border-accent: #dee2e6;
+      --border-focus: #3498db;
+      --shadow: rgba(0,0,0,0.1);
+      --shadow-hover: rgba(0,0,0,0.15);
+      --accent-primary: #3498db;
+      --accent-hover: #2980b9;
+      --accent-danger: #dc3545;
+      --accent-danger-hover: #c82333;
+      --accent-success: #27ae60;
+      --accent-success-hover: #229954;
+      --accent-warning: #e74c3c;
+      --tab-bg: #2c3e50;
+      --tab-hover: #34495e;
+      --status-success-bg: #d4edda;
+      --status-success-text: #155724;
+      --status-success-border: #c3e6cb;
+      --status-error-bg: #f8d7da;
+      --status-error-text: #721c24;
+      --status-error-border: #f5c6cb;
+      --status-info-bg: #cce7ff;
+      --status-info-text: #004085;
+      --status-info-border: #b3d7ff;
+      --loading-bg: #e3f2fd;
+      --loading-spinner: #0066cc;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        /* Dark theme - only when not manually set to light */
+        --bg-primary: #1e1e1e;
+        --bg-secondary: #252525;
+        --bg-tertiary: #2d2d2d;
+        --bg-accent: #1a2332;
+        --text-primary: #e0e0e0;
+        --text-secondary: #b0b0b0;
+        --text-muted: #888888;
+        --text-inverse: #ffffff;
+        --border-primary: #404040;
+        --border-secondary: #353535;
+        --border-accent: #454545;
+        --border-focus: #4a9eff;
+        --shadow: rgba(0,0,0,0.3);
+        --shadow-hover: rgba(0,0,0,0.4);
+        --accent-primary: #4a9eff;
+        --accent-hover: #3d8bdb;
+        --accent-danger: #ff4757;
+        --accent-danger-hover: #ff3838;
+        --accent-success: #2ed573;
+        --accent-success-hover: #26c965;
+        --accent-warning: #ff6b6b;
+        --tab-bg: #1a1a1a;
+        --tab-hover: #2a2a2a;
+        --status-success-bg: #1a2e1a;
+        --status-success-text: #90ee90;
+        --status-success-border: #2d4a2d;
+        --status-error-bg: #2e1a1a;
+        --status-error-text: #ffb3b3;
+        --status-error-border: #4a2d2d;
+        --status-info-bg: #1a2233;
+        --status-info-text: #87ceeb;
+        --status-info-border: #2d3d4a;
+        --loading-bg: #1a2332;
+        --loading-spinner: #4a9eff;
+      }
+    }
+
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       margin: 0;
       padding: 20px;
-      background: #f5f5f5;
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      transition: background-color 0.3s ease, color 0.3s ease;
     }
     .container {
       max-width: 1200px;
       margin: 0 auto;
-      background: white;
+      background: var(--bg-primary);
       border-radius: 8px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 10px var(--shadow);
       overflow: hidden;
     }
     .tabs {
       display: flex;
-      background: #2c3e50;
+      background: var(--tab-bg);
     }
     .tab {
       padding: 15px 25px;
-      color: white;
+      color: var(--text-inverse);
       cursor: pointer;
       border: none;
       background: none;
@@ -33,10 +120,10 @@
       transition: background 0.3s;
     }
     .tab:hover {
-      background: #34495e;
+      background: var(--tab-hover);
     }
     .tab.active {
-      background: #3498db;
+      background: var(--accent-primary);
     }
     .tab-content {
       display: none;
@@ -52,75 +139,78 @@
       display: block;
       margin-bottom: 5px;
       font-weight: 500;
-      color: #2c3e50;
+      color: var(--text-primary);
     }
     select, input, button {
       width: 100%;
       padding: 8px 12px;
-      border: 1px solid #ddd;
+      border: 1px solid var(--border-primary);
       border-radius: 4px;
       font-size: 14px;
+      background: var(--bg-primary);
+      color: var(--text-primary);
     }
     select:focus, input:focus {
       outline: none;
-      border-color: #3498db;
-      box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 2px rgba(74, 158, 255, 0.2);
     }
     button {
-      background: #3498db;
-      color: white;
+      background: var(--accent-primary);
+      color: var(--text-inverse);
       border: none;
       cursor: pointer;
       font-weight: 500;
       transition: background 0.3s;
     }
     button:hover {
-      background: #2980b9;
+      background: var(--accent-hover);
     }
     .map-container {
       margin-top: 20px;
-      border: 1px solid #ddd;
+      border: 1px solid var(--border-primary);
       border-radius: 4px;
       overflow: hidden;
     }
     .room-key {
       margin-top: 20px;
       padding: 15px;
-      background: #f8f9fa;
+      background: var(--bg-tertiary);
       border-radius: 4px;
-      border-left: 4px solid #3498db;
+      border-left: 4px solid var(--accent-primary);
     }
     .room-key h2 {
       margin-top: 0;
-      color: #2c3e50;
+      color: var(--text-primary);
     }
     .room {
       margin-bottom: 15px;
       padding: 10px;
-      background: white;
+      background: var(--bg-primary);
       border-radius: 4px;
-      border: 1px solid #e9ecef;
+      border: 1px solid var(--border-secondary);
     }
     .room h3 {
       margin-top: 0;
-      color: #495057;
-      border-bottom: 1px solid #dee2e6;
+      color: var(--text-secondary);
+      border-bottom: 1px solid var(--border-accent);
       padding-bottom: 5px;
     }
     .room p {
       margin: 5px 0;
-      color: #6c757d;
+      color: var(--text-muted);
     }
     .inputs {
       margin-top: 20px;
       padding: 15px;
-      background: #f8f9fa;
+      background: var(--bg-tertiary);
       border-radius: 4px;
       font-family: monospace;
       font-size: 12px;
       white-space: pre-wrap;
       max-height: 200px;
       overflow-y: auto;
+      color: var(--text-primary);
     }
     .map-options {
       display: grid;
@@ -129,16 +219,16 @@
       margin-bottom: 20px;
     }
     .option-group {
-      background: #f8f9fa;
+      background: var(--bg-tertiary);
       padding: 15px;
       border-radius: 4px;
-      border: 1px solid #e9ecef;
+      border: 1px solid var(--border-secondary);
     }
     .option-group h3 {
       margin-top: 0;
-      color: #495057;
+      color: var(--text-secondary);
       font-size: 16px;
-      border-bottom: 1px solid #dee2e6;
+      border-bottom: 1px solid var(--border-accent);
       padding-bottom: 8px;
     }
     .checkbox-group {
@@ -157,15 +247,15 @@
     .download-link {
       display: inline-block;
       padding: 8px 16px;
-      background: #27ae60;
-      color: white;
+      background: var(--accent-success);
+      color: var(--text-inverse);
       text-decoration: none;
       border-radius: 4px;
       margin-left: 10px;
       transition: background 0.3s;
     }
     .download-link:hover {
-      background: #229954;
+      background: var(--accent-success-hover);
     }
     /* Tag styling */
     .tag {
@@ -191,78 +281,80 @@
     .wandering-monsters {
       margin-top: 20px;
       padding: 15px;
-      background: #f8f9fa;
+      background: var(--bg-tertiary);
       border-radius: 4px;
-      border-left: 4px solid #e74c3c;
+      border-left: 4px solid var(--accent-warning);
     }
     .wandering-monsters h3 {
       margin-top: 0;
-      color: #2c3e50;
-      border-bottom: 1px solid #dee2e6;
+      color: var(--text-primary);
+      border-bottom: 1px solid var(--border-accent);
       padding-bottom: 8px;
     }
     .wandering-monster-table {
       width: 100%;
       border-collapse: collapse;
       margin-top: 15px;
-      background: white;
+      background: var(--bg-primary);
       border-radius: 4px;
       overflow: hidden;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      box-shadow: 0 1px 3px var(--shadow);
     }
     .wandering-monster-table th,
     .wandering-monster-table td {
       padding: 10px;
       text-align: left;
-      border-bottom: 1px solid #e9ecef;
+      border-bottom: 1px solid var(--border-secondary);
+      color: var(--text-primary);
     }
     .wandering-monster-table th {
-      background: #e74c3c;
-      color: white;
+      background: var(--accent-warning);
+      color: var(--text-inverse);
       font-weight: 600;
     }
     .wandering-monster-table tr:hover {
-      background: #f8f9fa;
+      background: var(--bg-tertiary);
     }
     .wandering-monster-table td:first-child {
       font-weight: 600;
-      color: #e74c3c;
+      color: var(--accent-warning);
     }
     .wandering-monster-table td:last-child {
       font-weight: 600;
-      color: #27ae60;
+      color: var(--accent-success);
     }
     
     /* Import Wizard Styles */
     .wizard-section, .data-manager-section {
       margin-bottom: 30px;
       padding: 20px;
-      border: 1px solid #e9ecef;
+      border: 1px solid var(--border-secondary);
       border-radius: 4px;
-      background: #f8f9fa;
+      background: var(--bg-tertiary);
     }
     .wizard-section h3, .data-manager-section h3 {
       margin-top: 0;
-      color: #495057;
-      border-bottom: 1px solid #dee2e6;
+      color: var(--text-secondary);
+      border-bottom: 1px solid var(--border-accent);
       padding-bottom: 8px;
     }
     .upload-area {
-      border: 2px dashed #ddd;
+      border: 2px dashed var(--border-primary);
       border-radius: 4px;
       padding: 40px;
       text-align: center;
-      background: white;
+      background: var(--bg-primary);
+      color: var(--text-primary);
       cursor: pointer;
       transition: border-color 0.3s;
       margin: 15px 0;
     }
     .upload-area:hover {
-      border-color: #3498db;
+      border-color: var(--accent-primary);
     }
     .upload-area.dragover {
-      border-color: #3498db;
-      background: #f0f8ff;
+      border-color: var(--accent-primary);
+      background: var(--bg-accent);
     }
     .status-message {
       padding: 10px;
@@ -270,19 +362,19 @@
       margin: 10px 0;
     }
     .status-success {
-      background: #d4edda;
-      color: #155724;
-      border: 1px solid #c3e6cb;
+      background: var(--status-success-bg);
+      color: var(--status-success-text);
+      border: 1px solid var(--status-success-border);
     }
     .status-error {
-      background: #f8d7da;
-      color: #721c24;
-      border: 1px solid #f5c6cb;
+      background: var(--status-error-bg);
+      color: var(--status-error-text);
+      border: 1px solid var(--status-error-border);
     }
     .status-info {
-      background: #cce7ff;
-      color: #004085;
-      border: 1px solid #b3d7ff;
+      background: var(--status-info-bg);
+      color: var(--status-info-text);
+      border: 1px solid var(--status-info-border);
     }
     .data-manager-actions {
       display: flex;
@@ -295,18 +387,18 @@
       padding: 8px 16px;
     }
     .btn-danger {
-      background: #dc3545 !important;
+      background: var(--accent-danger) !important;
     }
     .btn-danger:hover {
-      background: #c82333 !important;
+      background: var(--accent-danger-hover) !important;
     }
     .data-item {
       display: flex;
       justify-content: space-between;
       align-items: center;
       padding: 15px;
-      background: white;
-      border: 1px solid #e9ecef;
+      background: var(--bg-primary);
+      border: 1px solid var(--border-secondary);
       border-radius: 4px;
       margin-bottom: 10px;
     }
@@ -326,9 +418,9 @@
       gap: 15px;
       margin-bottom: 20px;
       padding: 15px;
-      background: #e8f4fd;
+      background: var(--bg-accent);
       border-radius: 4px;
-      border: 1px solid #bee5eb;
+      border: 1px solid var(--border-focus);
     }
     .preview-toggle {
       display: flex;
@@ -346,14 +438,14 @@
       display: none;
       align-items: center;
       gap: 8px;
-      color: #0066cc;
+      color: var(--loading-spinner);
       font-size: 14px;
     }
     .loading-spinner {
       width: 16px;
       height: 16px;
-      border: 2px solid #e3f2fd;
-      border-top: 2px solid #0066cc;
+      border: 2px solid var(--loading-bg);
+      border-top: 2px solid var(--loading-spinner);
       border-radius: 50%;
       animation: spin 1s linear infinite;
     }
@@ -365,13 +457,54 @@
       opacity: 0.6;
       pointer-events: none;
     }
-  </style>
+    \n    /* Theme selector styles */
+    .theme-selector {
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+    
+    .theme-option {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 15px;
+      background: var(--bg-primary);
+      border: 2px solid var(--border-secondary);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-weight: normal !important;
+      margin-bottom: 0 !important;
+    }
+    
+    .theme-option:hover {
+      border-color: var(--accent-primary);
+      background: var(--bg-accent);
+    }
+    
+    .theme-option input[type="radio"] {
+      width: auto;
+      margin: 0;
+    }
+    
+    .theme-option input[type="radio"]:checked + span {
+      font-weight: 600;
+    }
+    
+    .theme-option:has(input[type="radio"]:checked) {
+      border-color: var(--accent-primary);
+      background: var(--bg-accent);
+      box-shadow: 0 0 0 2px rgba(74, 158, 255, 0.2);
+    }\n    \n    /* Manual dark mode override */\n    [data-theme=\"dark\"] {\n      --bg-primary: #1e1e1e;\n      --bg-secondary: #252525;\n      --bg-tertiary: #2d2d2d;\n      --bg-accent: #1a2332;\n      --text-primary: #e0e0e0;\n      --text-secondary: #b0b0b0;\n      --text-muted: #888888;\n      --text-inverse: #ffffff;\n      --border-primary: #404040;\n      --border-secondary: #353535;\n      --border-accent: #454545;\n      --border-focus: #4a9eff;\n      --shadow: rgba(0,0,0,0.3);\n      --shadow-hover: rgba(0,0,0,0.4);\n      --accent-primary: #4a9eff;\n      --accent-hover: #3d8bdb;\n      --accent-danger: #ff4757;\n      --accent-danger-hover: #ff3838;\n      --accent-success: #2ed573;\n      --accent-success-hover: #26c965;\n      --accent-warning: #ff6b6b;\n      --tab-bg: #1a1a1a;\n      --tab-hover: #2a2a2a;\n      --status-success-bg: #1a2e1a;\n      --status-success-text: #90ee90;\n      --status-success-border: #2d4a2d;\n      --status-error-bg: #2e1a1a;\n      --status-error-text: #ffb3b3;\n      --status-error-border: #4a2d2d;\n      --status-info-bg: #1a2233;\n      --status-info-text: #87ceeb;\n      --status-info-border: #2d3d4a;\n      --loading-bg: #1a2332;\n      --loading-spinner: #4a9eff;\n    }\n    \n    [data-theme=\"light\"] {\n      --bg-primary: #ffffff;\n      --bg-secondary: #f5f5f5;\n      --bg-tertiary: #f8f9fa;\n      --bg-accent: #e8f4fd;\n      --text-primary: #2c3e50;\n      --text-secondary: #495057;\n      --text-muted: #6c757d;\n      --text-inverse: #ffffff;\n      --border-primary: #ddd;\n      --border-secondary: #e9ecef;\n      --border-accent: #dee2e6;\n      --border-focus: #3498db;\n      --shadow: rgba(0,0,0,0.1);\n      --shadow-hover: rgba(0,0,0,0.15);\n      --accent-primary: #3498db;\n      --accent-hover: #2980b9;\n      --accent-danger: #dc3545;\n      --accent-danger-hover: #c82333;\n      --accent-success: #27ae60;\n      --accent-success-hover: #229954;\n      --accent-warning: #e74c3c;\n      --tab-bg: #2c3e50;\n      --tab-hover: #34495e;\n      --status-success-bg: #d4edda;\n      --status-success-text: #155724;\n      --status-success-border: #c3e6cb;\n      --status-error-bg: #f8d7da;\n      --status-error-text: #721c24;\n      --status-error-border: #f5c6cb;\n      --status-info-bg: #cce7ff;\n      --status-info-text: #004085;\n      --status-info-border: #b3d7ff;\n      --loading-bg: #e3f2fd;\n      --loading-spinner: #0066cc;\n    }\n  </style>
 </head>
 <body>
   <div class="container">
     <div class="tabs">
       <button class="tab active" onclick="showTab('generator')">Generator</button>
       <button class="tab" onclick="showTab('data-manager')">Data Manager</button>
+      <button class="tab" onclick="showTab('settings')">Settings</button>
     </div>
 
     <div id="generator-tab" class="tab-content active">
@@ -581,8 +714,219 @@
         <div id="custom-data-list"></div>
       </div>
     </div>
+
+    <div id="settings-tab" class="tab-content">
+      <h2>Settings</h2>
+      <p>Configure application-wide settings and preferences.</p>
+      
+      <div class="wizard-section">
+        <h3>Appearance</h3>
+        <div class="form-group">
+          <label>Theme:</label>
+          <div class="theme-selector">
+            <label class="theme-option">
+              <input type="radio" name="theme" value="auto" checked>
+              <span>🔄 Auto (System)</span>
+            </label>
+            <label class="theme-option">
+              <input type="radio" name="theme" value="light">
+              <span>☀️ Light</span>
+            </label>
+            <label class="theme-option">
+              <input type="radio" name="theme" value="dark">
+              <span>🌙 Dark</span>
+            </label>
+          </div>
+        </div>
+      </div>
+      
+      <div class="wizard-section">
+        <h3>Generator Preferences</h3>
+        <div class="checkbox-group">
+          <input type="checkbox" id="auto-preview" checked>
+          <label for="auto-preview">Enable real-time preview by default</label>
+        </div>
+        <div class="form-group">
+          <label>Default Number of Rooms:</label>
+          <input type="number" id="default-rooms" value="8" min="3" max="20">
+        </div>
+        <div class="form-group">
+          <label>Default Map Size:</label>
+          <select id="default-size">
+            <option value="small">Small (30x30)</option>
+            <option value="medium" selected>Medium (50x50)</option>
+            <option value="large">Large (80x80)</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="wizard-section">
+        <h3>Export Settings</h3>
+        <div class="checkbox-group">
+          <input type="checkbox" id="include-metadata" checked>
+          <label for="include-metadata">Include metadata in exports</label>
+        </div>
+        <div class="form-group">
+          <label>Default Export Format:</label>
+          <select id="default-export">
+            <option value="svg" selected>SVG</option>
+            <option value="foundry">FoundryVTT</option>
+            <option value="ascii">ASCII</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="data-manager-actions">
+        <button id="save-settings">Save Settings</button>
+        <button id="reset-settings" class="btn-danger">Reset to Defaults</button>
+      </div>
+    </div>
   </div>
 
-  <script type="module" src="/src/main.ts"></script>
+  <script>
+    // Theme management functionality
+    function initializeTheme() {
+      const savedTheme = localStorage.getItem('theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      
+      let currentTheme;
+      if (savedTheme && savedTheme !== 'null') {
+        // User has manually selected a theme
+        currentTheme = savedTheme;
+      } else {
+        // No manual selection, use auto mode
+        currentTheme = 'auto';
+      }
+      
+      // Set the radio button
+      const themeRadio = document.querySelector(`input[name="theme"][value="${currentTheme}"]`);
+      if (themeRadio) {
+        themeRadio.checked = true;
+      }
+      
+      // Apply the actual theme
+      applyTheme(currentTheme, prefersDark);
+    }
+    
+    function applyTheme(themeChoice, prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      let actualTheme;
+      if (themeChoice === 'auto') {
+        actualTheme = prefersDark ? 'dark' : 'light';
+      } else {
+        actualTheme = themeChoice;
+      }
+      
+      document.documentElement.setAttribute('data-theme', actualTheme);
+    }
+    
+    function handleThemeChange(event) {
+      const selectedTheme = event.target.value;
+      
+      if (selectedTheme === 'auto') {
+        localStorage.removeItem('theme');
+      } else {
+        localStorage.setItem('theme', selectedTheme);
+      }
+      
+      applyTheme(selectedTheme);
+    }
+    
+    function showTab(tabName) {
+      // Hide all tab contents
+      document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+      });
+      
+      // Remove active class from all tabs
+      document.querySelectorAll('.tab').forEach(tab => {
+        tab.classList.remove('active');
+      });
+      
+      // Show selected tab content
+      document.getElementById(tabName + '-tab').classList.add('active');
+      
+      // Add active class to clicked tab
+      event.target.classList.add('active');
+    }
+    
+    function saveSettings() {
+      // Get all settings values
+      const settings = {
+        autoPreview: document.getElementById('auto-preview').checked,
+        defaultRooms: document.getElementById('default-rooms').value,
+        defaultSize: document.getElementById('default-size').value,
+        includeMetadata: document.getElementById('include-metadata').checked,
+        defaultExport: document.getElementById('default-export').value
+      };
+      
+      localStorage.setItem('appSettings', JSON.stringify(settings));
+      
+      // Show success message
+      const button = document.getElementById('save-settings');
+      const originalText = button.textContent;
+      button.textContent = 'Saved!';
+      button.style.background = 'var(--accent-success)';
+      
+      setTimeout(() => {
+        button.textContent = originalText;
+        button.style.background = '';
+      }, 2000);
+    }
+    
+    function resetSettings() {
+      if (confirm('Are you sure you want to reset all settings to defaults?')) {
+        localStorage.removeItem('appSettings');
+        localStorage.removeItem('theme');
+        
+        // Reset form values
+        document.getElementById('auto-preview').checked = true;
+        document.getElementById('default-rooms').value = '8';
+        document.getElementById('default-size').value = 'medium';
+        document.getElementById('include-metadata').checked = true;
+        document.getElementById('default-export').value = 'svg';
+        document.querySelector('input[name="theme"][value="auto"]').checked = true;
+        
+        // Apply auto theme
+        applyTheme('auto');
+        
+        alert('Settings reset to defaults');
+      }
+    }
+    
+    function loadSettings() {
+      const saved = localStorage.getItem('appSettings');
+      if (saved) {
+        const settings = JSON.parse(saved);
+        document.getElementById('auto-preview').checked = settings.autoPreview ?? true;
+        document.getElementById('default-rooms').value = settings.defaultRooms ?? '8';
+        document.getElementById('default-size').value = settings.defaultSize ?? 'medium';
+        document.getElementById('include-metadata').checked = settings.includeMetadata ?? true;
+        document.getElementById('default-export').value = settings.defaultExport ?? 'svg';
+      }
+    }
+    
+    // Initialize everything when page loads
+    document.addEventListener('DOMContentLoaded', () => {
+      initializeTheme();
+      loadSettings();
+      
+      // Add event listeners for theme radio buttons
+      document.querySelectorAll('input[name="theme"]').forEach(radio => {
+        radio.addEventListener('change', handleThemeChange);
+      });
+      
+      // Add event listeners for settings buttons
+      document.getElementById('save-settings').addEventListener('click', saveSettings);
+      document.getElementById('reset-settings').addEventListener('click', resetSettings);
+    });
+    
+    // Listen for system theme changes
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+      const savedTheme = localStorage.getItem('theme');
+      if (!savedTheme) { // Only if on auto mode
+        applyTheme('auto', e.matches);
+      }
+    });
+  </script>\n  <script type="module" src="/src/main.ts"></script>
 </body>
 </html>
