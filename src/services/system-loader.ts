@@ -57,7 +57,7 @@ export async function loadSystemModule(name?: string, rng?: () => number): Promi
   }
   
   const { isSystemPlugin } = await import('../core/plugin-types');
-  const plugin = await pluginLoader.load(name).catch((err) => {
+  const plugin = await pluginLoader.load(name).catch((err: any) => {
     throw new Error(`Unknown system: ${name}: ${err}`);
   });
   if (!isSystemPlugin(plugin)) {
@@ -84,10 +84,10 @@ export function getSystems(): SystemInfo[] {
   
   const pluginSystems = pluginLoader
     .getRegistry()
-    .filter((p) => p.type === 'system')
-    .map((p) => ({
+    .filter((p: any) => p.type === 'system')
+    .map((p: any) => ({
       id: p.metadata.id,
-      label: p.metadata.name || p.metadata.id,
+      label: (p.metadata as any).name || p.metadata.id,
       description: p.metadata.description,
     }));
   return [...BUILTIN_SYSTEMS, ...pluginSystems];

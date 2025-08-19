@@ -50,8 +50,10 @@ export interface SystemOptions extends Record<string, unknown> {
   };
 }
 
-export interface SystemPlugin extends BasePlugin, SystemModule {
-  // Just the core functionality - keep it simple
+export interface SystemPlugin extends BasePlugin {
+  // System-specific functionality
+  id: string;
+  label: string;
   enrich(dungeon: Dungeon, options?: SystemOptions): Promise<Dungeon> | Dungeon;
 }
 

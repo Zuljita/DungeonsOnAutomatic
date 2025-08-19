@@ -7,6 +7,7 @@ import { renderAscii, renderSvg } from "../services/render";
 import { exportFoundry } from "../services/foundry";
 import { dungeonTemplateService } from "../services/dungeon-templates";
 import { createDefaultPluginLoader } from "../services/plugin-loader";
+import { isExportPlugin } from "../core/plugin-types";
 import pc from "picocolors";
 import { promises as fs } from "node:fs";
 import path from "node:path";
@@ -140,13 +141,30 @@ program
             }
           : undefined;
       const enriched = await sys.enrich(d, { sources: opts.source, tags: tagOptions });
+      
+      // Handle exports
       if (opts.svg) {
         process.stdout.write(renderSvg(enriched) + "\n");
       } else if (opts.ascii) {
-        process.stdout.write(renderAscii(enriched) + "\n");
+        // Use ASCII export plugin
+        try {
+          const pluginLoader = createDefaultPluginLoader();
+          const plugin = await pluginLoader.load('ascii-export', { sandbox: false });
+          if (isExportPlugin(plugin)) {
+            const result = await plugin.export(enriched, 'ascii');
+            process.stdout.write(result.data + "\n");
+          } else {
+            throw new Error('ascii-export plugin is not an export plugin');
+          }
+        } catch (err) {
+          // Fallback to original implementation
+          console.error('Warning: ASCII plugin failed, using fallback:', err);
+          process.stdout.write(renderAscii(enriched) + "\n");
+        }
       } else if (opts.foundry) {
         process.stdout.write(JSON.stringify(exportFoundry(enriched), null, 2) + "\n");
       } else {
+        // Default output - JSON format for compatibility
         process.stdout.write(JSON.stringify(enriched, null, 2) + "\n");
       }
     });
@@ -227,7 +245,7 @@ plugins
     const loader = createDefaultPluginLoader();
     const infos = await loader.discover();
     const found = infos.filter((p) =>
-      (p.metadata.name || '').toLowerCase().includes(term.toLowerCase()) ||
+      ((p.metadata as any).name || '').toLowerCase().includes(term.toLowerCase()) ||
       (p.metadata.description || '').toLowerCase().includes(term.toLowerCase()) ||
       p.metadata.id.includes(term)
     );
@@ -261,9 +279,9 @@ plugins
     console.log(`Version: ${info.metadata.version}`);
     console.log(`Type: ${info.type}`);
     if (info.metadata.description) console.log(info.metadata.description);
-    console.log(`Author: ${info.metadata.author.name}`);
-    console.log(`License: ${info.metadata.license}`);
-    console.log(`Compatibility: ${info.metadata.compatibility}`);
+    console.log(`Author: ${(info.metadata as any).author?.name || info.metadata.author || 'Unknown'}`);
+    console.log(`License: ${(info.metadata as any).license || 'Unknown'}`);
+    console.log(`Compatibility: ${(info.metadata as any).compatibility || 'Unknown'}`);
   });
 
 plugins
@@ -383,7 +401,7 @@ plugins
     const rows = infos.map((i) => ({
       id: i.metadata.id,
       version: i.metadata.version,
-      compatibility: i.metadata.compatibility,
+      compatibility: (i.metadata as any).compatibility || 'unknown',
     }));
     if (opts.json) {
       process.stdout.write(JSON.stringify(rows, null, 2) + "\n");

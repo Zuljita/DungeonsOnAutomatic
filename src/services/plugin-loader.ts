@@ -10,7 +10,7 @@ import {
   executePluginFunction,
   validatePluginCapabilities,
 } from './plugin-security';
-import pkg from '../../package.json' assert { type: 'json' };
+import pkg from '../../package.json';
 
 const CORE_VERSION = pkg.version as string;
 
@@ -100,22 +100,23 @@ export class PluginLoader {
     }
     const sandbox = opts.sandbox !== false;
     const timeout = opts.timeout ?? 3000;
-    // Check core compatibility
-    if (!semver.satisfies(CORE_VERSION, info.metadata.compatibility)) {
+    // Check core compatibility (optional for simple plugins)
+    const compatibility = (info.metadata as any).compatibility;
+    if (compatibility && !semver.satisfies(CORE_VERSION, compatibility)) {
       throw new Error(
-        `Plugin ${id} requires DOA version ${info.metadata.compatibility} but current version is ${CORE_VERSION}`
+        `Plugin ${id} requires DOA version ${compatibility} but current version is ${CORE_VERSION}`
       );
     }
-    // Check dependencies
-    const deps = info.metadata.dependencies;
-    if (deps.systems) {
+    // Check dependencies (optional for simple plugins)
+    const deps = (info.metadata as any).dependencies;
+    if (deps?.systems) {
       for (const dep of deps.systems) {
         if (!this.registry.has(dep)) {
           throw new Error(`Plugin ${id} missing required system dependency ${dep}`);
         }
       }
     }
-    if (deps.plugins) {
+    if (deps?.plugins) {
       for (const dep of deps.plugins) {
         if (!this.registry.has(dep)) {
           throw new Error(`Plugin ${id} missing required plugin dependency ${dep}`);
@@ -136,7 +137,7 @@ export class PluginLoader {
     }
     plugin.metadata = plugin.metadata || info.metadata;
     try {
-      validatePluginCapabilities(plugin, info.type);
+      validatePluginCapabilities(plugin, info.type || 'unknown');
     } catch (err) {
       throw new Error((err as Error).message);
     }
@@ -168,9 +169,10 @@ export class PluginLoader {
 
 /** Utility to create default plugin loader using standard paths */
 export function createDefaultPluginLoader(): PluginLoader {
+  const corePluginsDir = path.resolve(process.cwd(), 'src/plugins');
   const pluginDir = path.resolve(process.cwd(), 'plugins');
   const nodeModules = path.resolve(process.cwd(), 'node_modules');
-  return new PluginLoader([pluginDir, nodeModules]);
+  return new PluginLoader([corePluginsDir, pluginDir, nodeModules]);
 }
 
 export type { PluginInfo };
