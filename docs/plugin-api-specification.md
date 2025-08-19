@@ -201,11 +201,14 @@ interface Encounter {
 ### 5.1 Loading Sequence
 
 1. **Discovery**: DOA scans plugin directories for `package.json` files
-2. **Validation**: Plugin metadata is validated against schema
+2. **Metadata Validation**: Plugin manifest is validated against schema
 3. **Dependency Resolution**: Plugin dependencies are checked and resolved
 4. **Loading**: Plugin code is loaded and instantiated
 5. **Initialization**: Optional `initialize()` method is called
-6. **Registration**: Plugin is registered with the appropriate service
+6. **Runtime Validation**: Optional `validate()` method is invoked
+7. **Registration**: Plugin is registered with the appropriate service
+8. **Execution**: Plugin's main methods (`enrich`, `export`, `generateRooms`) run during dungeon generation
+9. **Cleanup**: Optional `cleanup()` method runs when the plugin is unloaded
 
 ### 5.2 Error Handling
 

@@ -14,6 +14,10 @@ Plugins can receive configuration from multiple sources, with the following prio
 
 Keep it simple - most users won't need complex configuration.
 
+### Conflict Resolution
+
+When the same option appears in multiple sources, the value from the highest-priority source overrides lower-priority values. Primitive values are replaced, while object values are shallow-merged.
+
 ## Plugin Configuration File
 
 ### Basic Structure

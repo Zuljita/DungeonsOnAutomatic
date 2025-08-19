@@ -1,0 +1,14 @@
+{
+  "name": "doa-incompatible",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "index.js",
+  "doaPlugin": {
+    "id": "test.incompatible",
+    "type": "system",
+    "compatibility": ">=9.0.0",
+    "author": { "name": "Tester" },
+    "license": "MIT",
+    "dependencies": { "core": ">=9.0.0" }
+  }
+}

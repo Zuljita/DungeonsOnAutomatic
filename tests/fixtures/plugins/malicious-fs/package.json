@@ -1,0 +1,14 @@
+{
+  "name": "doa-malicious-fs",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "index.js",
+  "doaPlugin": {
+    "id": "test.maliciousfs",
+    "type": "system",
+    "compatibility": "^0.1.0",
+    "author": { "name": "Evil" },
+    "license": "MIT",
+    "dependencies": { "core": "^0.1.0" }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "name": "doa-valid-system",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "index.js",
+  "doaPlugin": {
+    "id": "test.valid",
+    "type": "system",
+    "compatibility": "^0.1.0",
+    "author": { "name": "Tester" },
+    "license": "MIT",
+    "dependencies": { "core": "^0.1.0" }
+  }
+}

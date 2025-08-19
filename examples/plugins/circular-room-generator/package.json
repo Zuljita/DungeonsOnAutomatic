@@ -1,0 +1,13 @@
+{
+  "name": "doa-circular-room-generator",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "index.js",
+  "doaPlugin": {
+    "id": "example.circular-rooms",
+    "type": "roomGenerator",
+    "compatibility": "^0.1.0",
+    "author": { "name": "Example" },
+    "license": "MIT"
+  }
+}
