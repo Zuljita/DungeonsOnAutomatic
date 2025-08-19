@@ -101,6 +101,37 @@ export interface RoomGeneratorPlugin extends BasePlugin {
   ): Promise<Room[]> | Room[];
 }
 
+// === Room Shape Plugin Interface ===
+
+export interface ShapePreferences {
+  rectangular?: number;     // weight for rectangular rooms
+  circular?: number;        // weight for circular rooms  
+  hexagonal?: number;       // weight for hexagonal rooms
+  octagonal?: number;       // weight for octagonal rooms
+  irregular?: number;       // weight for irregular rooms
+  'L-shaped'?: number;      // weight for L-shaped rooms
+  'T-shaped'?: number;      // weight for T-shaped rooms
+  cross?: number;           // weight for cross-shaped rooms
+}
+
+export interface RoomShapePlugin extends BasePlugin {
+  // Shape generation algorithms
+  generateShape(preferences?: ShapePreferences, roomKind?: string, rng?: RNG): RoomShape;
+  generateShapePoints(
+    shape: RoomShape, 
+    centerX: number, 
+    centerY: number, 
+    width: number, 
+    height: number, 
+    rng?: RNG
+  ): { x: number; y: number }[];
+  
+  // Available shapes and preferences
+  getSupportedShapes(): RoomShape[];
+  getDefaultPreferences(): ShapePreferences;
+  getKindPreferences(roomKind: string): Partial<ShapePreferences>;
+}
+
 // === Encounter Plugin Interface ===
 
 export interface EncounterContext {
@@ -212,6 +243,10 @@ export function isExportPlugin(plugin: BasePlugin): plugin is ExportPlugin {
 
 export function isRoomGeneratorPlugin(plugin: BasePlugin): plugin is RoomGeneratorPlugin {
   return 'generateRooms' in plugin && typeof plugin.generateRooms === 'function';
+}
+
+export function isRoomShapePlugin(plugin: BasePlugin): plugin is RoomShapePlugin {
+  return 'generateShape' in plugin && 'generateShapePoints' in plugin && typeof plugin.generateShape === 'function';
 }
 
 export function isEncounterPlugin(plugin: BasePlugin): plugin is EncounterPlugin {

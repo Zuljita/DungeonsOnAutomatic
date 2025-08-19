@@ -79,6 +79,11 @@ export function validatePluginCapabilities(plugin: BasePlugin, type: PluginType)
         throw new Error(`Plugin ${plugin.metadata?.id} missing required capability "generateEncounter"`);
       }
       break;
+    case 'room-shape':
+      if (typeof (plugin as any).generateShape !== 'function' || typeof (plugin as any).generateShapePoints !== 'function') {
+        throw new Error(`Plugin ${plugin.metadata?.id} missing required room-shape capabilities`);
+      }
+      break;
     default:
       throw new Error(`Unknown plugin type: ${type}`);
   }
