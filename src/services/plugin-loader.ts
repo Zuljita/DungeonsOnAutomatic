@@ -3,7 +3,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import semver from 'semver';
 import type { BasePlugin, PluginInfo, PluginType } from '../core/plugin-types';
-import { validatePluginMetadata } from '../core/plugin-types';
+import { parsePluginMetadata } from '../core/plugin-types';
 import {
   analyzePluginCode,
   loadPluginSandboxed,
@@ -51,10 +51,14 @@ export class PluginLoader {
             const pkgJson = JSON.parse(pkgRaw);
             const doaPlugin = pkgJson.doaPlugin;
             if (!doaPlugin) continue;
-            const metadata = validatePluginMetadata({
+            const metadata = parsePluginMetadata({
               ...doaPlugin,
               version: pkgJson.version,
             });
+            if (!metadata) {
+              console.warn(`Invalid plugin metadata in ${pkgPath}`);
+              continue;
+            }
             const info: PluginInfo = {
               metadata,
               type: doaPlugin.type as PluginType,
