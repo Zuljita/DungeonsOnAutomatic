@@ -6,6 +6,7 @@ import { tagSystem } from '@src/services/tag-system';
 import { buildDungeon } from '@src/services/assembler';
 import { dungeonTemplateService } from '@src/services/dungeon-templates';
 import { roomShapeService } from '@src/services/room-shapes';
+import { presetStorage, type DungeonPreset, type PresetConfiguration } from './preset-system';
 
 let importWizard: ImportWizardComponent | null = null;
 const STORAGE_KEY = 'doa-generator-settings';
@@ -776,6 +777,521 @@ function restoreCollapsedStates() {
   });
 }
 
+// Preset Management Functions
+
+function getCurrentConfiguration(): PresetConfiguration {
+  const templateInput = document.getElementById('template') as HTMLSelectElement;
+  const roomsInput = document.getElementById('rooms') as HTMLInputElement;
+  const seedInput = document.getElementById('seed') as HTMLInputElement;
+  const systemInput = document.getElementById('system') as HTMLSelectElement;
+  const themeInput = document.getElementById('theme') as HTMLSelectElement;
+  const widthInput = document.getElementById('width') as HTMLInputElement;
+  const heightInput = document.getElementById('height') as HTMLInputElement;
+  const layoutTypeInput = document.getElementById('layout-type') as HTMLSelectElement;
+  const roomLayoutInput = document.getElementById('room-layout') as HTMLSelectElement;
+  const roomSizeInput = document.getElementById('room-size') as HTMLSelectElement;
+  const roomShapeInput = document.getElementById('room-shape') as HTMLSelectElement;
+  const corridorTypeInput = document.getElementById('corridor-type') as HTMLSelectElement;
+  const corridorWidthInput = document.getElementById('corridor-width') as HTMLSelectElement;
+  const allowDeadendsInput = document.getElementById('allow-deadends') as HTMLInputElement;
+  const stairsUpInput = document.getElementById('stairs-up') as HTMLInputElement;
+  const stairsDownInput = document.getElementById('stairs-down') as HTMLInputElement;
+  const entrancePeripheryInput = document.getElementById('entrance-periphery') as HTMLInputElement;
+  
+  const sourcesInput = document.getElementById('sources') as HTMLSelectElement;
+  const monsterTagsInput = document.getElementById('monster-tags') as HTMLInputElement;
+  const trapTagsInput = document.getElementById('trap-tags') as HTMLInputElement;
+  const treasureTagsInput = document.getElementById('treasure-tags') as HTMLInputElement;
+  const textureInput = document.getElementById('texture') as HTMLSelectElement;
+  const mapStyleInput = document.getElementById('map-style') as HTMLSelectElement;
+  const colorThemeInput = document.getElementById('color-theme') as HTMLSelectElement;
+
+  const selectedSources = Array.from(sourcesInput.selectedOptions).map(option => option.value).filter(s => s);
+  const monsterTags = monsterTagsInput.value.split(',').map(tag => tag.trim()).filter(tag => tag);
+  const trapTags = trapTagsInput.value.split(',').map(tag => tag.trim()).filter(tag => tag);
+  const treasureTags = treasureTagsInput.value.split(',').map(tag => tag.trim()).filter(tag => tag);
+
+  return {
+    template: templateInput.value || undefined,
+    system: systemInput.value || undefined,
+    theme: themeInput.value || undefined,
+    rooms: parseInt(roomsInput.value) || undefined,
+    width: parseInt(widthInput.value) || undefined,
+    height: parseInt(heightInput.value) || undefined,
+    seed: seedInput.value || undefined,
+    layoutType: layoutTypeInput.value || undefined,
+    roomLayout: roomLayoutInput.value || undefined,
+    roomSize: roomSizeInput.value || undefined,
+    roomShape: roomShapeInput.value || undefined,
+    corridorType: corridorTypeInput.value || undefined,
+    corridorWidth: parseInt(corridorWidthInput.value) || undefined,
+    allowDeadends: allowDeadendsInput.checked,
+    stairsUp: stairsUpInput.checked,
+    stairsDown: stairsDownInput.checked,
+    entranceFromPeriphery: entrancePeripheryInput.checked,
+    sources: selectedSources.length ? selectedSources : undefined,
+    monsterTags: monsterTags.length ? monsterTags : undefined,
+    trapTags: trapTags.length ? trapTags : undefined,
+    treasureTags: treasureTags.length ? treasureTags : undefined,
+    texture: textureInput.value || undefined,
+    mapStyle: mapStyleInput.value || undefined,
+    colorTheme: colorThemeInput.value || undefined
+  };
+}
+
+function applyConfiguration(config: PresetConfiguration): void {
+  const templateInput = document.getElementById('template') as HTMLSelectElement;
+  const roomsInput = document.getElementById('rooms') as HTMLInputElement;
+  const seedInput = document.getElementById('seed') as HTMLInputElement;
+  const systemInput = document.getElementById('system') as HTMLSelectElement;
+  const themeInput = document.getElementById('theme') as HTMLSelectElement;
+  const widthInput = document.getElementById('width') as HTMLInputElement;
+  const heightInput = document.getElementById('height') as HTMLInputElement;
+  const layoutTypeInput = document.getElementById('layout-type') as HTMLSelectElement;
+  const roomLayoutInput = document.getElementById('room-layout') as HTMLSelectElement;
+  const roomSizeInput = document.getElementById('room-size') as HTMLSelectElement;
+  const roomShapeInput = document.getElementById('room-shape') as HTMLSelectElement;
+  const corridorTypeInput = document.getElementById('corridor-type') as HTMLSelectElement;
+  const corridorWidthInput = document.getElementById('corridor-width') as HTMLSelectElement;
+  const allowDeadendsInput = document.getElementById('allow-deadends') as HTMLInputElement;
+  const stairsUpInput = document.getElementById('stairs-up') as HTMLInputElement;
+  const stairsDownInput = document.getElementById('stairs-down') as HTMLInputElement;
+  const entrancePeripheryInput = document.getElementById('entrance-periphery') as HTMLInputElement;
+  
+  const sourcesInput = document.getElementById('sources') as HTMLSelectElement;
+  const monsterTagsInput = document.getElementById('monster-tags') as HTMLInputElement;
+  const trapTagsInput = document.getElementById('trap-tags') as HTMLInputElement;
+  const treasureTagsInput = document.getElementById('treasure-tags') as HTMLInputElement;
+  const textureInput = document.getElementById('texture') as HTMLSelectElement;
+  const mapStyleInput = document.getElementById('map-style') as HTMLSelectElement;
+  const colorThemeInput = document.getElementById('color-theme') as HTMLSelectElement;
+
+  // Apply basic settings
+  if (config.template !== undefined) templateInput.value = config.template;
+  if (config.system !== undefined) {
+    systemInput.value = config.system;
+    systemInput.dispatchEvent(new Event('change')); // Update themes and sources
+  }
+  if (config.theme !== undefined) themeInput.value = config.theme;
+  if (config.rooms !== undefined) roomsInput.value = String(config.rooms);
+  if (config.width !== undefined) widthInput.value = String(config.width);
+  if (config.height !== undefined) heightInput.value = String(config.height);
+  if (config.seed !== undefined) seedInput.value = config.seed;
+  
+  // Apply layout settings
+  if (config.layoutType !== undefined) layoutTypeInput.value = config.layoutType;
+  if (config.roomLayout !== undefined) roomLayoutInput.value = config.roomLayout;
+  if (config.roomSize !== undefined) roomSizeInput.value = config.roomSize;
+  if (config.roomShape !== undefined) roomShapeInput.value = config.roomShape;
+  
+  // Apply corridor settings
+  if (config.corridorType !== undefined) corridorTypeInput.value = config.corridorType;
+  if (config.corridorWidth !== undefined) corridorWidthInput.value = String(config.corridorWidth);
+  if (config.allowDeadends !== undefined) allowDeadendsInput.checked = config.allowDeadends;
+  
+  // Apply special features
+  if (config.stairsUp !== undefined) stairsUpInput.checked = config.stairsUp;
+  if (config.stairsDown !== undefined) stairsDownInput.checked = config.stairsDown;
+  if (config.entranceFromPeriphery !== undefined) entrancePeripheryInput.checked = config.entranceFromPeriphery;
+  
+  // Apply content filtering
+  if (config.sources && Array.isArray(config.sources)) {
+    Array.from(sourcesInput.options).forEach(option => {
+      option.selected = config.sources!.includes(option.value);
+    });
+  }
+  if (config.monsterTags && Array.isArray(config.monsterTags)) {
+    monsterTagsInput.value = config.monsterTags.join(', ');
+  }
+  if (config.trapTags && Array.isArray(config.trapTags)) {
+    trapTagsInput.value = config.trapTags.join(', ');
+  }
+  if (config.treasureTags && Array.isArray(config.treasureTags)) {
+    treasureTagsInput.value = config.treasureTags.join(', ');
+  }
+  
+  // Apply rendering settings
+  if (config.texture !== undefined) textureInput.value = config.texture;
+  if (config.mapStyle !== undefined) {
+    mapStyleInput.value = config.mapStyle;
+    mapStyleInput.dispatchEvent(new Event('change')); // Update related controls
+  }
+  if (config.colorTheme !== undefined) colorThemeInput.value = config.colorTheme;
+}
+
+function populatePresetSelector(): void {
+  const selector = document.getElementById('preset-selector') as HTMLSelectElement;
+  const presets = presetStorage.getAllPresets();
+  
+  // Clear existing options
+  selector.innerHTML = '<option value="">Select a preset...</option>';
+  
+  // Group by category
+  const categories = presetStorage.getCategories();
+  const categorizedPresets = new Map<string, DungeonPreset[]>();
+  const uncategorized: DungeonPreset[] = [];
+  
+  presets.forEach(preset => {
+    if (preset.metadata.category) {
+      if (!categorizedPresets.has(preset.metadata.category)) {
+        categorizedPresets.set(preset.metadata.category, []);
+      }
+      categorizedPresets.get(preset.metadata.category)!.push(preset);
+    } else {
+      uncategorized.push(preset);
+    }
+  });
+  
+  // Add built-in presets first
+  if (categories.length > 0) {
+    categories.forEach(category => {
+      const categoryPresets = categorizedPresets.get(category) || [];
+      const builtInPresets = categoryPresets.filter(p => p.metadata.isBuiltIn);
+      
+      if (builtInPresets.length > 0) {
+        const optgroup = document.createElement('optgroup');
+        optgroup.label = `${category} (Built-in)`;
+        
+        builtInPresets.forEach(preset => {
+          const option = document.createElement('option');
+          option.value = preset.metadata.id;
+          option.textContent = preset.metadata.name;
+          option.title = preset.metadata.description;
+          optgroup.appendChild(option);
+        });
+        
+        selector.appendChild(optgroup);
+      }
+    });
+  }
+  
+  // Add custom presets
+  if (categories.length > 0) {
+    categories.forEach(category => {
+      const categoryPresets = categorizedPresets.get(category) || [];
+      const customPresets = categoryPresets.filter(p => !p.metadata.isBuiltIn);
+      
+      if (customPresets.length > 0) {
+        const optgroup = document.createElement('optgroup');
+        optgroup.label = category;
+        
+        customPresets.forEach(preset => {
+          const option = document.createElement('option');
+          option.value = preset.metadata.id;
+          option.textContent = preset.metadata.name;
+          option.title = preset.metadata.description;
+          optgroup.appendChild(option);
+        });
+        
+        selector.appendChild(optgroup);
+      }
+    });
+  }
+  
+  // Add uncategorized presets
+  if (uncategorized.length > 0) {
+    const customUncategorized = uncategorized.filter(p => !p.metadata.isBuiltIn);
+    if (customUncategorized.length > 0) {
+      const optgroup = document.createElement('optgroup');
+      optgroup.label = 'Custom';
+      
+      customUncategorized.forEach(preset => {
+        const option = document.createElement('option');
+        option.value = preset.metadata.id;
+        option.textContent = preset.metadata.name;
+        option.title = preset.metadata.description;
+        optgroup.appendChild(option);
+      });
+      
+      selector.appendChild(optgroup);
+    }
+  }
+}
+
+function showPresetStatus(message: string, type: 'success' | 'error' | 'info'): void {
+  const statusEl = document.getElementById('preset-status');
+  if (!statusEl) return;
+  
+  statusEl.className = `preset-status-message preset-status-${type}`;
+  statusEl.textContent = message;
+  statusEl.style.display = 'block';
+  
+  // Auto-hide after 3 seconds
+  setTimeout(() => {
+    statusEl.style.display = 'none';
+  }, 3000);
+}
+
+function initializePresetSystem(): void {
+  populatePresetSelector();
+  
+  // Preset selector change handler
+  const selector = document.getElementById('preset-selector') as HTMLSelectElement;
+  const loadBtn = document.getElementById('load-preset-btn') as HTMLButtonElement;
+  
+  selector.addEventListener('change', () => {
+    loadBtn.disabled = !selector.value;
+  });
+  
+  // Load preset button
+  loadBtn.addEventListener('click', () => {
+    const presetId = selector.value;
+    if (!presetId) return;
+    
+    const preset = presetStorage.loadPreset(presetId);
+    if (preset) {
+      applyConfiguration(preset.configuration);
+      showPresetStatus(`Loaded preset: ${preset.metadata.name}`, 'success');
+      debounceGenerate(); // Trigger regeneration with new settings
+    } else {
+      showPresetStatus('Failed to load preset', 'error');
+    }
+  });
+  
+  // Save preset button
+  const saveBtn = document.getElementById('save-preset-btn');
+  saveBtn?.addEventListener('click', () => {
+    openSavePresetModal();
+  });
+  
+  // Manage presets button
+  const manageBtn = document.getElementById('manage-presets-btn');
+  manageBtn?.addEventListener('click', () => {
+    openManagePresetsModal();
+  });
+  
+  // Export presets button
+  const exportBtn = document.getElementById('export-presets-btn');
+  exportBtn?.addEventListener('click', () => {
+    exportAllPresets();
+  });
+  
+  // Import presets button
+  const importBtn = document.getElementById('import-presets-btn');
+  const importFile = document.getElementById('import-file') as HTMLInputElement;
+  
+  importBtn?.addEventListener('click', () => {
+    importFile.click();
+  });
+  
+  importFile?.addEventListener('change', (e) => {
+    const file = (e.target as HTMLInputElement).files?.[0];
+    if (file) {
+      importPresets(file);
+    }
+  });
+}
+
+function openSavePresetModal(): void {
+  const modal = document.getElementById('save-preset-modal');
+  const nameInput = document.getElementById('preset-name') as HTMLInputElement;
+  const descriptionInput = document.getElementById('preset-description') as HTMLTextAreaElement;
+  const categoryInput = document.getElementById('preset-category') as HTMLInputElement;
+  const errorDiv = document.getElementById('save-preset-error');
+  
+  // Clear previous values
+  nameInput.value = '';
+  descriptionInput.value = '';
+  categoryInput.value = '';
+  if (errorDiv) errorDiv.style.display = 'none';
+  
+  // Show modal
+  modal?.classList.add('show');
+  nameInput.focus();
+}
+
+function closeSavePresetModal(): void {
+  const modal = document.getElementById('save-preset-modal');
+  modal?.classList.remove('show');
+}
+
+function saveCurrentPreset(): void {
+  const nameInput = document.getElementById('preset-name') as HTMLInputElement;
+  const descriptionInput = document.getElementById('preset-description') as HTMLTextAreaElement;
+  const categoryInput = document.getElementById('preset-category') as HTMLInputElement;
+  const errorDiv = document.getElementById('save-preset-error');
+  
+  const name = nameInput.value.trim();
+  const description = descriptionInput.value.trim();
+  const category = categoryInput.value.trim() || undefined;
+  
+  if (!name) {
+    if (errorDiv) {
+      errorDiv.textContent = 'Please enter a preset name';
+      errorDiv.style.display = 'block';
+    }
+    return;
+  }
+  
+  if (!description) {
+    if (errorDiv) {
+      errorDiv.textContent = 'Please enter a description';
+      errorDiv.style.display = 'block';
+    }
+    return;
+  }
+  
+  const config = getCurrentConfiguration();
+  const success = presetStorage.savePreset(name, description, config, category);
+  
+  if (success) {
+    closeSavePresetModal();
+    populatePresetSelector();
+    showPresetStatus(`Preset "${name}" saved successfully!`, 'success');
+  } else {
+    if (errorDiv) {
+      errorDiv.textContent = 'Failed to save preset. Name may already exist.';
+      errorDiv.style.display = 'block';
+    }
+  }
+}
+
+function openManagePresetsModal(): void {
+  const modal = document.getElementById('manage-presets-modal');
+  modal?.classList.add('show');
+  populatePresetList();
+}
+
+function closeManagePresetsModal(): void {
+  const modal = document.getElementById('manage-presets-modal');
+  modal?.classList.remove('show');
+}
+
+function populatePresetList(searchQuery?: string): void {
+  const listContainer = document.getElementById('preset-list');
+  if (!listContainer) return;
+  
+  const presets = searchQuery ? presetStorage.searchPresets(searchQuery) : presetStorage.getAllPresets();
+  
+  listContainer.innerHTML = '';
+  
+  if (presets.length === 0) {
+    listContainer.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-muted);">No presets found</div>';
+    return;
+  }
+  
+  presets.forEach(preset => {
+    const item = document.createElement('div');
+    item.className = `preset-item ${preset.metadata.isBuiltIn ? 'built-in' : ''}`;
+    
+    const createdDate = new Date(preset.metadata.createdAt).toLocaleDateString();
+    const usageText = preset.metadata.usageCount > 0 ? `Used ${preset.metadata.usageCount} times` : 'Never used';
+    
+    item.innerHTML = `
+      <div class="preset-info">
+        <div class="preset-name">
+          ${preset.metadata.name}
+          ${preset.metadata.isBuiltIn ? '<span class="preset-badge">Built-in</span>' : ''}
+          ${preset.metadata.category ? `<span class="preset-badge">${preset.metadata.category}</span>` : ''}
+        </div>
+        <div class="preset-description">${preset.metadata.description}</div>
+        <div class="preset-meta">
+          <span>Created: ${createdDate}</span>
+          <span>${usageText}</span>
+          ${preset.metadata.systemType ? `<span>System: ${preset.metadata.systemType}</span>` : ''}
+        </div>
+      </div>
+      <div class="preset-actions-inline">
+        <button class="preset-action-small preset-load-btn" onclick="loadPresetFromManager('${preset.metadata.id}')">Load</button>
+        <button class="preset-action-small preset-export-btn" onclick="exportSinglePreset('${preset.metadata.id}')">Export</button>
+        ${!preset.metadata.isBuiltIn ? `<button class="preset-action-small preset-delete-btn" onclick="deletePresetFromManager('${preset.metadata.id}')">Delete</button>` : ''}
+      </div>
+    `;
+    
+    listContainer.appendChild(item);
+  });
+  
+  // Add search functionality
+  const searchInput = document.getElementById('preset-search') as HTMLInputElement;
+  searchInput.oninput = (e) => {
+    const query = (e.target as HTMLInputElement).value;
+    populatePresetList(query);
+  };
+}
+
+function loadPresetFromManager(presetId: string): void {
+  const preset = presetStorage.loadPreset(presetId);
+  if (preset) {
+    applyConfiguration(preset.configuration);
+    closeManagePresetsModal();
+    showPresetStatus(`Loaded preset: ${preset.metadata.name}`, 'success');
+    debounceGenerate(); // Trigger regeneration
+  } else {
+    showPresetStatus('Failed to load preset', 'error');
+  }
+}
+
+function deletePresetFromManager(presetId: string): void {
+  const preset = presetStorage.loadPreset(presetId);
+  if (!preset) return;
+  
+  if (confirm(`Are you sure you want to delete the preset "${preset.metadata.name}"?`)) {
+    const success = presetStorage.deletePreset(presetId);
+    if (success) {
+      populatePresetList();
+      populatePresetSelector();
+      showPresetStatus(`Deleted preset: ${preset.metadata.name}`, 'success');
+    } else {
+      showPresetStatus('Failed to delete preset', 'error');
+    }
+  }
+}
+
+function exportSinglePreset(presetId: string): void {
+  const json = presetStorage.exportPresets([presetId]);
+  const preset = presetStorage.loadPreset(presetId);
+  const filename = `doa-preset-${preset?.metadata.name.toLowerCase().replace(/[^a-z0-9]/g, '-') || 'export'}.json`;
+  
+  downloadJSON(json, filename);
+  showPresetStatus('Preset exported successfully!', 'success');
+}
+
+function exportAllPresets(): void {
+  const json = presetStorage.exportPresets();
+  const filename = `doa-presets-export-${new Date().toISOString().split('T')[0]}.json`;
+  
+  downloadJSON(json, filename);
+  showPresetStatus('All presets exported successfully!', 'success');
+}
+
+function importPresets(file: File): void {
+  const reader = new FileReader();
+  
+  reader.onload = (e) => {
+    try {
+      const json = e.target?.result as string;
+      const result = presetStorage.importPresets(json, false); // Don't overwrite by default
+      
+      if (result.success) {
+        populatePresetSelector();
+        showPresetStatus(`Successfully imported ${result.imported} preset(s)`, 'success');
+        
+        if (result.errors.length > 0) {
+          console.warn('Import warnings:', result.errors);
+        }
+      } else {
+        showPresetStatus(`Import failed: ${result.errors.join(', ')}`, 'error');
+      }
+    } catch (error) {
+      showPresetStatus('Failed to read preset file', 'error');
+    }
+  };
+  
+  reader.readAsText(file);
+}
+
+function downloadJSON(json: string, filename: string): void {
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
   initializeTabs();
@@ -783,6 +1299,7 @@ document.addEventListener('DOMContentLoaded', () => {
   populateSystemSelector();
   initializeThemeSelector();
   initializeSourceSelector();
+  initializePresetSystem(); // Initialize preset system
   loadGeneratorSettings();
   restoreCollapsedStates(); // Restore collapsed states from localStorage
   
@@ -808,6 +1325,12 @@ document.addEventListener('DOMContentLoaded', () => {
 (window as any).showTab = showTab;
 (window as any).toggleSummary = toggleSummary;
 (window as any).toggleOptionGroup = toggleOptionGroup;
+(window as any).closeSavePresetModal = closeSavePresetModal;
+(window as any).saveCurrentPreset = saveCurrentPreset;
+(window as any).closeManagePresetsModal = closeManagePresetsModal;
+(window as any).loadPresetFromManager = loadPresetFromManager;
+(window as any).deletePresetFromManager = deletePresetFromManager;
+(window as any).exportSinglePreset = exportSinglePreset;
 (window as any).importWizard = {
   deleteDataset: (moduleId: string, dataType: string) => {
     if (importWizard) {
