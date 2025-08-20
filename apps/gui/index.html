@@ -168,11 +168,16 @@
       margin-top: 20px;
       border: 1px solid var(--border-primary);
       border-radius: 4px;
-      overflow: auto;
+      overflow: scroll;
       position: relative;
       max-height: 70vh;
       cursor: grab;
       user-select: none;
+      -ms-overflow-style: none; /* IE and Edge */
+      scrollbar-width: none; /* Firefox */
+    }
+    .map-container::-webkit-scrollbar {
+      display: none; /* Chrome, Safari */
     }
     .map-container:active {
       cursor: grabbing;
