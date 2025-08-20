@@ -25,30 +25,19 @@ program
   .option("--width <n>", "map width", (v) => parseInt(v, 10))
   .option("--height <n>", "map height", (v) => parseInt(v, 10))
   .option("--seed <seed>", "random seed")
-  .option(
-    "--layout-type <type>",
-    "advanced layout type (rectangle, square, box, cross, etc.)"
+  .option("--layout-type <type>", "advanced layout type (rectangle, square, box, cross, etc.)")
+  .option("--corridor-type <type>", "corridor generation type (maze, winding, straight, mixed)")
+  .option("--corridor-width <width>", "corridor width in tiles (1, 2, or 3)", (v) =>
+    parseInt(v, 10),
   )
-  .option(
-    "--corridor-type <type>",
-    "corridor generation type (maze, winding, straight, mixed)"
-  )
-  .option(
-    "--corridor-width <width>",
-    "corridor width in tiles (1, 2, or 3)",
-    (v) => parseInt(v, 10)
-  )
-  .option(
-    "--room-layout <layout>",
-    "room layout style (sparse, scattered, dense, symmetric)"
-  )
+  .option("--room-layout <layout>", "room layout style (sparse, scattered, dense, symmetric)")
   .option(
     "--room-shape <shape>",
-    "room shape preference (rectangular, diverse, hex-preference, circular-preference, mixed)"
+    "room shape preference (rectangular, diverse, hex-preference, circular-preference, mixed)",
   )
   .option(
     "--template <id>",
-    "apply a dungeon template (use 'doa templates' to see available options)"
+    "apply a dungeon template (use 'doa templates' to see available options)",
   )
   .option("--stairs-up", "include stairs up to upper level")
   .option("--stairs-down", "include stairs down to lower level")
@@ -74,151 +63,157 @@ program
     (v, p) => [...p, v],
     [] as string[],
   )
-  .option(
-    "--map-style <style>",
-    "map rendering style (classic, hand-drawn)",
-    "classic",
-  )
-  .option(
-    "--sketch-intensity <n>",
-    "hand-drawn sketch intensity",
-    (v) => parseFloat(v),
-    1,
-  )
-  .option(
-    "--texture <name>",
-    "background texture (none, paper)",
-    "none",
-  )
-  .option(
-    "--palette <name>",
-    "color palette (light, dark, sepia)",
-    "light",
-  )
-  .option(
-    "--lock-percentage <n>",
-    "fraction of doors to lock (0-1)",
-    (v) => parseFloat(v),
-  )
+  .option("--map-style <style>", "map rendering style (classic, hand-drawn)", "classic")
+  .option("--sketch-intensity <n>", "hand-drawn sketch intensity", (v) => parseFloat(v), 1)
+  .option("--texture <name>", "background texture (none, paper)", "none")
+  .option("--palette <name>", "color palette (light, dark, sepia)", "light")
+  .option("--lock-percentage <n>", "fraction of doors to lock (0-1)", (v) => parseFloat(v))
   .option("--magical-locks", "allow magical locks")
   .option("--ascii", "render an ASCII map instead of JSON output")
   .option("--svg", "render an SVG map instead of JSON output")
   .option("--foundry", "output FoundryVTT-compatible JSON")
-    .action(async (opts) => {
-      if (opts.listSystems) {
-        const loader = createDefaultPluginLoader();
-        let plugins: string[] = [];
-        try {
-          const infos = await loader.discover();
-          plugins = infos.filter((p) => p.type === 'system').map((p) => p.metadata.id);
-        } catch {}
-        const systems = ['generic', 'dfrpg', ...plugins];
-        process.stdout.write(JSON.stringify(systems, null, 2) + "\n");
-        return;
-      }
-      if (opts.pluginInfo) {
-        const loader = createDefaultPluginLoader();
-        await loader.discover();
-        try {
-          const plugin: any = await loader.load(opts.pluginInfo, { sandbox: false });
-          const schema = plugin.getConfigSchema?.();
-          if (schema?.cliOptions) {
-            process.stdout.write(JSON.stringify(schema.cliOptions, null, 2) + "\n");
-          } else {
-            console.log('No plugin-specific options');
-          }
-        } catch (err) {
-          const msg = err instanceof Error ? err.message : String(err);
-          console.error(msg);
-          process.exitCode = 1;
-        }
-        return;
-      }
-
-      const d = buildDungeon({
-        rooms: opts.rooms,
-        seed: opts.seed,
-        width: opts.width,
-        height: opts.height,
-        template: opts.template,
-        layoutType: opts.layoutType,
-        roomLayout: opts.roomLayout,
-        corridorType: opts.corridorType,
-        corridorWidth: opts.corridorWidth,
-        roomShape: opts.roomShape,
-        stairsUp: opts.stairsUp,
-        stairsDown: opts.stairsDown,
-        entranceFromPeriphery: opts.entranceFromPeriphery,
-      });
-      let sys: SystemModule;
+  .option("--export-format <format>", "use export plugin for specified format")
+  .option("--export-page-size <size>", "PDF page size (a4|letter|legal)")
+  .option("--export-layout <layout>", "PDF layout (map-only|with-keys|detailed)")
+  .option("--export-color-mode <mode>", "PDF color mode (color|monochrome)")
+  .action(async (opts) => {
+    if (opts.listSystems) {
+      const loader = createDefaultPluginLoader();
+      let plugins: string[] = [];
       try {
-        sys = await loadSystemModule(opts.system, d.rng);
+        const infos = await loader.discover();
+        plugins = infos.filter((p) => p.type === "system").map((p) => p.metadata.id);
+      } catch {}
+      const systems = ["generic", "dfrpg", ...plugins];
+      process.stdout.write(JSON.stringify(systems, null, 2) + "\n");
+      return;
+    }
+    if (opts.pluginInfo) {
+      const loader = createDefaultPluginLoader();
+      await loader.discover();
+      try {
+        const plugin: any = await loader.load(opts.pluginInfo, { sandbox: false });
+        const schema = plugin.getConfigSchema?.();
+        if (schema?.cliOptions) {
+          process.stdout.write(JSON.stringify(schema.cliOptions, null, 2) + "\n");
+        } else {
+          console.log("No plugin-specific options");
+        }
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         console.error(msg);
-        sys = await loadSystemModule('generic', d.rng);
+        process.exitCode = 1;
       }
-      const tagOptions =
-        opts.theme || opts.monsterTag.length || opts.trapTag.length || opts.treasureTag.length
-          ? {
-              theme: opts.theme,
-              monsters: opts.monsterTag.length ? { requiredTags: opts.monsterTag } : undefined,
-              traps: opts.trapTag.length ? { requiredTags: opts.trapTag } : undefined,
-              treasure: opts.treasureTag.length ? { requiredTags: opts.treasureTag } : undefined,
-            }
-          : undefined;
-      const lockOptions =
-        opts.lockPercentage !== undefined || opts.magicalLocks
-          ? {
-              lockOptions: {
-                ...(opts.lockPercentage !== undefined
-                  ? { lockPercentage: opts.lockPercentage }
-                  : {}),
-                ...(opts.magicalLocks ? { allowMagicalLocks: true } : {}),
-              },
-            }
-          : undefined;
-      const enriched = await sys.enrich(d, {
-        sources: opts.source,
-        tags: tagOptions,
-        ...(lockOptions || {}),
-      });
-      
-      // Handle exports
-      if (opts.svg) {
-        let theme = lightTheme;
-        if (opts.palette === "dark") theme = darkTheme;
-        else if (opts.palette === "sepia") theme = sepiaTheme;
-        const svg = await renderSvg(enriched, theme, {
-          style: opts.mapStyle,
-          wobbleIntensity: opts.sketchIntensity || 1,
-          wallThickness: 1,
-          showGrid: false,
-        });
-        process.stdout.write(svg + "\n");
-      } else if (opts.ascii) {
-        // Use ASCII export plugin
-        try {
-          const pluginLoader = createDefaultPluginLoader();
-          const plugin = await pluginLoader.load('ascii-export', { sandbox: false });
-          if (isExportPlugin(plugin)) {
-            const result = await plugin.export(enriched, 'ascii');
-            process.stdout.write(result.data + "\n");
-          } else {
-            throw new Error('ascii-export plugin is not an export plugin');
-          }
-        } catch (err) {
-          // Fallback to original implementation
-          console.error('Warning: ASCII plugin failed, using fallback:', err);
-          process.stdout.write(renderAscii(enriched) + "\n");
-        }
-      } else if (opts.foundry) {
-        process.stdout.write(JSON.stringify(exportFoundry(enriched), null, 2) + "\n");
-      } else {
-        // Default output - JSON format for compatibility
-        process.stdout.write(JSON.stringify(enriched, null, 2) + "\n");
-      }
+      return;
+    }
+
+    const d = buildDungeon({
+      rooms: opts.rooms,
+      seed: opts.seed,
+      width: opts.width,
+      height: opts.height,
+      template: opts.template,
+      layoutType: opts.layoutType,
+      roomLayout: opts.roomLayout,
+      corridorType: opts.corridorType,
+      corridorWidth: opts.corridorWidth,
+      roomShape: opts.roomShape,
+      stairsUp: opts.stairsUp,
+      stairsDown: opts.stairsDown,
+      entranceFromPeriphery: opts.entranceFromPeriphery,
     });
+    let sys: SystemModule;
+    try {
+      sys = await loadSystemModule(opts.system, d.rng);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(msg);
+      sys = await loadSystemModule("generic", d.rng);
+    }
+    const tagOptions =
+      opts.theme || opts.monsterTag.length || opts.trapTag.length || opts.treasureTag.length
+        ? {
+            theme: opts.theme,
+            monsters: opts.monsterTag.length ? { requiredTags: opts.monsterTag } : undefined,
+            traps: opts.trapTag.length ? { requiredTags: opts.trapTag } : undefined,
+            treasure: opts.treasureTag.length ? { requiredTags: opts.treasureTag } : undefined,
+          }
+        : undefined;
+    const lockOptions =
+      opts.lockPercentage !== undefined || opts.magicalLocks
+        ? {
+            lockOptions: {
+              ...(opts.lockPercentage !== undefined ? { lockPercentage: opts.lockPercentage } : {}),
+              ...(opts.magicalLocks ? { allowMagicalLocks: true } : {}),
+            },
+          }
+        : undefined;
+    const enriched = await sys.enrich(d, {
+      sources: opts.source,
+      tags: tagOptions,
+      ...(lockOptions || {}),
+    });
+
+    // Handle exports
+    if (opts.exportFormat) {
+      const pluginLoader = createDefaultPluginLoader();
+      const infos = await pluginLoader.discover();
+      for (const info of infos) {
+        try {
+          const plugin = await pluginLoader.load(info.metadata.id, { sandbox: false });
+          if (isExportPlugin(plugin) && plugin.supportedFormats.includes(opts.exportFormat)) {
+            const result = await plugin.export(enriched, opts.exportFormat, {
+              pageSize: opts.exportPageSize,
+              layout: opts.exportLayout,
+              colorMode: opts.exportColorMode,
+              filename: `dungeon.${opts.exportFormat}`,
+            });
+            if (typeof result.data === "string") {
+              process.stdout.write(result.data + "\n");
+            } else {
+              process.stdout.write(result.data as any);
+            }
+            return;
+          }
+        } catch {
+          continue;
+        }
+      }
+      console.error(`No export plugin found for format ${opts.exportFormat}`);
+    } else if (opts.svg) {
+      let theme = lightTheme;
+      if (opts.palette === "dark") theme = darkTheme;
+      else if (opts.palette === "sepia") theme = sepiaTheme;
+      const svg = await renderSvg(enriched, theme, {
+        style: opts.mapStyle,
+        wobbleIntensity: opts.sketchIntensity || 1,
+        wallThickness: 1,
+        showGrid: false,
+      });
+      process.stdout.write(svg + "\n");
+    } else if (opts.ascii) {
+      // Use ASCII export plugin
+      try {
+        const pluginLoader = createDefaultPluginLoader();
+        const plugin = await pluginLoader.load("ascii-export", { sandbox: false });
+        if (isExportPlugin(plugin)) {
+          const result = await plugin.export(enriched, "ascii");
+          process.stdout.write(result.data + "\n");
+        } else {
+          throw new Error("ascii-export plugin is not an export plugin");
+        }
+      } catch (err) {
+        // Fallback to original implementation
+        console.error("Warning: ASCII plugin failed, using fallback:", err);
+        process.stdout.write(renderAscii(enriched) + "\n");
+      }
+    } else if (opts.foundry) {
+      process.stdout.write(JSON.stringify(exportFoundry(enriched), null, 2) + "\n");
+    } else {
+      // Default output - JSON format for compatibility
+      process.stdout.write(JSON.stringify(enriched, null, 2) + "\n");
+    }
+  });
 
 program
   .command("templates")
@@ -226,33 +221,35 @@ program
   .option("--category <cat>", "filter by category (classic, natural, fortress, maze, special)")
   .action((opts) => {
     const categories = dungeonTemplateService.getCategories();
-    const templates = opts.category 
+    const templates = opts.category
       ? dungeonTemplateService.getTemplatesByCategory(opts.category)
       : dungeonTemplateService.getAllTemplates();
 
     if (opts.category) {
-      const category = categories.find(c => c.id === opts.category);
-      console.log(`\n${category?.name || 'Unknown Category'} Templates:\n`);
+      const category = categories.find((c) => c.id === opts.category);
+      console.log(`\n${category?.name || "Unknown Category"} Templates:\n`);
     } else {
       console.log("\nAvailable Dungeon Templates:\n");
-      
+
       // Show categories first
       console.log("Categories:");
-      categories.forEach(cat => {
+      categories.forEach((cat) => {
         const count = dungeonTemplateService.getTemplatesByCategory(cat.id).length;
         console.log(`  ${cat.id}: ${cat.name} (${count} templates)`);
       });
       console.log("\nTemplates:\n");
     }
 
-    templates.forEach(template => {
+    templates.forEach((template) => {
       console.log(`${template.id}:`);
       console.log(`  Name: ${template.name}`);
       console.log(`  Category: ${template.category}`);
       console.log(`  Description: ${template.description}`);
-      console.log(`  Rooms: ${template.mapOptions.rooms || 'default'}`);
-      console.log(`  Size: ${template.mapOptions.width || 'default'}x${template.mapOptions.height || 'default'}`);
-      console.log(`  Layout: ${template.mapOptions.layoutType || 'default'}`);
+      console.log(`  Rooms: ${template.mapOptions.rooms || "default"}`);
+      console.log(
+        `  Size: ${template.mapOptions.width || "default"}x${template.mapOptions.height || "default"}`,
+      );
+      console.log(`  Layout: ${template.mapOptions.layoutType || "default"}`);
       if (template.recommendedSystem) {
         console.log(`  Recommended System: ${template.recommendedSystem}`);
       }
@@ -295,10 +292,11 @@ plugins
   .action(async (term, opts) => {
     const loader = createDefaultPluginLoader();
     const infos = await loader.discover();
-    const found = infos.filter((p) =>
-      ((p.metadata as any).name || '').toLowerCase().includes(term.toLowerCase()) ||
-      (p.metadata.description || '').toLowerCase().includes(term.toLowerCase()) ||
-      p.metadata.id.includes(term)
+    const found = infos.filter(
+      (p) =>
+        ((p.metadata as any).name || "").toLowerCase().includes(term.toLowerCase()) ||
+        (p.metadata.description || "").toLowerCase().includes(term.toLowerCase()) ||
+        p.metadata.id.includes(term),
     );
     if (opts.json) {
       process.stdout.write(JSON.stringify(found, null, 2) + "\n");
@@ -330,9 +328,11 @@ plugins
     console.log(`Version: ${info.metadata.version}`);
     console.log(`Type: ${info.type}`);
     if (info.metadata.description) console.log(info.metadata.description);
-    console.log(`Author: ${(info.metadata as any).author?.name || info.metadata.author || 'Unknown'}`);
-    console.log(`License: ${(info.metadata as any).license || 'Unknown'}`);
-    console.log(`Compatibility: ${(info.metadata as any).compatibility || 'Unknown'}`);
+    console.log(
+      `Author: ${(info.metadata as any).author?.name || info.metadata.author || "Unknown"}`,
+    );
+    console.log(`License: ${(info.metadata as any).license || "Unknown"}`);
+    console.log(`Compatibility: ${(info.metadata as any).compatibility || "Unknown"}`);
   });
 
 plugins
@@ -340,14 +340,14 @@ plugins
   .description("Install plugin from npm or local path")
   .action(async (src) => {
     try {
-      if (src.startsWith('.') || src.startsWith('/') || src.endsWith('.tgz')) {
+      if (src.startsWith(".") || src.startsWith("/") || src.endsWith(".tgz")) {
         const abs = path.resolve(src);
-        const destDir = path.resolve(process.cwd(), 'plugins', path.basename(abs));
+        const destDir = path.resolve(process.cwd(), "plugins", path.basename(abs));
         await fs.mkdir(path.dirname(destDir), { recursive: true });
         await fs.cp(abs, destDir, { recursive: true });
         console.log(`Installed plugin from ${abs}`);
       } else {
-        execSync(`pnpm add ${src}`, { stdio: 'inherit' });
+        execSync(`pnpm add ${src}`, { stdio: "inherit" });
       }
     } catch (err) {
       console.error((err as Error).message);
@@ -360,10 +360,10 @@ plugins
   .description("Remove installed plugin")
   .action(async (id) => {
     try {
-      const dir = path.resolve(process.cwd(), 'plugins', id);
+      const dir = path.resolve(process.cwd(), "plugins", id);
       await fs.rm(dir, { recursive: true, force: true });
       try {
-        execSync(`pnpm remove ${id}`, { stdio: 'inherit' });
+        execSync(`pnpm remove ${id}`, { stdio: "inherit" });
       } catch {}
       console.log(`Uninstalled ${id}`);
     } catch (err) {
@@ -377,7 +377,7 @@ plugins
   .description("Update plugin to latest version")
   .action(async (id) => {
     try {
-      execSync(`pnpm update ${id}`, { stdio: 'inherit' });
+      execSync(`pnpm update ${id}`, { stdio: "inherit" });
       console.log(`Updated ${id}`);
     } catch (err) {
       console.error((err as Error).message);
@@ -423,10 +423,10 @@ plugins
     for (const info of infos) {
       try {
         await loader.load(info.metadata.id, { sandbox: true });
-        results.push({ id: info.metadata.id, status: 'ok' });
+        results.push({ id: info.metadata.id, status: "ok" });
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
-        results.push({ id: info.metadata.id, status: 'error', error: msg });
+        results.push({ id: info.metadata.id, status: "error", error: msg });
       } finally {
         await loader.unload(info.metadata.id).catch(() => {});
       }
@@ -435,9 +435,9 @@ plugins
       process.stdout.write(JSON.stringify(results, null, 2) + "\n");
     } else {
       for (const r of results) {
-        const color = r.status === 'ok' ? pc.green : pc.red;
+        const color = r.status === "ok" ? pc.green : pc.red;
         console.log(color(`${r.id}: ${r.status}`));
-        if (r.error && r.status !== 'ok') console.log(`  ${r.error}`);
+        if (r.error && r.status !== "ok") console.log(`  ${r.error}`);
       }
     }
   });
@@ -452,14 +452,12 @@ plugins
     const rows = infos.map((i) => ({
       id: i.metadata.id,
       version: i.metadata.version,
-      compatibility: (i.metadata as any).compatibility || 'unknown',
+      compatibility: (i.metadata as any).compatibility || "unknown",
     }));
     if (opts.json) {
       process.stdout.write(JSON.stringify(rows, null, 2) + "\n");
     } else {
-      rows.forEach((r) =>
-        console.log(`${r.id}\t${r.version}\tcompatible with ${r.compatibility}`)
-      );
+      rows.forEach((r) => console.log(`${r.id}\t${r.version}\tcompatible with ${r.compatibility}`));
     }
   });
 
