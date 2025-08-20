@@ -23,14 +23,17 @@
   "dependencies": {
     "commander": "^12.1.0",
     "delaunator": "^5.0.1",
+    "pdfkit": "^0.17.1",
     "picocolors": "^1.1.1",
     "semver": "^7.5.4",
+    "svg-to-pdfkit": "^0.1.8",
     "zod": "^3.23.8"
   },
   "devDependencies": {
     "@playwright/test": "^1.54.2",
     "@types/delaunator": "^5.0.3",
     "@types/node": "^22.5.1",
+    "@types/pdfkit": "^0.17.2",
     "@types/semver": "^7.7.0",
     "@typescript-eslint/eslint-plugin": "^8.1.0",
     "@typescript-eslint/parser": "^8.1.0",
