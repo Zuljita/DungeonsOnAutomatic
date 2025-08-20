@@ -1,0 +1,17 @@
+{
+  "name": "@doa/donjon-export",
+  "version": "1.0.0",
+  "description": "DonJon TSV export plugin for Dungeons on Automatic",
+  "main": "index.ts",
+  "type": "module",
+  "doaPlugin": {
+    "id": "donjon-export",
+    "type": "export",
+    "description": "Export dungeons as DonJon-compatible TSV files",
+    "author": "DOA Community",
+    "tags": ["export", "donjon", "tsv", "traditional"]
+  },
+  "peerDependencies": {
+    "@doa/core": "^1.0.0"
+  }
+}
