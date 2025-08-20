@@ -147,5 +147,26 @@ describe('cli', () => {
     expect(result.status).toBe(0);
     expect(result.stdout).toMatch(/font-family="cursive"/);
   });
+
+  it('supports hex SVG map style', async () => {
+    const result = spawnSync(
+      'pnpm',
+      [
+        'tsx',
+        cliPath,
+        'generate',
+        '--rooms',
+        '1',
+        '--seed',
+        'cli',
+        '--svg',
+        '--map-style',
+        'hex',
+      ],
+      { encoding: 'utf-8' },
+    );
+    expect(result.status).toBe(0);
+    expect(result.stdout).toMatch(/class="hex-cell"/);
+  });
 });
 

@@ -31,6 +31,7 @@ pnpm doa generate --rooms=5 --theme=generic-undead --monster-tag=undead --trap-t
 pnpm doa generate --rooms=8 --room-shape=diverse --corridor-width=2
 pnpm doa generate --rooms=6 --room-shape=hex-preference --corridor-type=winding
 pnpm doa generate --rooms=4 --room-shape=circular-preference --layout-type=round
+pnpm doa generate --rooms=5 --svg --map-style hex > hex.svg
 ```
 
 Use `--width` and `--height` to control the overall map dimensions.

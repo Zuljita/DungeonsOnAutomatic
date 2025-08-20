@@ -76,7 +76,7 @@ program
   )
   .option(
     "--map-style <style>",
-    "map rendering style (classic, hand-drawn)",
+    "map rendering style (classic, hand-drawn, hex)",
     "classic",
   )
   .option(
