@@ -104,6 +104,8 @@ program
   .option("--ascii", "render an ASCII map instead of JSON output")
   .option("--svg", "render an SVG map instead of JSON output")
   .option("--foundry", "output FoundryVTT-compatible JSON")
+  .option("--export-format <format>", "export using a plugin format")
+  .option("--donjon", "shorthand for --export-format donjon")
     .action(async (opts) => {
       if (opts.listSystems) {
         const loader = createDefaultPluginLoader();
@@ -183,7 +185,9 @@ program
         tags: tagOptions,
         ...(lockOptions || {}),
       });
-      
+
+      const exportFormat = opts.exportFormat || (opts.donjon ? 'donjon' : undefined);
+
       // Handle exports
       if (opts.svg) {
         let theme = lightTheme;
@@ -211,6 +215,33 @@ program
           // Fallback to original implementation
           console.error('Warning: ASCII plugin failed, using fallback:', err);
           process.stdout.write(renderAscii(enriched) + "\n");
+        }
+      } else if (exportFormat) {
+        const pluginLoader = createDefaultPluginLoader();
+        const infos = await pluginLoader.discover();
+        let handled = false;
+        for (const info of infos) {
+          try {
+            const plugin = await pluginLoader.load(info.metadata.id, { sandbox: false });
+            if (isExportPlugin(plugin) && plugin.supportedFormats.includes(exportFormat)) {
+              const result = await plugin.export(enriched, exportFormat);
+              const data: any = result.data;
+              if (typeof data === 'string' || data instanceof Buffer) {
+                process.stdout.write(data.toString() + (typeof data === 'string' ? "\n" : ""));
+              } else {
+                process.stdout.write(JSON.stringify(data, null, 2) + "\n");
+              }
+              handled = true;
+            }
+          } catch {
+            /* ignore plugin load errors */
+          } finally {
+            await pluginLoader.unload(info.metadata.id).catch(() => {});
+          }
+          if (handled) break;
+        }
+        if (!handled) {
+          console.error(`No export plugin found for format: ${exportFormat}`);
         }
       } else if (opts.foundry) {
         process.stdout.write(JSON.stringify(exportFoundry(enriched), null, 2) + "\n");
