@@ -531,6 +531,8 @@ async function generate(): Promise<void> {
     
     roomKeyEl.innerHTML = fullRoomKey;
 
+    setupMapKeyInteractions(mapEl, roomKeyEl);
+
     // Update download link
     const blob = new Blob([svg], { type: 'image/svg+xml' });
     downloadEl.href = URL.createObjectURL(blob);
@@ -1278,6 +1280,58 @@ function importPresets(file: File): void {
   };
   
   reader.readAsText(file);
+}
+
+function setupMapKeyInteractions(mapEl: HTMLElement, roomKeyEl: HTMLElement): void {
+  const svg = mapEl.querySelector('svg');
+  if (!svg) return;
+
+  svg.querySelectorAll<SVGTextElement>('text[data-room]').forEach(el => {
+    el.addEventListener('click', () => {
+      const num = el.getAttribute('data-room');
+      const target = roomKeyEl.querySelector<HTMLElement>(`#room-${num}`);
+      target?.scrollIntoView({ behavior: 'smooth' });
+    });
+  });
+
+  svg.querySelectorAll<SVGGraphicsElement>('.door-icon').forEach(el => {
+    el.addEventListener('click', () => {
+      const id = el.getAttribute('data-door');
+      const target = roomKeyEl.querySelector<HTMLElement>(`#door-${id}`);
+      target?.scrollIntoView({ behavior: 'smooth' });
+    });
+  });
+
+  svg.querySelectorAll<SVGGraphicsElement>('.key-icon').forEach(el => {
+    el.addEventListener('click', () => {
+      const id = el.getAttribute('data-key');
+      const target = roomKeyEl.querySelector<HTMLElement>(`#key-${id}`);
+      target?.scrollIntoView({ behavior: 'smooth' });
+    });
+  });
+
+  const highlight = (element: SVGGraphicsElement) => {
+    svg.querySelectorAll('.map-highlight').forEach(e => e.classList.remove('map-highlight'));
+    element.classList.add('map-highlight');
+    element.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+  };
+
+  roomKeyEl.querySelectorAll<HTMLElement>('section.room').forEach(section => {
+    const num = section.getAttribute('data-room');
+    section.addEventListener('click', () => {
+      const el = svg.querySelector<SVGGraphicsElement>(`.room-shape[data-room="${num}"]`);
+      if (el) highlight(el);
+    });
+  });
+
+  roomKeyEl.querySelectorAll<HTMLElement>('[data-key]').forEach(keyEl => {
+    const id = keyEl.getAttribute('data-key');
+    keyEl.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const el = svg.querySelector<SVGGraphicsElement>(`.key-icon[data-key="${id}"]`);
+      if (el) highlight(el);
+    });
+  });
 }
 
 function downloadJSON(json: string, filename: string): void {
