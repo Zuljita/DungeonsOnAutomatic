@@ -1,0 +1,17 @@
+{
+  "name": "@doa/roll20-export",
+  "version": "1.0.0",
+  "description": "Roll20 export plugin for Dungeons on Automatic",
+  "main": "index.ts",
+  "type": "module",
+  "doaPlugin": {
+    "id": "roll20-export",
+    "type": "export",
+    "description": "Export dungeons for Roll20 VTT platform",
+    "author": "DOA Community",
+    "tags": ["export", "roll20", "vtt", "virtual-tabletop"]
+  },
+  "peerDependencies": {
+    "@doa/core": "^1.0.0"
+  }
+}

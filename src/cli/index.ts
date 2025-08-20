@@ -72,7 +72,8 @@ program
   .option("--ascii", "render an ASCII map instead of JSON output")
   .option("--svg", "render an SVG map instead of JSON output")
   .option("--foundry", "output FoundryVTT-compatible JSON")
-  .option("--export-format <format>", "use export plugin for specified format")
+  .option("--export-format <format>", "use an export plugin for the given format")
+  .option("--donjon", "shorthand for --export-format donjon")
   .option("--export-page-size <size>", "PDF page size (a4|letter|legal)")
   .option("--export-layout <layout>", "PDF layout (map-only|with-keys|detailed)")
   .option("--export-color-mode <mode>", "PDF color mode (color|monochrome)")
@@ -82,9 +83,9 @@ program
       let plugins: string[] = [];
       try {
         const infos = await loader.discover();
-        plugins = infos.filter((p) => p.type === "system").map((p) => p.metadata.id);
+        plugins = infos.filter((p) => p.type === 'system').map((p) => p.metadata.id);
       } catch {}
-      const systems = ["generic", "dfrpg", ...plugins];
+      const systems = ['generic', 'dfrpg', ...plugins];
       process.stdout.write(JSON.stringify(systems, null, 2) + "\n");
       return;
     }
@@ -97,7 +98,7 @@ program
         if (schema?.cliOptions) {
           process.stdout.write(JSON.stringify(schema.cliOptions, null, 2) + "\n");
         } else {
-          console.log("No plugin-specific options");
+          console.log('No plugin-specific options');
         }
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
@@ -154,32 +155,39 @@ program
       ...(lockOptions || {}),
     });
 
+    const exportFormat = opts.exportFormat || (opts.donjon ? 'donjon' : undefined);
+
     // Handle exports
-    if (opts.exportFormat) {
+    if (exportFormat) {
       const pluginLoader = createDefaultPluginLoader();
-      const infos = await pluginLoader.discover();
+      await pluginLoader.discover();
+      const infos = pluginLoader.getRegistry();
+      let handled = false;
       for (const info of infos) {
         try {
           const plugin = await pluginLoader.load(info.metadata.id, { sandbox: false });
-          if (isExportPlugin(plugin) && plugin.supportedFormats.includes(opts.exportFormat)) {
-            const result = await plugin.export(enriched, opts.exportFormat, {
+          if (isExportPlugin(plugin) && plugin.supportedFormats.includes(exportFormat)) {
+            const result = await plugin.export(enriched, exportFormat, {
               pageSize: opts.exportPageSize,
               layout: opts.exportLayout,
               colorMode: opts.exportColorMode,
-              filename: `dungeon.${opts.exportFormat}`,
+              filename: `dungeon.${exportFormat}`,
             });
-            if (typeof result.data === "string") {
+            if (typeof result.data === 'string') {
               process.stdout.write(result.data + "\n");
             } else {
               process.stdout.write(result.data as any);
             }
-            return;
+            handled = true;
+            break;
           }
-        } catch {
-          continue;
+        } catch (err) {
+          console.error(`Error processing export plugin ${info.metadata.id}: ${err}`);
         }
       }
-      console.error(`No export plugin found for format ${opts.exportFormat}`);
+      if (!handled) {
+        console.error(`No export plugin found for format: ${exportFormat}`);
+      }
     } else if (opts.svg) {
       let theme = lightTheme;
       if (opts.palette === "dark") theme = darkTheme;
@@ -192,7 +200,6 @@ program
       });
       process.stdout.write(svg + "\n");
     } else if (opts.ascii) {
-      // Use ASCII export plugin
       try {
         const pluginLoader = createDefaultPluginLoader();
         const plugin = await pluginLoader.load("ascii-export", { sandbox: false });
@@ -203,14 +210,12 @@ program
           throw new Error("ascii-export plugin is not an export plugin");
         }
       } catch (err) {
-        // Fallback to original implementation
         console.error("Warning: ASCII plugin failed, using fallback:", err);
         process.stdout.write(renderAscii(enriched) + "\n");
       }
     } else if (opts.foundry) {
       process.stdout.write(JSON.stringify(exportFoundry(enriched), null, 2) + "\n");
     } else {
-      // Default output - JSON format for compatibility
       process.stdout.write(JSON.stringify(enriched, null, 2) + "\n");
     }
   });
@@ -230,8 +235,6 @@ program
       console.log(`\n${category?.name || "Unknown Category"} Templates:\n`);
     } else {
       console.log("\nAvailable Dungeon Templates:\n");
-
-      // Show categories first
       console.log("Categories:");
       categories.forEach((cat) => {
         const count = dungeonTemplateService.getTemplatesByCategory(cat.id).length;
@@ -247,7 +250,9 @@ program
       console.log(`  Description: ${template.description}`);
       console.log(`  Rooms: ${template.mapOptions.rooms || "default"}`);
       console.log(
-        `  Size: ${template.mapOptions.width || "default"}x${template.mapOptions.height || "default"}`,
+        `  Size: ${template.mapOptions.width || "default"}x${
+          template.mapOptions.height || "default"
+        }`,
       );
       console.log(`  Layout: ${template.mapOptions.layoutType || "default"}`);
       if (template.recommendedSystem) {
@@ -263,8 +268,6 @@ program
       console.log(`Example: pnpm doa generate --template ${templates[0].id} --ascii`);
     }
   });
-
-// === Plugin Commands ===
 
 const plugins = program.command("plugins").description("Plugin discovery and management");
 
