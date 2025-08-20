@@ -526,6 +526,216 @@
       color: var(--text-muted);
       white-space: pre-wrap;
     }
+    
+    /* Preset Management Styles */
+    .preset-selector-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .preset-selector-row select {
+      flex: 1;
+    }
+    .preset-action-btn {
+      width: auto !important;
+      padding: 8px 12px !important;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    .preset-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .preset-btn {
+      width: auto !important;
+      padding: 10px 15px !important;
+      font-size: 13px;
+      background: var(--accent-primary);
+      border: none;
+      border-radius: 4px;
+      color: var(--text-inverse);
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    .preset-btn:hover {
+      background: var(--accent-hover);
+    }
+    .preset-btn:disabled {
+      background: var(--text-muted);
+      cursor: not-allowed;
+    }
+    .preset-status-message {
+      margin-top: 10px;
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+    .preset-status-success {
+      background: var(--status-success-bg);
+      color: var(--status-success-text);
+      border: 1px solid var(--status-success-border);
+    }
+    .preset-status-error {
+      background: var(--status-error-bg);
+      color: var(--status-error-text);
+      border: 1px solid var(--status-error-border);
+    }
+    .preset-status-info {
+      background: var(--status-info-bg);
+      color: var(--status-info-text);
+      border: 1px solid var(--status-info-border);
+    }
+    
+    /* Modal Styles */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+    }
+    .modal.show {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-content {
+      background: var(--bg-primary);
+      border-radius: 8px;
+      padding: 20px;
+      max-width: 500px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+      box-shadow: 0 4px 20px var(--shadow);
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border-secondary);
+    }
+    .modal-header h3 {
+      margin: 0;
+      color: var(--text-primary);
+    }
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: var(--text-muted);
+      padding: 0;
+      width: auto !important;
+    }
+    .modal-close:hover {
+      color: var(--text-primary);
+    }
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      margin-top: 20px;
+      padding-top: 15px;
+      border-top: 1px solid var(--border-secondary);
+    }
+    .modal-btn {
+      width: auto !important;
+      padding: 8px 16px !important;
+      font-size: 14px;
+    }
+    .modal-btn.primary {
+      background: var(--accent-primary);
+      color: var(--text-inverse);
+    }
+    .modal-btn.secondary {
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      border: 1px solid var(--border-primary);
+    }
+    
+    /* Preset List Styles */
+    .preset-list {
+      max-height: 400px;
+      overflow-y: auto;
+      border: 1px solid var(--border-secondary);
+      border-radius: 4px;
+    }
+    .preset-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 15px;
+      border-bottom: 1px solid var(--border-secondary);
+      background: var(--bg-primary);
+      transition: background 0.3s;
+    }
+    .preset-item:last-child {
+      border-bottom: none;
+    }
+    .preset-item:hover {
+      background: var(--bg-tertiary);
+    }
+    .preset-item.built-in {
+      background: var(--bg-accent);
+    }
+    .preset-info {
+      flex: 1;
+    }
+    .preset-name {
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 2px;
+    }
+    .preset-description {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+    .preset-meta {
+      font-size: 11px;
+      color: var(--text-muted);
+      display: flex;
+      gap: 10px;
+    }
+    .preset-actions-inline {
+      display: flex;
+      gap: 5px;
+    }
+    .preset-action-small {
+      width: auto !important;
+      padding: 4px 8px !important;
+      font-size: 11px;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+    .preset-load-btn {
+      background: var(--accent-primary);
+      color: var(--text-inverse);
+    }
+    .preset-delete-btn {
+      background: var(--accent-danger);
+      color: var(--text-inverse);
+    }
+    .preset-export-btn {
+      background: var(--accent-success);
+      color: var(--text-inverse);
+    }
+    .preset-badge {
+      background: var(--accent-warning);
+      color: var(--text-inverse);
+      padding: 2px 6px;
+      border-radius: 10px;
+      font-size: 10px;
+      font-weight: 500;
+    }
     \n    /* Theme selector styles */
     .theme-selector {
       display: flex;
@@ -579,6 +789,35 @@
     <div id="generator-tab" class="tab-content active">
       <div style="text-align: center; margin-bottom: 15px; color: var(--text-muted); font-size: 14px;">
         💡 Click on any section header to expand/collapse options
+      </div>
+
+      <!-- Preset Management Section -->
+      <div class="option-group" data-group="presets">
+        <h3 onclick="toggleOptionGroup('presets')">Configuration Presets <span class="toggle-icon">▼</span></h3>
+        <div class="option-group-content">
+          <div class="preset-controls">
+            <div class="form-group">
+              <label>Load Preset:</label>
+              <div class="preset-selector-row">
+                <select id="preset-selector">
+                  <option value="">Select a preset...</option>
+                </select>
+                <button id="load-preset-btn" class="preset-action-btn" disabled>Load</button>
+                <button id="manage-presets-btn" class="preset-action-btn">Manage</button>
+              </div>
+              <small class="help-text">Choose from saved configurations or built-in examples</small>
+            </div>
+            <div class="form-group">
+              <div class="preset-actions">
+                <button id="save-preset-btn" class="preset-btn">💾 Save Current Configuration</button>
+                <button id="export-presets-btn" class="preset-btn">📤 Export Presets</button>
+                <button id="import-presets-btn" class="preset-btn">📥 Import Presets</button>
+                <input type="file" id="import-file" accept=".json" style="display: none;">
+              </div>
+            </div>
+            <div id="preset-status" class="preset-status-message" style="display: none;"></div>
+          </div>
+        </div>
       </div>
       <div class="map-options">
         <div class="option-group" data-group="basic">
@@ -964,6 +1203,55 @@
       <div class="data-manager-actions">
         <button id="save-settings">Save Settings</button>
         <button id="reset-settings" class="btn-danger">Reset to Defaults</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Save Preset Modal -->
+  <div id="save-preset-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Save Configuration Preset</h3>
+        <button class="modal-close" onclick="closeSavePresetModal()">&times;</button>
+      </div>
+      <div class="form-group">
+        <label>Preset Name:</label>
+        <input type="text" id="preset-name" placeholder="Enter preset name" maxlength="50">
+      </div>
+      <div class="form-group">
+        <label>Description:</label>
+        <textarea id="preset-description" rows="3" placeholder="Describe this configuration..." maxlength="200"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Category (optional):</label>
+        <input type="text" id="preset-category" placeholder="e.g., Quick Start, Campaign" maxlength="30">
+      </div>
+      <div id="save-preset-error" class="preset-status-message preset-status-error" style="display: none;"></div>
+      <div class="modal-actions">
+        <button class="modal-btn secondary" onclick="closeSavePresetModal()">Cancel</button>
+        <button class="modal-btn primary" onclick="saveCurrentPreset()">Save Preset</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Manage Presets Modal -->
+  <div id="manage-presets-modal" class="modal">
+    <div class="modal-content" style="max-width: 700px;">
+      <div class="modal-header">
+        <h3>Manage Configuration Presets</h3>
+        <button class="modal-close" onclick="closeManagePresetsModal()">&times;</button>
+      </div>
+      
+      <div class="form-group">
+        <input type="text" id="preset-search" placeholder="Search presets..." style="margin-bottom: 10px;">
+      </div>
+      
+      <div id="preset-list" class="preset-list">
+        <!-- Preset list will be populated by JavaScript -->
+      </div>
+      
+      <div class="modal-actions">
+        <button class="modal-btn secondary" onclick="closeManagePresetsModal()">Close</button>
       </div>
     </div>
   </div>
