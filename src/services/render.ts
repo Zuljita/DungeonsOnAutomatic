@@ -349,167 +349,39 @@ function distanceFromPointToLineSegment(point: { x: number; y: number }, p1: { x
   return distance(point, { x: closestX, y: closestY });
 }
 
-/**
- * Create a wobbly line path for technical pen hand-drawn style
- * Uses multiple points with subtle perturbations for organic feel
- */
-function createWobblyPath(x1: number, y1: number, x2: number, y2: number, wobbleIntensity: number, rng: () => number): string {
-  const dx = x2 - x1;
-  const dy = y2 - y1;
-  const length = Math.sqrt(dx * dx + dy * dy);
-  
-  // For very short lines, don't add wobble
-  if (length < 10) {
-    return `M ${x1} ${y1} L ${x2} ${y2}`;
-  }
-  
-  const points: { x: number; y: number }[] = [{ x: x1, y: y1 }];
-  
-  // Add intermediate points for wobble effect
-  const numSegments = Math.max(3, Math.floor(length / 8));
-  for (let i = 1; i < numSegments; i++) {
-    const t = i / numSegments;
-    const baseX = x1 + dx * t;
-    const baseY = y1 + dy * t;
-    
-    // Perpendicular wobble
-    const perpX = -dy / length;
-    const perpY = dx / length;
-    const wobble = (rng() - 0.5) * wobbleIntensity * 2;
-    
-    points.push({
-      x: baseX + perpX * wobble,
-      y: baseY + perpY * wobble
-    });
-  }
-  
-  points.push({ x: x2, y: y2 });
-  
-  // Create smooth path using quadratic bezier curves
-  let path = `M ${points[0].x} ${points[0].y}`;
-  for (let i = 1; i < points.length - 1; i++) {
-    const curr = points[i];
-    const next = points[i + 1];
-    const controlX = curr.x;
-    const controlY = curr.y;
-    const endX = (curr.x + next.x) / 2;
-    const endY = (curr.y + next.y) / 2;
-    path += ` Q ${controlX} ${controlY} ${endX} ${endY}`;
-  }
-  
-  // Final segment to end point
-  const lastPoint = points[points.length - 1];
-  path += ` L ${lastPoint.x} ${lastPoint.y}`;
-  
-  return path;
-}
 
-/**
- * Generate crosshatching pattern for filled areas
- */
-function generateCrosshatch(x: number, y: number, width: number, height: number, density: number, rng: () => number): string[] {
-  const lines: string[] = [];
-  const spacing = 8; // Increase spacing to reduce line count
-  
-  // First set of diagonal lines (top-left to bottom-right)
-  for (let i = -width; i < width + height; i += spacing) {
-    const startX = x + i;
-    const startY = y;
-    const endX = x + i + height;
-    const endY = y + height;
-    
-    // Clip to rectangle bounds
-    const clippedStart = clipLineToRect(startX, startY, endX, endY, x, y, width, height);
-    if (clippedStart) {
-      // Use simple lines instead of wobbly paths for crosshatching
-      lines.push(`<line x1="${clippedStart.x1}" y1="${clippedStart.y1}" x2="${clippedStart.x2}" y2="${clippedStart.y2}" stroke="#000000" stroke-width="0.5" opacity="0.7"/>`);
-    }
-  }
-  
-  // Second set of diagonal lines (top-right to bottom-left)
-  for (let i = -height; i < width + height; i += spacing) {
-    const startX = x + width;
-    const startY = y + i;
-    const endX = x;
-    const endY = y + i + width;
-    
-    // Clip to rectangle bounds
-    const clippedStart = clipLineToRect(startX, startY, endX, endY, x, y, width, height);
-    if (clippedStart) {
-      // Use simple lines instead of wobbly paths for crosshatching
-      lines.push(`<line x1="${clippedStart.x1}" y1="${clippedStart.y1}" x2="${clippedStart.x2}" y2="${clippedStart.y2}" stroke="#000000" stroke-width="0.5" opacity="0.7"/>`);
-    }
-  }
-  
-  return lines;
-}
-
-/**
- * Clip a line to rectangle bounds
- */
-function clipLineToRect(x1: number, y1: number, x2: number, y2: number, rectX: number, rectY: number, rectW: number, rectH: number): { x1: number; y1: number; x2: number; y2: number } | null {
-  const left = rectX;
-  const right = rectX + rectW;
-  const top = rectY;
-  const bottom = rectY + rectH;
-  
-  // Simple clipping - find intersections with rectangle edges
-  let clipX1 = x1, clipY1 = y1, clipX2 = x2, clipY2 = y2;
-  
-  // Clip start point
-  if (x1 < left) {
-    clipY1 = y1 + (y2 - y1) * (left - x1) / (x2 - x1);
-    clipX1 = left;
-  } else if (x1 > right) {
-    clipY1 = y1 + (y2 - y1) * (right - x1) / (x2 - x1);
-    clipX1 = right;
-  }
-  
-  if (y1 < top) {
-    clipX1 = x1 + (x2 - x1) * (top - y1) / (y2 - y1);
-    clipY1 = top;
-  } else if (y1 > bottom) {
-    clipX1 = x1 + (x2 - x1) * (bottom - y1) / (y2 - y1);
-    clipY1 = bottom;
-  }
-  
-  // Clip end point
-  if (x2 < left) {
-    clipY2 = y1 + (y2 - y1) * (left - x1) / (x2 - x1);
-    clipX2 = left;
-  } else if (x2 > right) {
-    clipY2 = y1 + (y2 - y1) * (right - x1) / (x2 - x1);
-    clipX2 = right;
-  }
-  
-  if (y2 < top) {
-    clipX2 = x1 + (x2 - x1) * (top - y1) / (y2 - y1);
-    clipY2 = top;
-  } else if (y2 > bottom) {
-    clipX2 = x1 + (x2 - x1) * (bottom - y1) / (y2 - y1);
-    clipY2 = bottom;
-  }
-  
-  // Check if line is completely outside
-  if (clipX1 < left && clipX2 < left) return null;
-  if (clipX1 > right && clipX2 > right) return null;
-  if (clipY1 < top && clipY2 < top) return null;
-  if (clipY1 > bottom && clipY2 > bottom) return null;
-  
-  return { x1: clipX1, y1: clipY1, x2: clipX2, y2: clipY2 };
-}
-
-export function renderSvg(
+export async function renderSvg(
   d: Dungeon,
   theme: RenderTheme = lightTheme,
   opts: RenderOptions = {},
-): string {
+): Promise<string> {
   const cell = 20; // pixel size of a single grid square
   const style = opts.style ?? "classic";
   const showGrid = opts.showGrid ?? false;
   const wobbleIntensity = opts.wobbleIntensity ?? 1;
   const wallThickness = opts.wallThickness ?? 1;
   const rng = d.rng ?? Math.random;
+  
+  // Try to use render plugin first if style is supported (Node.js only)
+  if (style !== "classic" && typeof window === 'undefined') {
+    try {
+      // Dynamic import to avoid bundling in browser
+      const { renderPluginService } = await import('./render-plugins');
+      
+      const pluginOptions = {
+        ...opts,
+        cellSize: cell,
+        theme: (theme === darkTheme ? 'dark' : theme === sepiaTheme ? 'sepia' : 'light') as 'light' | 'dark' | 'sepia'
+      };
+      
+      const result = await renderPluginService.renderWithStyle(d, style, pluginOptions);
+      if (result) {
+        return result.data;
+      }
+    } catch (error) {
+      console.warn(`Plugin rendering failed for style ${style}, falling back to core rendering:`, error);
+    }
+  }
   
   // Calculate map bounds
   const points: { x: number; y: number }[] = [];
@@ -533,274 +405,61 @@ export function renderSvg(
     `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">`,
   ];
 
-  if (style === "hand-drawn") {
-    // Technical pen style: high contrast black and white
-    parts.push(`<rect x="0" y="0" width="${width}" height="${height}" fill="#ffffff"/>`);
-    
-    // Optional subtle grid background
-    if (showGrid) {
-      const gridSpacing = cell;
-      parts.push(`<defs><pattern id="grid" width="${gridSpacing}" height="${gridSpacing}" patternUnits="userSpaceOnUse"><path d="M ${gridSpacing} 0 L 0 0 0 ${gridSpacing}" fill="none" stroke="#e8e8e8" stroke-width="0.3"/></pattern></defs>`);
-      parts.push(`<rect x="0" y="0" width="${width}" height="${height}" fill="url(#grid)"/>`);
+  // Classic style rendering (fallback) - all non-classic styles now handled by plugins
+  parts.push(`<rect x="0" y="0" width="${width}" height="${height}" fill="${theme.background}"/>`);
+
+  for (const c of d.corridors) {
+    for (const p of c.path) {
+      parts.push(
+        `<rect x="${p.x * cell}" y="${p.y * cell}" width="${cell}" height="${cell}" fill="${theme.corridorFill}" stroke="none"/>`,
+      );
     }
-    
-    // Create efficient crosshatching pattern using SVG patterns
-    // This replaces the performance-heavy line-by-line generation
-    const patternSize = 8; // Size of the crosshatch pattern
-    const lineWidth = 0.5;
-    const opacity = 0.7;
-    
-    // Create a mask for walkable areas using proper shapes
-    parts.push(`<defs>`);
-    
-    // Define crosshatch pattern
-    parts.push(`<pattern id="crosshatch" patternUnits="userSpaceOnUse" width="${patternSize}" height="${patternSize}">`);
-    parts.push(`<line x1="0" y1="0" x2="${patternSize}" y2="${patternSize}" stroke="#000000" stroke-width="${lineWidth}" opacity="${opacity}"/>`);
-    parts.push(`<line x1="0" y1="${patternSize}" x2="${patternSize}" y2="0" stroke="#000000" stroke-width="${lineWidth}" opacity="${opacity}"/>`);
-    parts.push(`</pattern>`);
-    
-    // Create mask for walkable areas
-    parts.push(`<mask id="walkableMask">`);
-    parts.push(`<rect x="0" y="0" width="${width}" height="${height}" fill="white"/>`);
-    
-    // Mask out corridor tiles (make them black in the mask so crosshatching won't show)
-    for (const c of d.corridors) {
-      for (const p of c.path) {
-        parts.push(`<rect x="${p.x * cell}" y="${p.y * cell}" width="${cell}" height="${cell}" fill="black"/>`);
+    if (c.path.length > 0) {
+      const start = c.path[0];
+      const end = c.path[c.path.length - 1];
+      const fromRoom = d.rooms.find((r) => r.id === c.from);
+      const toRoom = d.rooms.find((r) => r.id === c.to);
+      if (fromRoom) {
+        const doorPosition = c.doorStart || start;
+        const edge = doorEdge(fromRoom, doorPosition);
+        if (edge)
+          parts.push(
+            `<line x1="${edge.x1 * cell}" y1="${edge.y1 * cell}" x2="${edge.x2 * cell}" y2="${edge.y2 * cell}" stroke="${theme.roomStroke}" stroke-width="${cell * 0.2}"/>`,
+          );
+      }
+      if (toRoom) {
+        const doorPosition = c.doorEnd || end;
+        const edge = doorEdge(toRoom, doorPosition);
+        if (edge)
+          parts.push(
+            `<line x1="${edge.x1 * cell}" y1="${edge.y1 * cell}" x2="${edge.x2 * cell}" y2="${edge.y2 * cell}" stroke="${theme.roomStroke}" stroke-width="${cell * 0.2}"/>`,
+          );
       }
     }
-    
-    // Mask out room areas using proper shapes
-    for (const r of d.rooms) {
-      if (r.shape === 'rectangular' || !r.shapePoints) {
-        // Rectangular rooms - use rectangle
-        parts.push(`<rect x="${r.x * cell}" y="${r.y * cell}" width="${r.w * cell}" height="${r.h * cell}" fill="black"/>`);
-      } else {
-        // Shaped rooms - use actual polygon shape
-        const points = r.shapePoints!.map((p) => `${p.x * cell},${p.y * cell}`).join(" ");
-        parts.push(`<polygon points="${points}" fill="black"/>`);
-      }
-    }
-    parts.push(`</mask>`);
-    parts.push(`</defs>`);
-    
-    // Apply crosshatching pattern with mask - single rectangle instead of thousands of lines
-    parts.push(`<rect x="0" y="0" width="${width}" height="${height}" fill="url(#crosshatch)" mask="url(#walkableMask)"/>`);
-    
-    // Draw room outlines with thick, wobbly walls
-    d.rooms.forEach((r, i) => {
-      const thickness = 3 * wallThickness;
-      
-      if (r.shape === "rectangular" || !r.shapePoints) {
-        // Draw thick walls for rectangular rooms
-        const x = r.x * cell;
-        const y = r.y * cell;
-        const w = r.w * cell;
-        const h = r.h * cell;
-        
-        // Top wall
-        const topPath = createWobblyPath(x, y, x + w, y, wobbleIntensity, rng);
-        parts.push(`<path d="${topPath}" stroke="#000000" stroke-width="${thickness}" fill="none" stroke-linecap="round"/>`);
-        
-        // Right wall
-        const rightPath = createWobblyPath(x + w, y, x + w, y + h, wobbleIntensity, rng);
-        parts.push(`<path d="${rightPath}" stroke="#000000" stroke-width="${thickness}" fill="none" stroke-linecap="round"/>`);
-        
-        // Bottom wall
-        const bottomPath = createWobblyPath(x + w, y + h, x, y + h, wobbleIntensity, rng);
-        parts.push(`<path d="${bottomPath}" stroke="#000000" stroke-width="${thickness}" fill="none" stroke-linecap="round"/>`);
-        
-        // Left wall
-        const leftPath = createWobblyPath(x, y + h, x, y, wobbleIntensity, rng);
-        parts.push(`<path d="${leftPath}" stroke="#000000" stroke-width="${thickness}" fill="none" stroke-linecap="round"/>`);
-        
-      } else {
-        // Draw thick walls for shaped rooms
-        const points = r.shapePoints!;
-        for (let j = 0; j < points.length; j++) {
-          const curr = points[j];
-          const next = points[(j + 1) % points.length];
-          const wallPath = createWobblyPath(curr.x * cell, curr.y * cell, next.x * cell, next.y * cell, wobbleIntensity, rng);
-          parts.push(`<path d="${wallPath}" stroke="#000000" stroke-width="${thickness}" fill="none" stroke-linecap="round"/>`);
-        }
-      }
-      
-      // Room numbers with hand-drawn style
+  }
+
+  d.rooms.forEach((r, i) => {
+    if (r.shape === "rectangular" || !r.shapePoints) {
+      parts.push(
+        `<rect x="${r.x * cell}" y="${r.y * cell}" width="${r.w * cell}" height="${r.h * cell}" fill="${theme.roomFill}" stroke="${theme.roomStroke}"/>`,
+      );
       const cx = (r.x + r.w / 2) * cell;
       const cy = (r.y + r.h / 2) * cell;
-      const wobbleX = (rng() - 0.5) * wobbleIntensity;
-      const wobbleY = (rng() - 0.5) * wobbleIntensity;
-      const rotation = (rng() - 0.5) * 5 * wobbleIntensity;
-      
       parts.push(
-        `<text x="${cx + wobbleX}" y="${cy + wobbleY}" text-anchor="middle" dominant-baseline="middle" font-size="${cell * 0.7}" fill="#000000" font-family="serif" font-weight="bold" transform="rotate(${rotation},${cx + wobbleX},${cy + wobbleY})">${i + 1}</text>`,
+        `<text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" font-size="${cell * 0.6}" fill="${theme.textFill}">${i + 1}</text>`,
       );
-    });
-    
-    // Draw corridor outlines
-    for (const c of d.corridors) {
-      for (const p of c.path) {
-        const x = p.x * cell;
-        const y = p.y * cell;
-        const thickness = 2 * wallThickness;
-        
-        // Draw outline around corridor tile
-        const outlinePath = createWobblyPath(x, y, x + cell, y, wobbleIntensity, rng) + " " +
-                          createWobblyPath(x + cell, y, x + cell, y + cell, wobbleIntensity, rng) + " " +
-                          createWobblyPath(x + cell, y + cell, x, y + cell, wobbleIntensity, rng) + " " +
-                          createWobblyPath(x, y + cell, x, y, wobbleIntensity, rng);
-        
-        // Only draw outline if this corridor tile is adjacent to solid area
-        // (We'll simplify and draw thin outlines for all corridor tiles)
-        parts.push(`<rect x="${x}" y="${y}" width="${cell}" height="${cell}" fill="none" stroke="#000000" stroke-width="1" opacity="0.3"/>`);
-      }
+    } else {
+      const points = r.shapePoints!.map((p) => `${p.x * cell},${p.y * cell}`).join(" ");
+      parts.push(
+        `<polygon points="${points}" fill="${theme.roomFill}" stroke="${theme.roomStroke}"/>`,
+      );
+      const cx = r.x * cell;
+      const cy = r.y * cell;
+      parts.push(
+        `<text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" font-size="${cell * 0.6}" fill="${theme.textFill}">${i + 1}</text>`,
+      );
     }
-    
-    // Draw doors with enhanced visibility for technical pen style
-    for (const c of d.corridors) {
-      if (c.path.length > 0) {
-        const start = c.path[0];
-        const end = c.path[c.path.length - 1];
-        const fromRoom = d.rooms.find((r) => r.id === c.from);
-        const toRoom = d.rooms.find((r) => r.id === c.to);
-        
-        if (fromRoom) {
-          const doorPosition = c.doorStart || start;
-          const edge = doorEdge(fromRoom, doorPosition);
-          if (edge) {
-            // Draw door as a white "gap" with thick black borders
-            const doorThickness = 6 * wallThickness;
-            const borderThickness = 2 * wallThickness;
-            
-            // First draw a thick white line to create the "opening"
-            const whiteDoorPath = createWobblyPath(edge.x1 * cell, edge.y1 * cell, edge.x2 * cell, edge.y2 * cell, wobbleIntensity * 0.3, rng);
-            parts.push(`<path d="${whiteDoorPath}" stroke="#ffffff" stroke-width="${doorThickness}" fill="none" stroke-linecap="round"/>`);
-            
-            // Then draw black border lines on each side of the door
-            const doorLength = Math.sqrt((edge.x2 - edge.x1) ** 2 + (edge.y2 - edge.y1) ** 2);
-            if (doorLength > 0) {
-              const dx = (edge.x2 - edge.x1) / doorLength;
-              const dy = (edge.y2 - edge.y1) / doorLength;
-              const perpX = -dy * doorThickness * 0.4;
-              const perpY = dx * doorThickness * 0.4;
-              
-              // Left border
-              const leftBorderPath = createWobblyPath(
-                edge.x1 * cell + perpX, edge.y1 * cell + perpY,
-                edge.x2 * cell + perpX, edge.y2 * cell + perpY,
-                wobbleIntensity * 0.3, rng
-              );
-              parts.push(`<path d="${leftBorderPath}" stroke="#000000" stroke-width="${borderThickness}" fill="none" stroke-linecap="round"/>`);
-              
-              // Right border
-              const rightBorderPath = createWobblyPath(
-                edge.x1 * cell - perpX, edge.y1 * cell - perpY,
-                edge.x2 * cell - perpX, edge.y2 * cell - perpY,
-                wobbleIntensity * 0.3, rng
-              );
-              parts.push(`<path d="${rightBorderPath}" stroke="#000000" stroke-width="${borderThickness}" fill="none" stroke-linecap="round"/>`);
-            }
-          }
-        }
-        
-        if (toRoom) {
-          const doorPosition = c.doorEnd || end;
-          const edge = doorEdge(toRoom, doorPosition);
-          if (edge) {
-            // Draw door as a white "gap" with thick black borders
-            const doorThickness = 6 * wallThickness;
-            const borderThickness = 2 * wallThickness;
-            
-            // First draw a thick white line to create the "opening"
-            const whiteDoorPath = createWobblyPath(edge.x1 * cell, edge.y1 * cell, edge.x2 * cell, edge.y2 * cell, wobbleIntensity * 0.3, rng);
-            parts.push(`<path d="${whiteDoorPath}" stroke="#ffffff" stroke-width="${doorThickness}" fill="none" stroke-linecap="round"/>`);
-            
-            // Then draw black border lines on each side of the door
-            const doorLength = Math.sqrt((edge.x2 - edge.x1) ** 2 + (edge.y2 - edge.y1) ** 2);
-            if (doorLength > 0) {
-              const dx = (edge.x2 - edge.x1) / doorLength;
-              const dy = (edge.y2 - edge.y1) / doorLength;
-              const perpX = -dy * doorThickness * 0.4;
-              const perpY = dx * doorThickness * 0.4;
-              
-              // Left border
-              const leftBorderPath = createWobblyPath(
-                edge.x1 * cell + perpX, edge.y1 * cell + perpY,
-                edge.x2 * cell + perpX, edge.y2 * cell + perpY,
-                wobbleIntensity * 0.3, rng
-              );
-              parts.push(`<path d="${leftBorderPath}" stroke="#000000" stroke-width="${borderThickness}" fill="none" stroke-linecap="round"/>`);
-              
-              // Right border
-              const rightBorderPath = createWobblyPath(
-                edge.x1 * cell - perpX, edge.y1 * cell - perpY,
-                edge.x2 * cell - perpX, edge.y2 * cell - perpY,
-                wobbleIntensity * 0.3, rng
-              );
-              parts.push(`<path d="${rightBorderPath}" stroke="#000000" stroke-width="${borderThickness}" fill="none" stroke-linecap="round"/>`);
-            }
-          }
-        }
-      }
-    }
-    
-  } else {
-    // Classic style rendering (unchanged)
-    parts.push(`<rect x="0" y="0" width="${width}" height="${height}" fill="${theme.background}"/>`);
-
-    for (const c of d.corridors) {
-      for (const p of c.path) {
-        parts.push(
-          `<rect x="${p.x * cell}" y="${p.y * cell}" width="${cell}" height="${cell}" fill="${theme.corridorFill}" stroke="none"/>`,
-        );
-      }
-      if (c.path.length > 0) {
-        const start = c.path[0];
-        const end = c.path[c.path.length - 1];
-        const fromRoom = d.rooms.find((r) => r.id === c.from);
-        const toRoom = d.rooms.find((r) => r.id === c.to);
-        if (fromRoom) {
-          const doorPosition = c.doorStart || start;
-          const edge = doorEdge(fromRoom, doorPosition);
-          if (edge)
-            parts.push(
-              `<line x1="${edge.x1 * cell}" y1="${edge.y1 * cell}" x2="${edge.x2 * cell}" y2="${edge.y2 * cell}" stroke="${theme.roomStroke}" stroke-width="${cell * 0.2}"/>`,
-            );
-        }
-        if (toRoom) {
-          const doorPosition = c.doorEnd || end;
-          const edge = doorEdge(toRoom, doorPosition);
-          if (edge)
-            parts.push(
-              `<line x1="${edge.x1 * cell}" y1="${edge.y1 * cell}" x2="${edge.x2 * cell}" y2="${edge.y2 * cell}" stroke="${theme.roomStroke}" stroke-width="${cell * 0.2}"/>`,
-            );
-        }
-      }
-    }
-
-    d.rooms.forEach((r, i) => {
-      if (r.shape === "rectangular" || !r.shapePoints) {
-        parts.push(
-          `<rect x="${r.x * cell}" y="${r.y * cell}" width="${r.w * cell}" height="${r.h * cell}" fill="${theme.roomFill}" stroke="${theme.roomStroke}"/>`,
-        );
-        const cx = (r.x + r.w / 2) * cell;
-        const cy = (r.y + r.h / 2) * cell;
-        parts.push(
-          `<text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" font-size="${cell * 0.6}" fill="${theme.textFill}">${i + 1}</text>`,
-        );
-      } else {
-        const points = r.shapePoints!.map((p) => `${p.x * cell},${p.y * cell}`).join(" ");
-        parts.push(
-          `<polygon points="${points}" fill="${theme.roomFill}" stroke="${theme.roomStroke}"/>`,
-        );
-        const cx = r.x * cell;
-        const cy = r.y * cell;
-        parts.push(
-          `<text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" font-size="${cell * 0.6}" fill="${theme.textFill}">${i + 1}</text>`,
-        );
-      }
-    });
-  }
+  });
 
   parts.push("</svg>");
   return parts.join("");
