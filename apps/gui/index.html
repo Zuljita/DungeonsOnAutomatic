@@ -227,6 +227,86 @@
       transform-origin: 0 0;
       transition: transform 0.2s ease;
     }
+    .minimap {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      width: 200px;
+      height: 150px;
+      border: 2px solid var(--border-primary);
+      border-radius: 6px;
+      background: var(--bg-primary);
+      box-shadow: 0 4px 12px var(--shadow);
+      z-index: 20;
+      overflow: hidden;
+      opacity: 0.9;
+      transition: opacity 0.3s ease;
+    }
+    .minimap:hover {
+      opacity: 1;
+    }
+    .minimap.collapsed {
+      width: 40px;
+      height: 40px;
+      cursor: pointer;
+    }
+    .minimap-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 8px;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-primary);
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+    .minimap-toggle {
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      cursor: pointer;
+      padding: 2px;
+      font-size: 14px;
+      line-height: 1;
+    }
+    .minimap-toggle:hover {
+      color: var(--text-primary);
+    }
+    .minimap-content {
+      position: relative;
+      width: 100%;
+      height: calc(100% - 24px);
+      overflow: hidden;
+    }
+    .minimap.collapsed .minimap-content,
+    .minimap.collapsed .minimap-header {
+      display: none;
+    }
+    .minimap.collapsed::before {
+      content: '🗺️';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 18px;
+    }
+    .minimap-svg {
+      width: 100%;
+      height: 100%;
+      cursor: crosshair;
+    }
+    .minimap-viewport {
+      position: absolute;
+      border: 2px solid var(--accent-primary);
+      background: rgba(var(--accent-rgb), 0.1);
+      pointer-events: all;
+      cursor: grab;
+      z-index: 1;
+    }
+    .minimap-viewport.dragging {
+      pointer-events: all;
+      cursor: grabbing;
+    }
     .room-key {
       margin-top: 20px;
       padding: 15px;
@@ -1142,6 +1222,16 @@
           <button id="reset-view" class="map-control-btn" title="Reset View">⌂</button>
         </div>
         <div id="map-content"></div>
+        <div id="minimap" class="minimap" style="display: none;">
+          <div class="minimap-header">
+            <span>Overview</span>
+            <button id="minimap-toggle" class="minimap-toggle" title="Collapse">−</button>
+          </div>
+          <div class="minimap-content">
+            <div id="minimap-svg-container"></div>
+            <div id="minimap-viewport" class="minimap-viewport"></div>
+          </div>
+        </div>
       </div>
       <div id="room-key" class="room-key"></div>
       <div id="inputs" class="inputs"></div>
