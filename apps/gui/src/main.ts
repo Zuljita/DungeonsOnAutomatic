@@ -1366,53 +1366,47 @@ let minimapState: MinimapState = {
   containerHeight: 126 // 150 - 24 (header height)
 };
 
+let minimapInitialized = false;
+
 function createMinimap(originalSvg: SVGElement): void {
   const minimapContainer = document.getElementById('minimap-svg-container');
   const minimap = document.getElementById('minimap');
-  
+
   if (!minimapContainer || !minimap || !originalSvg) return;
 
-  // Clone the original SVG for the minimap
-  const clonedSvg = originalSvg.cloneNode(true) as SVGElement;
-  clonedSvg.classList.add('minimap-svg');
-  clonedSvg.removeAttribute('id'); // Avoid duplicate IDs
-  
-  // Get original SVG dimensions
-  const originalViewBox = originalSvg.getAttribute('viewBox');
+  const serializer = new XMLSerializer();
+  const svgString = serializer.serializeToString(originalSvg);
+
   const originalWidth = parseFloat(originalSvg.getAttribute('width') || '800');
   const originalHeight = parseFloat(originalSvg.getAttribute('height') || '600');
-  
+
   minimapState.svgWidth = originalWidth;
   minimapState.svgHeight = originalHeight;
-  
-  // Calculate scale to fit minimap container
+
   const scaleX = minimapState.containerWidth / originalWidth;
   const scaleY = minimapState.containerHeight / originalHeight;
   minimapState.scale = Math.min(scaleX, scaleY);
-  
-  // Set minimap SVG dimensions
+
   const minimapWidth = originalWidth * minimapState.scale;
   const minimapHeight = originalHeight * minimapState.scale;
-  
-  clonedSvg.setAttribute('width', minimapWidth.toString());
-  clonedSvg.setAttribute('height', minimapHeight.toString());
-  
-  if (originalViewBox) {
-    clonedSvg.setAttribute('viewBox', originalViewBox);
-  }
-  
-  // Clear previous content and add new minimap
+
+  const img = document.createElement('img');
+  img.src = 'data:image/svg+xml,' + encodeURIComponent(svgString);
+  img.classList.add('minimap-svg');
+  img.setAttribute('width', minimapWidth.toString());
+  img.setAttribute('height', minimapHeight.toString());
+
   minimapContainer.innerHTML = '';
-  minimapContainer.appendChild(clonedSvg);
-  
-  // Show minimap
+  minimapContainer.appendChild(img);
+
   minimap.style.display = 'block';
   minimapState.isVisible = true;
-  
-  // Setup minimap interactions
-  setupMinimapInteractions();
-  
-  // Initial viewport rectangle update
+
+  if (!minimapInitialized) {
+    setupMinimapInteractions();
+    minimapInitialized = true;
+  }
+
   updateMinimapViewport();
 }
 
