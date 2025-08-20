@@ -405,11 +405,12 @@ async function generate(): Promise<void> {
   const texture = textureInput.value;
 
   const mapEl = document.getElementById('map');
+  const mapContentEl = document.getElementById('map-content');
   const roomKeyEl = document.getElementById('room-key');
   const inputEl = document.getElementById('inputs');
   const downloadEl = document.getElementById('download-svg') as HTMLAnchorElement;
 
-  if (!mapEl || !roomKeyEl || !inputEl) {
+  if (!mapEl || !mapContentEl || !roomKeyEl || !inputEl) {
     hideLoadingState();
     return;
   }
@@ -519,7 +520,11 @@ async function generate(): Promise<void> {
 
     // Render the map
     const svg = await renderSvg(enriched, selectedTheme, renderOptions);
-    mapEl.innerHTML = svg;
+    mapContentEl.innerHTML = svg;
+
+    // Setup pan and zoom functionality
+    setupMapPanZoom(mapEl);
+    setupZoomControls(mapEl);
 
     // Generate room details using populateRooms to get proper format with features
     const details = populateRooms(enriched, enriched.rng ?? Math.random, system);
@@ -531,7 +536,7 @@ async function generate(): Promise<void> {
     
     roomKeyEl.innerHTML = fullRoomKey;
 
-    setupMapKeyInteractions(mapEl, roomKeyEl);
+    setupMapKeyInteractions(mapContentEl, roomKeyEl);
 
     // Update download link
     const blob = new Blob([svg], { type: 'image/svg+xml' });
@@ -540,7 +545,7 @@ async function generate(): Promise<void> {
 
   } catch (error) {
     console.error('Error generating dungeon:', error);
-    mapEl.innerHTML = `<p style="color: red;">Error generating dungeon: ${error}</p>`;
+    mapContentEl.innerHTML = `<p style="color: red;">Error generating dungeon: ${error}</p>`;
   } finally {
     // Always hide loading state
     hideLoadingState();
@@ -1331,6 +1336,210 @@ function setupMapKeyInteractions(mapEl: HTMLElement, roomKeyEl: HTMLElement): vo
       const el = svg.querySelector<SVGGraphicsElement>(`.key-icon[data-key="${id}"]`);
       if (el) highlight(el);
     });
+  });
+}
+
+// Map pan and zoom functionality
+interface MapViewState {
+  scale: number;
+  translateX: number;
+  translateY: number;
+  isDragging: boolean;
+  dragStartX: number;
+  dragStartY: number;
+  dragStartScrollX: number;
+  dragStartScrollY: number;
+}
+
+let mapViewState: MapViewState = {
+  scale: 1,
+  translateX: 0,
+  translateY: 0,
+  isDragging: false,
+  dragStartX: 0,
+  dragStartY: 0,
+  dragStartScrollX: 0,
+  dragStartScrollY: 0
+};
+
+function setupMapPanZoom(mapEl: HTMLElement): void {
+  const mapContentEl = mapEl.querySelector('#map-content') as HTMLElement;
+  const svg = mapContentEl?.querySelector('svg');
+  if (!svg || !mapContentEl) return;
+
+  // Add class to SVG for CSS transitions
+  svg.classList.add('map-svg');
+  
+  // Ensure the SVG has a minimum size to enable scrolling
+  const svgRect = svg.getBoundingClientRect();
+  const containerRect = mapEl.getBoundingClientRect();
+  
+  // If SVG is smaller than container, artificially expand it for pan functionality
+  if (svgRect.width <= containerRect.width) {
+    svg.style.minWidth = (containerRect.width + 200) + 'px';
+  }
+  if (svgRect.height <= containerRect.height) {
+    svg.style.minHeight = (containerRect.height + 200) + 'px';
+  }
+
+  // Pan functionality - using scroll-based approach for better performance
+  let isDragging = false;
+  let startX = 0, startY = 0;
+  let scrollLeft = 0, scrollTop = 0;
+
+  const onMouseDown = (e: MouseEvent) => {
+    // Don't interfere with clickable elements
+    const target = e.target as Element;
+    if (target.closest('.room-number, .door-icon, .key-icon, .map-control-btn')) {
+      return;
+    }
+
+    isDragging = true;
+    mapEl.classList.add('dragging');
+    
+    // Use clientX/Y instead of pageX/Y for better cross-browser compatibility
+    startX = e.clientX;
+    startY = e.clientY;
+    scrollLeft = mapEl.scrollLeft;
+    scrollTop = mapEl.scrollTop;
+    e.preventDefault();
+  };
+
+  const onMouseMove = (e: MouseEvent) => {
+    if (!isDragging) return;
+    e.preventDefault();
+    
+    // Calculate the movement delta
+    const deltaX = e.clientX - startX;
+    const deltaY = e.clientY - startY;
+    
+    // Update scroll position (subtract delta to invert direction for natural feel)
+    mapEl.scrollLeft = scrollLeft - deltaX;
+    mapEl.scrollTop = scrollTop - deltaY;
+  };
+
+  const onMouseUp = () => {
+    isDragging = false;
+    mapEl.classList.remove('dragging');
+  };
+
+  const onMouseLeave = () => {
+    isDragging = false;
+    mapEl.classList.remove('dragging');
+  };
+
+  // Mouse wheel zoom functionality
+  const onWheel = (e: WheelEvent) => {
+    e.preventDefault();
+    
+    const delta = e.deltaY > 0 ? -0.1 : 0.1;
+    const newScale = Math.max(0.1, Math.min(5, mapViewState.scale + delta));
+    
+    zoomToPoint(mapEl, svg, e.clientX, e.clientY, newScale);
+  };
+
+  // Event listeners
+  mapEl.addEventListener('mousedown', onMouseDown);
+  mapEl.addEventListener('mousemove', onMouseMove);
+  mapEl.addEventListener('mouseup', onMouseUp);
+  mapEl.addEventListener('mouseleave', onMouseLeave);
+  mapEl.addEventListener('wheel', onWheel, { passive: false });
+
+  // Touch support for mobile
+  let touchStartX = 0, touchStartY = 0;
+  let touchScrollLeft = 0, touchScrollTop = 0;
+
+  mapEl.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 1) {
+      const touch = e.touches[0];
+      touchStartX = touch.clientX;
+      touchStartY = touch.clientY;
+      touchScrollLeft = mapEl.scrollLeft;
+      touchScrollTop = mapEl.scrollTop;
+    }
+  }, { passive: true });
+
+  mapEl.addEventListener('touchmove', (e) => {
+    if (e.touches.length === 1) {
+      e.preventDefault();
+      const touch = e.touches[0];
+      const deltaX = touch.clientX - touchStartX;
+      const deltaY = touch.clientY - touchStartY;
+      
+      mapEl.scrollLeft = touchScrollLeft - deltaX;
+      mapEl.scrollTop = touchScrollTop - deltaY;
+    }
+  }, { passive: false });
+}
+
+function zoomToPoint(mapEl: HTMLElement, svg: SVGElement, clientX: number, clientY: number, newScale: number): void {
+  const rect = mapEl.getBoundingClientRect();
+  const containerX = clientX - rect.left;
+  const containerY = clientY - rect.top;
+  
+  // Get current scroll position
+  const scrollLeft = mapEl.scrollLeft;
+  const scrollTop = mapEl.scrollTop;
+  
+  // Calculate the point in the SVG coordinate system
+  const svgPoint = {
+    x: (containerX + scrollLeft) / mapViewState.scale,
+    y: (containerY + scrollTop) / mapViewState.scale
+  };
+  
+  // Update scale
+  const oldScale = mapViewState.scale;
+  mapViewState.scale = newScale;
+  
+  // Apply scale transform
+  svg.style.transform = `scale(${newScale})`;
+  
+  // Calculate new scroll position to keep the zoom point fixed
+  const newScrollLeft = svgPoint.x * newScale - containerX;
+  const newScrollTop = svgPoint.y * newScale - containerY;
+  
+  mapEl.scrollLeft = newScrollLeft;
+  mapEl.scrollTop = newScrollTop;
+}
+
+function setupZoomControls(mapEl: HTMLElement): void {
+  const mapContentEl = mapEl.querySelector('#map-content') as HTMLElement;
+  const svg = mapContentEl?.querySelector('svg');
+  if (!svg || !mapContentEl) return;
+
+  const zoomInBtn = document.getElementById('zoom-in');
+  const zoomOutBtn = document.getElementById('zoom-out');
+  const resetViewBtn = document.getElementById('reset-view');
+
+  zoomInBtn?.addEventListener('click', () => {
+    const newScale = Math.min(5, mapViewState.scale + 0.2);
+    const rect = mapEl.getBoundingClientRect();
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    zoomToPoint(mapEl, svg, rect.left + centerX, rect.top + centerY, newScale);
+  });
+
+  zoomOutBtn?.addEventListener('click', () => {
+    const newScale = Math.max(0.1, mapViewState.scale - 0.2);
+    const rect = mapEl.getBoundingClientRect();
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    zoomToPoint(mapEl, svg, rect.left + centerX, rect.top + centerY, newScale);
+  });
+
+  resetViewBtn?.addEventListener('click', () => {
+    // Reset zoom
+    mapViewState.scale = 1;
+    svg.style.transform = 'scale(1)';
+    
+    // Center the map
+    setTimeout(() => {
+      const svgRect = svg.getBoundingClientRect();
+      const containerRect = mapEl.getBoundingClientRect();
+      
+      mapEl.scrollLeft = Math.max(0, (svgRect.width - containerRect.width) / 2);
+      mapEl.scrollTop = Math.max(0, (svgRect.height - containerRect.height) / 2);
+    }, 50);
   });
 }
 

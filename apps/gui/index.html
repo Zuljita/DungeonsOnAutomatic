@@ -168,7 +168,17 @@
       margin-top: 20px;
       border: 1px solid var(--border-primary);
       border-radius: 4px;
-      overflow: hidden;
+      overflow: auto;
+      position: relative;
+      max-height: 70vh;
+      cursor: grab;
+      user-select: none;
+    }
+    .map-container:active {
+      cursor: grabbing;
+    }
+    .map-container.dragging {
+      cursor: grabbing;
     }
     .room-number,
     .door-icon,
@@ -178,6 +188,44 @@
     .map-highlight {
       stroke: var(--accent-warning);
       stroke-width: 3;
+    }
+    .map-controls {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      z-index: 10;
+    }
+    .map-control-btn {
+      width: 40px !important;
+      height: 40px !important;
+      padding: 0 !important;
+      border-radius: 6px;
+      font-size: 18px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-primary);
+      border: 1px solid var(--border-primary);
+      color: var(--text-primary);
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 2px 4px var(--shadow);
+    }
+    .map-control-btn:hover {
+      background: var(--bg-accent);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px var(--shadow-hover);
+    }
+    .map-control-btn:active {
+      transform: translateY(0);
+    }
+    .map-svg {
+      transform-origin: 0 0;
+      transition: transform 0.2s ease;
     }
     .room-key {
       margin-top: 20px;
@@ -1087,7 +1135,14 @@
         </div>
       </div>
 
-      <div id="map" class="map-container"></div>
+      <div id="map" class="map-container">
+        <div class="map-controls">
+          <button id="zoom-in" class="map-control-btn" title="Zoom In">+</button>
+          <button id="zoom-out" class="map-control-btn" title="Zoom Out">−</button>
+          <button id="reset-view" class="map-control-btn" title="Reset View">⌂</button>
+        </div>
+        <div id="map-content"></div>
+      </div>
       <div id="room-key" class="room-key"></div>
       <div id="inputs" class="inputs"></div>
     </div>
