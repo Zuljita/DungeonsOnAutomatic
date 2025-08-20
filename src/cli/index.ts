@@ -104,6 +104,7 @@ program
   .option("--ascii", "render an ASCII map instead of JSON output")
   .option("--svg", "render an SVG map instead of JSON output")
   .option("--foundry", "output FoundryVTT-compatible JSON")
+  .option("--export-format <format>", "use an export plugin for the given format")
     .action(async (opts) => {
       if (opts.listSystems) {
         const loader = createDefaultPluginLoader();
@@ -196,6 +197,27 @@ program
           showGrid: false,
         });
         process.stdout.write(svg + "\n");
+      } else if (opts.exportFormat) {
+        const pluginLoader = createDefaultPluginLoader();
+        await pluginLoader.discover();
+        const infos = pluginLoader.getRegistry();
+        let handled = false;
+        for (const info of infos) {
+          try {
+            const plugin = await pluginLoader.load(info.metadata.id, { sandbox: false });
+            if (isExportPlugin(plugin) && plugin.supportedFormats.includes(opts.exportFormat)) {
+              const result = await plugin.export(enriched, opts.exportFormat);
+              const out =
+                typeof result.data === 'string' ? result.data : JSON.stringify(result.data, null, 2);
+              process.stdout.write(out + "\n");
+              handled = true;
+              break;
+            }
+          } catch {}
+        }
+        if (!handled) {
+          console.error(`No export plugin found for format ${opts.exportFormat}`);
+        }
       } else if (opts.ascii) {
         // Use ASCII export plugin
         try {
