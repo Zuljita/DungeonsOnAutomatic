@@ -3,6 +3,162 @@ import { id } from './random';
 
 type Edge = { a: number; b: number; d: number };
 
+// A* pathfinding node
+interface PathNode {
+  x: number;
+  y: number;
+  g: number; // Cost from start
+  h: number; // Heuristic cost to goal
+  f: number; // Total cost (g + h)
+  parent?: PathNode;
+}
+
+// Priority queue for A* pathfinding
+class PriorityQueue {
+  private items: PathNode[] = [];
+
+  enqueue(node: PathNode): void {
+    this.items.push(node);
+    this.items.sort((a, b) => a.f - b.f);
+  }
+
+  dequeue(): PathNode | undefined {
+    return this.items.shift();
+  }
+
+  isEmpty(): boolean {
+    return this.items.length === 0;
+  }
+}
+
+/**
+ * Generate a cost grid for pathfinding
+ * Higher costs discourage pathfinding through certain areas
+ */
+function generateCostGrid(rooms: Room[], width: number, height: number): number[][] {
+  // Initialize with base cost of 1 for all tiles
+  const costGrid: number[][] = Array(height).fill(null).map(() => Array(width).fill(1));
+  
+  // Set high cost for room interiors (but not edges where doors will be)
+  for (const room of rooms) {
+    for (let y = room.y; y < room.y + room.h; y++) {
+      for (let x = room.x; x < room.x + room.w; x++) {
+        if (x >= 0 && x < width && y >= 0 && y < height) {
+          // High cost for room interiors to discourage pathfinding through them
+          costGrid[y][x] = 20;
+        }
+      }
+    }
+    
+    // Lower cost for room edges where doors can be placed
+    // Top and bottom edges
+    for (let x = room.x; x < room.x + room.w; x++) {
+      if (x >= 0 && x < width) {
+        if (room.y >= 0 && room.y < height) costGrid[room.y][x] = 5;
+        if (room.y + room.h - 1 >= 0 && room.y + room.h - 1 < height) costGrid[room.y + room.h - 1][x] = 5;
+      }
+    }
+    // Left and right edges
+    for (let y = room.y; y < room.y + room.h; y++) {
+      if (y >= 0 && y < height) {
+        if (room.x >= 0 && room.x < width) costGrid[y][room.x] = 5;
+        if (room.x + room.w - 1 >= 0 && room.x + room.w - 1 < width) costGrid[y][room.x + room.w - 1] = 5;
+      }
+    }
+  }
+  
+  return costGrid;
+}
+
+/**
+ * A* pathfinding with cost grid support
+ * Finds optimal path while avoiding high-cost areas (like room interiors)
+ */
+function findPathAStar(
+  start: { x: number; y: number },
+  goal: { x: number; y: number },
+  costGrid: number[][],
+  width: number,
+  height: number
+): { x: number; y: number }[] {
+  const openSet = new PriorityQueue();
+  const closedSet = new Set<string>();
+  
+  // Heuristic function (Manhattan distance)
+  const heuristic = (a: { x: number; y: number }, b: { x: number; y: number }): number => {
+    return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+  };
+  
+  // Create start node
+  const startNode: PathNode = {
+    x: start.x,
+    y: start.y,
+    g: 0,
+    h: heuristic(start, goal),
+    f: heuristic(start, goal)
+  };
+  
+  openSet.enqueue(startNode);
+  
+  while (!openSet.isEmpty()) {
+    const currentNode = openSet.dequeue()!;
+    const nodeKey = `${currentNode.x},${currentNode.y}`;
+    
+    // Goal reached
+    if (currentNode.x === goal.x && currentNode.y === goal.y) {
+      const path: { x: number; y: number }[] = [];
+      let current: PathNode | undefined = currentNode;
+      while (current) {
+        path.unshift({ x: current.x, y: current.y });
+        current = current.parent;
+      }
+      return path;
+    }
+    
+    closedSet.add(nodeKey);
+    
+    // Check neighbors (4-directional movement)
+    const neighbors = [
+      { x: currentNode.x + 1, y: currentNode.y },
+      { x: currentNode.x - 1, y: currentNode.y },
+      { x: currentNode.x, y: currentNode.y + 1 },
+      { x: currentNode.x, y: currentNode.y - 1 }
+    ];
+    
+    for (const neighbor of neighbors) {
+      // Skip if out of bounds
+      if (neighbor.x < 0 || neighbor.x >= width || neighbor.y < 0 || neighbor.y >= height) {
+        continue;
+      }
+      
+      const neighborKey = `${neighbor.x},${neighbor.y}`;
+      
+      // Skip if already evaluated
+      if (closedSet.has(neighborKey)) {
+        continue;
+      }
+      
+      // Calculate cost using the cost grid
+      const moveCost = costGrid[neighbor.y][neighbor.x];
+      const tentativeG = currentNode.g + moveCost;
+      
+      const neighborNode: PathNode = {
+        x: neighbor.x,
+        y: neighbor.y,
+        g: tentativeG,
+        h: heuristic(neighbor, goal),
+        f: tentativeG + heuristic(neighbor, goal),
+        parent: currentNode
+      };
+      
+      openSet.enqueue(neighborNode);
+    }
+  }
+  
+  // No path found, fallback to Manhattan path
+  return manhattanPath(start, goal, () => 0.5);
+}
+
 export function connectRooms(rooms: Room[], r: () => number): Corridor[] {
   if (rooms.length < 2) return [];
   const centers = rooms.map(rm => ({ x: rm.x + Math.floor(rm.w/2), y: rm.y + Math.floor(rm.h/2) }));
