@@ -1,5 +1,5 @@
 import { systemLoader } from '@src/services/system-loader';
-import { renderSvg } from '@src/services/render';
+import { renderSvg, lightTheme, darkTheme, sepiaTheme, type RenderOptions, type RenderTheme } from '@src/services/render';
 import { htmlRoomDetails, populateRooms, getDungeonMetaHtml } from '@src/services/room-key';
 import { ImportWizardComponent } from './import-wizard';
 import { tagSystem } from '@src/services/tag-system';
@@ -284,6 +284,13 @@ async function generate(): Promise<void> {
   const stairsUpInput = document.getElementById('stairs-up') as HTMLInputElement;
   const stairsDownInput = document.getElementById('stairs-down') as HTMLInputElement;
   const entrancePeripheryInput = document.getElementById('entrance-periphery') as HTMLInputElement;
+  
+  // Map rendering controls
+  const mapStyleInput = document.getElementById('map-style') as HTMLSelectElement;
+  const colorThemeInput = document.getElementById('color-theme') as HTMLSelectElement;
+  const showGridInput = document.getElementById('show-grid') as HTMLInputElement;
+  const wobbleIntensityInput = document.getElementById('wobble-intensity') as HTMLSelectElement;
+  const wallThicknessInput = document.getElementById('wall-thickness') as HTMLSelectElement;
 
   const template = templateInput.value || undefined;
   const rooms = parseInt(roomsInput.value) || 8;
@@ -363,8 +370,37 @@ async function generate(): Promise<void> {
     };
     inputEl.textContent = JSON.stringify(inputParams, null, 2);
 
+    // Prepare rendering options
+    const mapStyle = mapStyleInput.value as "classic" | "hand-drawn";
+    const colorTheme = colorThemeInput.value;
+    const showGrid = showGridInput.checked;
+    const wobbleIntensity = parseFloat(wobbleIntensityInput.value) || 1;
+    const wallThickness = parseFloat(wallThicknessInput.value) || 1;
+
+    // Select the appropriate theme
+    let selectedTheme: RenderTheme;
+    switch (colorTheme) {
+      case 'dark':
+        selectedTheme = darkTheme;
+        break;
+      case 'sepia':
+        selectedTheme = sepiaTheme;
+        break;
+      default:
+        selectedTheme = lightTheme;
+        break;
+    }
+
+    // Create render options
+    const renderOptions: RenderOptions = {
+      style: mapStyle,
+      showGrid: showGrid,
+      wobbleIntensity: wobbleIntensity,
+      wallThickness: wallThickness
+    };
+
     // Render the map
-    const svg = renderSvg(enriched);
+    const svg = renderSvg(enriched, selectedTheme, renderOptions);
     mapEl.innerHTML = svg;
 
     // Generate room details using populateRooms to get proper format with features
@@ -397,7 +433,8 @@ function setupRealTimePreview() {
     'rooms', 'width', 'height', 'seed',
     'layout-type', 'room-layout', 'room-size', 'room-shape',
     'corridor-type', 'corridor-width', 'system', 'theme',
-    'allow-deadends', 'stairs-up', 'stairs-down', 'entrance-periphery'
+    'allow-deadends', 'stairs-up', 'stairs-down', 'entrance-periphery',
+    'map-style', 'color-theme', 'show-grid', 'wobble-intensity', 'wall-thickness'
   ];
 
   formElements.forEach(id => {
@@ -426,6 +463,34 @@ function setupRealTimePreview() {
   }
 }
 
+function setupMapStyleControls() {
+  const mapStyleInput = document.getElementById('map-style') as HTMLSelectElement;
+  const gridToggleGroup = document.getElementById('grid-toggle-group') as HTMLElement;
+  const wobbleIntensityGroup = document.getElementById('wobble-intensity-group') as HTMLElement;
+  const wallThicknessGroup = document.getElementById('wall-thickness-group') as HTMLElement;
+
+  function toggleHandDrawnControls() {
+    const isHandDrawn = mapStyleInput.value === 'hand-drawn';
+    if (gridToggleGroup) {
+      gridToggleGroup.style.display = isHandDrawn ? 'block' : 'none';
+    }
+    if (wobbleIntensityGroup) {
+      wobbleIntensityGroup.style.display = isHandDrawn ? 'block' : 'none';
+    }
+    if (wallThicknessGroup) {
+      wallThicknessGroup.style.display = isHandDrawn ? 'block' : 'none';
+    }
+  }
+
+  // Initial setup
+  toggleHandDrawnControls();
+
+  // Listen for style changes
+  if (mapStyleInput) {
+    mapStyleInput.addEventListener('change', toggleHandDrawnControls);
+  }
+}
+
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
   initializeTabs();
@@ -444,6 +509,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Setup real-time preview listeners
   setupRealTimePreview();
+
+  // Setup map style controls
+  setupMapStyleControls();
 
   // Initial generation
   generate().catch(console.error);
