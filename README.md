@@ -13,10 +13,10 @@ Support for additional RPG systems is currently a stretch goal.
 ## Quick Start
 
 1. Install Node.js LTS and pnpm (or npm).
-2. Install deps:
+2. Install deps and Playwright:
 
 ```bash
-pnpm install
+./scripts/setup
 ```
 
 3. Run the CLI (examples):
