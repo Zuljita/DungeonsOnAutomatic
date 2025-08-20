@@ -82,6 +82,49 @@ function initializeThemeSelector() {
   updateThemes(); // Initial call
 }
 
+function initializeSourceSelector() {
+  const systemSelect = document.getElementById('system') as HTMLSelectElement;
+  const sourcesSelect = document.getElementById('sources') as HTMLSelectElement;
+  
+  async function updateSources() {
+    const selectedSystem = systemSelect.value;
+    
+    sourcesSelect.innerHTML = '<option value="">All Sources</option>';
+    
+    if (!selectedSystem) return;
+    
+    try {
+      const sys = await systemLoader.getSystem(selectedSystem);
+      // Get available sources from the system if the method exists
+      if (typeof sys.getAvailableSources === 'function') {
+        const sources = sys.getAvailableSources();
+        
+        sources.forEach(source => {
+          const option = document.createElement('option');
+          option.value = typeof source === 'string' ? source : source.id;
+          option.textContent = typeof source === 'string' ? source : source.name;
+          sourcesSelect.appendChild(option);
+        });
+      } else {
+        // Fallback: Add some common source options for systems that don't provide them
+        const commonSources = ['core', 'basic', 'advanced', 'expanded'];
+        commonSources.forEach(source => {
+          const option = document.createElement('option');
+          option.value = source;
+          option.textContent = source.charAt(0).toUpperCase() + source.slice(1);
+          sourcesSelect.appendChild(option);
+        });
+      }
+    } catch (error) {
+      console.warn('Failed to load sources for system:', selectedSystem, error);
+      // Leave with just "All Sources" option on error
+    }
+  }
+  
+  systemSelect.addEventListener('change', updateSources);
+  updateSources(); // Initial call
+}
+
 function populateSystemSelector() {
   const systemSelect = document.getElementById('system') as HTMLSelectElement;
   const systems = systemLoader.getSystems();
@@ -196,8 +239,12 @@ function hideLoadingState() {
 function debounceGenerate() {
   const realtimePreview = document.getElementById('real-time-preview') as HTMLInputElement;
   
-  // Only auto-generate if real-time preview is enabled
-  if (!realtimePreview?.checked) return;
+  // Always run validation for immediate feedback
+  const validation = validateForm();
+  displayValidationErrors(validation.errors);
+  
+  // Only auto-generate if real-time preview is enabled and form is valid
+  if (!realtimePreview?.checked || !validation.isValid) return;
   
   // Clear existing timeout
   if (generateTimeout) {
@@ -236,6 +283,13 @@ function loadGeneratorSettings() {
     const stairsUpInput = document.getElementById('stairs-up') as HTMLInputElement;
     const stairsDownInput = document.getElementById('stairs-down') as HTMLInputElement;
     const entrancePeripheryInput = document.getElementById('entrance-periphery') as HTMLInputElement;
+    
+    // New form elements
+    const sourcesInput = document.getElementById('sources') as HTMLSelectElement;
+    const monsterTagsInput = document.getElementById('monster-tags') as HTMLInputElement;
+    const trapTagsInput = document.getElementById('trap-tags') as HTMLInputElement;
+    const treasureTagsInput = document.getElementById('treasure-tags') as HTMLInputElement;
+    const textureInput = document.getElementById('texture') as HTMLSelectElement;
 
     templateInput.value = settings.template ?? '';
     roomsInput.value =
@@ -258,12 +312,33 @@ function loadGeneratorSettings() {
     stairsUpInput.checked = !!settings.stairsUp;
     stairsDownInput.checked = !!settings.stairsDown;
     entrancePeripheryInput.checked = !!settings.entranceFromPeriphery;
+    
+    // Load new settings
+    if (settings.sources && Array.isArray(settings.sources)) {
+      // Select multiple sources
+      Array.from(sourcesInput.options).forEach(option => {
+        option.selected = settings.sources.includes(option.value);
+      });
+    }
+    monsterTagsInput.value = settings.monsterTags ? settings.monsterTags.join(', ') : '';
+    trapTagsInput.value = settings.trapTags ? settings.trapTags.join(', ') : '';
+    treasureTagsInput.value = settings.treasureTags ? settings.treasureTags.join(', ') : '';
+    textureInput.value = settings.texture ?? 'none';
   } catch (error) {
     console.error('Failed to load generator settings', error);
   }
 }
 
 async function generate(): Promise<void> {
+  // Validate form before generation
+  const validation = validateForm();
+  displayValidationErrors(validation.errors);
+  
+  if (!validation.isValid) {
+    hideLoadingState();
+    return;
+  }
+
   // Show loading state
   showLoadingState();
 
@@ -291,6 +366,13 @@ async function generate(): Promise<void> {
   const showGridInput = document.getElementById('show-grid') as HTMLInputElement;
   const wobbleIntensityInput = document.getElementById('wobble-intensity') as HTMLSelectElement;
   const wallThicknessInput = document.getElementById('wall-thickness') as HTMLSelectElement;
+  
+  // New content filtering controls
+  const sourcesInput = document.getElementById('sources') as HTMLSelectElement;
+  const monsterTagsInput = document.getElementById('monster-tags') as HTMLInputElement;
+  const trapTagsInput = document.getElementById('trap-tags') as HTMLInputElement;
+  const treasureTagsInput = document.getElementById('treasure-tags') as HTMLInputElement;
+  const textureInput = document.getElementById('texture') as HTMLSelectElement;
 
   const template = templateInput.value || undefined;
   const rooms = parseInt(roomsInput.value) || 8;
@@ -309,6 +391,17 @@ async function generate(): Promise<void> {
   const stairsUp = stairsUpInput.checked;
   const stairsDown = stairsDownInput.checked;
   const entranceFromPeriphery = entrancePeripheryInput.checked;
+  
+  // Parse tag inputs
+  const monsterTags = monsterTagsInput.value.split(',').map(tag => tag.trim()).filter(tag => tag);
+  const trapTags = trapTagsInput.value.split(',').map(tag => tag.trim()).filter(tag => tag);
+  const treasureTags = treasureTagsInput.value.split(',').map(tag => tag.trim()).filter(tag => tag);
+  
+  // Get selected sources
+  const selectedSources = Array.from(sourcesInput.selectedOptions).map(option => option.value).filter(s => s);
+  
+  // Get texture setting
+  const texture = textureInput.value;
 
   const mapEl = document.getElementById('map');
   const roomKeyEl = document.getElementById('room-key');
@@ -346,9 +439,19 @@ async function generate(): Promise<void> {
     const generatorSettings = {
       ...dungeonOptions,
       system,
-      theme
+      theme,
+      sources: selectedSources,
+      monsterTags,
+      trapTags,
+      treasureTags,
+      texture,
+      mapStyle: mapStyleInput.value,
+      colorTheme: colorThemeInput.value
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(generatorSettings));
+    
+    // Update configuration summary
+    updateConfigurationSummary(generatorSettings);
 
     console.log('Dungeon generation options:', dungeonOptions);
 
@@ -358,8 +461,22 @@ async function generate(): Promise<void> {
 
     // Enrich with system-specific content
     const sys = await systemLoader.getSystem(system);
-    const tagOptions = theme ? { theme } : undefined;
-    const enriched = await sys.enrich(dungeon, { tags: tagOptions });
+    
+    // Build tag options from the new inputs
+    const tagOptions = 
+      theme || monsterTags.length || trapTags.length || treasureTags.length
+        ? {
+            theme,
+            monsters: monsterTags.length ? { requiredTags: monsterTags } : undefined,
+            traps: trapTags.length ? { requiredTags: trapTags } : undefined,
+            treasure: treasureTags.length ? { requiredTags: treasureTags } : undefined,
+          }
+        : undefined;
+    
+    const enriched = await sys.enrich(dungeon, { 
+      sources: selectedSources.length ? selectedSources : undefined, 
+      tags: tagOptions 
+    });
     console.log('Enriched dungeon:', enriched);
 
     // Display input parameters
@@ -434,7 +551,8 @@ function setupRealTimePreview() {
     'layout-type', 'room-layout', 'room-size', 'room-shape',
     'corridor-type', 'corridor-width', 'system', 'theme',
     'allow-deadends', 'stairs-up', 'stairs-down', 'entrance-periphery',
-    'map-style', 'color-theme', 'show-grid', 'wobble-intensity', 'wall-thickness'
+    'map-style', 'color-theme', 'show-grid', 'wobble-intensity', 'wall-thickness',
+    'sources', 'monster-tags', 'trap-tags', 'treasure-tags', 'texture'
   ];
 
   formElements.forEach(id => {
@@ -491,13 +609,182 @@ function setupMapStyleControls() {
   }
 }
 
+function validateForm(): { isValid: boolean; errors: string[] } {
+  const errors: string[] = [];
+  
+  // Validate rooms
+  const roomsInput = document.getElementById('rooms') as HTMLInputElement;
+  const rooms = parseInt(roomsInput.value);
+  if (rooms < 3 || rooms > 20) {
+    errors.push('Rooms must be between 3 and 20');
+    roomsInput.style.borderColor = 'var(--accent-danger)';
+  } else {
+    roomsInput.style.borderColor = '';
+  }
+  
+  // Validate width
+  const widthInput = document.getElementById('width') as HTMLInputElement;
+  const width = parseInt(widthInput.value);
+  if (width < 20 || width > 100) {
+    errors.push('Width must be between 20 and 100');
+    widthInput.style.borderColor = 'var(--accent-danger)';
+  } else {
+    widthInput.style.borderColor = '';
+  }
+  
+  // Validate height
+  const heightInput = document.getElementById('height') as HTMLInputElement;
+  const height = parseInt(heightInput.value);
+  if (height < 20 || height > 100) {
+    errors.push('Height must be between 20 and 100');
+    heightInput.style.borderColor = 'var(--accent-danger)';
+  } else {
+    heightInput.style.borderColor = '';
+  }
+  
+  // Validate room count vs map size (rooms should fit reasonably)
+  if (rooms && width && height && rooms > (width * height) / 50) {
+    errors.push('Too many rooms for map size - consider increasing map dimensions or reducing room count');
+  }
+  
+  return { isValid: errors.length === 0, errors };
+}
+
+function displayValidationErrors(errors: string[]) {
+  let errorContainer = document.getElementById('validation-errors');
+  
+  if (!errorContainer) {
+    errorContainer = document.createElement('div');
+    errorContainer.id = 'validation-errors';
+    errorContainer.className = 'status-message status-error';
+    const previewControls = document.querySelector('.preview-controls');
+    previewControls?.insertBefore(errorContainer, previewControls.firstChild);
+  }
+  
+  if (errors.length === 0) {
+    errorContainer.style.display = 'none';
+  } else {
+    errorContainer.style.display = 'block';
+    errorContainer.innerHTML = `
+      <strong>Configuration Issues:</strong>
+      <ul style="margin: 5px 0 0 20px; padding: 0;">
+        ${errors.map(error => `<li>${error}</li>`).join('')}
+      </ul>
+    `;
+  }
+}
+
+function updateConfigurationSummary(config: any) {
+  const summaryText = document.getElementById('config-summary-text');
+  if (!summaryText) return;
+  
+  const summary = `🎲 Dungeon Configuration Summary
+
+Basic Settings:
+  • Template: ${config.template || 'Custom'}
+  • System: ${config.system || 'Generic'}
+  • Theme: ${config.theme || 'Random'}
+  • Rooms: ${config.rooms}
+  • Map Size: ${config.width} × ${config.height}
+  • Seed: ${config.seed || 'Random'}
+
+Layout & Structure:
+  • Layout Type: ${config.layoutType || 'Rectangle'}
+  • Room Layout: ${config.roomLayout || 'Scattered'}
+  • Room Size: ${config.roomSize || 'Medium'}
+  • Room Shape: ${config.roomShape || 'Rectangular'}
+
+Corridors:
+  • Type: ${config.corridorType || 'Straight'}
+  • Width: ${config.corridorWidth || 1} tiles
+  • Deadends: ${config.allowDeadends ? 'Allowed' : 'Not allowed'}
+
+Special Features:
+  • Stairs Up: ${config.stairsUp ? 'Yes' : 'No'}
+  • Stairs Down: ${config.stairsDown ? 'Yes' : 'No'}
+  • Entrance from Periphery: ${config.entranceFromPeriphery ? 'Yes' : 'No'}
+
+Content Filtering:
+  • Sources: ${config.sources?.length ? config.sources.join(', ') : 'All'}
+  • Monster Tags: ${config.monsterTags?.length ? config.monsterTags.join(', ') : 'None'}
+  • Trap Tags: ${config.trapTags?.length ? config.trapTags.join(', ') : 'None'}
+  • Treasure Tags: ${config.treasureTags?.length ? config.treasureTags.join(', ') : 'None'}
+
+Rendering:
+  • Style: ${config.mapStyle || 'Classic'}
+  • Color Theme: ${config.colorTheme || 'Light'}
+  • Texture: ${config.texture || 'None'}`;
+
+  summaryText.textContent = summary;
+}
+
+function toggleSummary() {
+  const content = document.getElementById('summary-content');
+  const toggle = document.getElementById('summary-toggle');
+  
+  if (content && toggle) {
+    if (content.classList.contains('expanded')) {
+      content.classList.remove('expanded');
+      toggle.textContent = '▼';
+    } else {
+      content.classList.add('expanded');
+      toggle.textContent = '▲';
+    }
+  }
+}
+
+function toggleOptionGroup(groupName: string) {
+  const group = document.querySelector(`[data-group="${groupName}"]`);
+  if (!group) return;
+  
+  const isCollapsed = group.classList.contains('collapsed');
+  const icon = group.querySelector('.toggle-icon');
+  
+  if (isCollapsed) {
+    group.classList.remove('collapsed');
+    if (icon) icon.textContent = '▼';
+  } else {
+    group.classList.add('collapsed');
+    if (icon) icon.textContent = '▶';
+  }
+  
+  // Save collapsed state to localStorage
+  const collapsedGroups = JSON.parse(localStorage.getItem('collapsedGroups') || '[]');
+  if (isCollapsed) {
+    // Remove from collapsed list (expanding)
+    const index = collapsedGroups.indexOf(groupName);
+    if (index > -1) collapsedGroups.splice(index, 1);
+  } else {
+    // Add to collapsed list (collapsing)
+    if (!collapsedGroups.includes(groupName)) {
+      collapsedGroups.push(groupName);
+    }
+  }
+  localStorage.setItem('collapsedGroups', JSON.stringify(collapsedGroups));
+}
+
+function restoreCollapsedStates() {
+  const collapsedGroups = JSON.parse(localStorage.getItem('collapsedGroups') || '[]');
+  
+  collapsedGroups.forEach((groupName: string) => {
+    const group = document.querySelector(`[data-group="${groupName}"]`);
+    const icon = group?.querySelector('.toggle-icon');
+    if (group && !group.classList.contains('collapsed')) {
+      group.classList.add('collapsed');
+      if (icon) icon.textContent = '▶';
+    }
+  });
+}
+
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
   initializeTabs();
   populateTemplateSelector();
   populateSystemSelector();
   initializeThemeSelector();
+  initializeSourceSelector();
   loadGeneratorSettings();
+  restoreCollapsedStates(); // Restore collapsed states from localStorage
   
   const generateBtn = document.getElementById('generate');
   if (generateBtn) {
@@ -517,8 +804,10 @@ document.addEventListener('DOMContentLoaded', () => {
   generate().catch(console.error);
 });
 
-// Make showTab and importWizard available globally for onclick handlers
+// Make functions available globally for onclick handlers
 (window as any).showTab = showTab;
+(window as any).toggleSummary = toggleSummary;
+(window as any).toggleOptionGroup = toggleOptionGroup;
 (window as any).importWizard = {
   deleteDataset: (moduleId: string, dataType: string) => {
     if (importWizard) {

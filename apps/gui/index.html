@@ -218,16 +218,41 @@
     }
     .option-group {
       background: var(--bg-tertiary);
-      padding: 15px;
       border-radius: 4px;
       border: 1px solid var(--border-secondary);
+      margin-bottom: 10px;
     }
     .option-group h3 {
-      margin-top: 0;
+      margin: 0;
       color: var(--text-secondary);
       font-size: 16px;
-      border-bottom: 1px solid var(--border-accent);
-      padding-bottom: 8px;
+      padding: 12px 15px;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-secondary);
+      cursor: pointer;
+      user-select: none;
+      transition: background-color 0.3s ease;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .option-group h3:hover {
+      background: var(--bg-accent);
+    }
+    .option-group .toggle-icon {
+      font-size: 14px;
+      transition: transform 0.3s ease;
+    }
+    .option-group.collapsed .toggle-icon {
+      transform: rotate(-90deg);
+    }
+    .option-group-content {
+      padding: 15px;
+      transition: max-height 0.3s ease, opacity 0.3s ease;
+      overflow: hidden;
+    }
+    .option-group.collapsed .option-group-content {
+      display: none;
     }
     .checkbox-group {
       display: flex;
@@ -241,6 +266,14 @@
     .checkbox-group label {
       margin-bottom: 0;
       font-weight: normal;
+    }
+    .help-text {
+      display: block;
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 3px;
+      margin-bottom: 0;
+      font-style: italic;
     }
     .download-link {
       display: inline-block;
@@ -454,6 +487,45 @@
       opacity: 0.6;
       pointer-events: none;
     }
+    .configuration-summary {
+      margin-bottom: 20px;
+      border: 1px solid var(--border-secondary);
+      border-radius: 4px;
+      background: var(--bg-tertiary);
+    }
+    .summary-header {
+      cursor: pointer;
+      padding: 10px 15px;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-secondary);
+      user-select: none;
+      transition: background-color 0.3s ease;
+    }
+    .summary-header:hover {
+      background: var(--bg-accent);
+    }
+    .summary-header h3 {
+      margin: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--text-secondary);
+    }
+    .summary-content {
+      padding: 15px;
+      max-height: 200px;
+      overflow-y: auto;
+      display: none;
+    }
+    .summary-content.expanded {
+      display: block;
+    }
+    #config-summary-text {
+      font-family: monospace;
+      font-size: 12px;
+      color: var(--text-muted);
+      white-space: pre-wrap;
+    }
     \n    /* Theme selector styles */
     .theme-selector {
       display: flex;
@@ -497,6 +569,7 @@
 </head>
 <body>
   <div class="container">
+    <h1 style="text-align: center; padding: 20px 0 10px 0; margin: 0; color: var(--text-primary);">Dungeons On Automatic</h1>
     <div class="tabs">
       <button class="tab active" onclick="showTab('generator')">Generator</button>
       <button class="tab" onclick="showTab('data-manager')">Data Manager</button>
@@ -504,176 +577,240 @@
     </div>
 
     <div id="generator-tab" class="tab-content active">
+      <div style="text-align: center; margin-bottom: 15px; color: var(--text-muted); font-size: 14px;">
+        💡 Click on any section header to expand/collapse options
+      </div>
       <div class="map-options">
-        <div class="option-group">
-          <h3>Basic Settings</h3>
-          <div class="form-group">
-            <label>Template:</label>
-            <select id="template">
-              <option value="">No Template (Custom)</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>System:</label>
-            <select id="system">
-              <option value="">Select System</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Theme:</label>
-            <select id="theme">
-              <option value="">No Theme (Random)</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Rooms:</label>
-            <input type="number" id="rooms" value="8" min="3" max="20">
-          </div>
-          <div class="form-group">
-            <label>Width:</label>
-            <input type="number" id="width" value="50" min="20" max="100">
-          </div>
-          <div class="form-group">
-            <label>Height:</label>
-            <input type="number" id="height" value="50" min="20" max="100">
-          </div>
-          <div class="form-group">
-            <label>Seed:</label>
-            <input type="text" id="seed" placeholder="Random">
-          </div>
-        </div>
-
-        <div class="option-group">
-          <h3>Layout Type</h3>
-          <div class="form-group">
-            <label>Map Layout:</label>
-            <select id="layout-type">
-              <option value="rectangle">Rectangle</option>
-              <option value="square">Square</option>
-              <option value="box">Box (Courtyard)</option>
-              <option value="cross">Cross</option>
-              <option value="dagger">Dagger</option>
-              <option value="saltire">Saltire (X-Shape)</option>
-              <option value="keep">Keep (Castle)</option>
-              <option value="hexagon">Hexagon</option>
-              <option value="round">Round</option>
-              <option value="cavernous">Cavernous</option>
-            </select>
+        <div class="option-group" data-group="basic">
+          <h3 onclick="toggleOptionGroup('basic')">Basic Settings <span class="toggle-icon">▼</span></h3>
+          <div class="option-group-content">
+            <div class="form-group">
+              <label>Template:</label>
+              <select id="template">
+                <option value="">No Template (Custom)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>System:</label>
+              <select id="system">
+                <option value="">Select System</option>
+              </select>
+              <small class="help-text">Choose game system for encounters and content</small>
+            </div>
+            <div class="form-group">
+              <label>Theme:</label>
+              <select id="theme">
+                <option value="">No Theme (Random)</option>
+              </select>
+              <small class="help-text">Apply thematic filter to encounters (requires system)</small>
+            </div>
+            <div class="form-group">
+              <label>Rooms (3-20):</label>
+              <input type="number" id="rooms" value="8" min="3" max="20">
+              <small class="help-text">Number of rooms in the dungeon</small>
+            </div>
+            <div class="form-group">
+              <label>Width (20-100):</label>
+              <input type="number" id="width" value="50" min="20" max="100">
+              <small class="help-text">Map width in grid squares</small>
+            </div>
+            <div class="form-group">
+              <label>Height (20-100):</label>
+              <input type="number" id="height" value="50" min="20" max="100">
+              <small class="help-text">Map height in grid squares</small>
+            </div>
+            <div class="form-group">
+              <label>Seed:</label>
+              <input type="text" id="seed" placeholder="Random">
+              <small class="help-text">Reproducible random seed (leave empty for random)</small>
+            </div>
           </div>
         </div>
 
-        <div class="option-group">
-          <h3>Room Configuration</h3>
-          <div class="form-group">
-            <label>Room Layout:</label>
-            <select id="room-layout">
-              <option value="scattered">Scattered</option>
-              <option value="sparse">Sparse</option>
-              <option value="dense">Dense</option>
-              <option value="symmetric">Symmetric</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Room Size:</label>
-            <select id="room-size">
-              <option value="medium">Medium</option>
-              <option value="small">Small</option>
-              <option value="large">Large</option>
-              <option value="mixed">Mixed</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Room Shape:</label>
-            <select id="room-shape">
-              <option value="rectangular">Rectangular</option>
-              <option value="diverse">Diverse (All shapes)</option>
-              <option value="hex-preference">Hex Preference</option>
-              <option value="circular-preference">Circular Preference</option>
-              <option value="small-preference">Small Preference</option>
-              <option value="mixed">Mixed</option>
-            </select>
+        <div class="option-group" data-group="layout">
+          <h3 onclick="toggleOptionGroup('layout')">Layout Type <span class="toggle-icon">▼</span></h3>
+          <div class="option-group-content">
+            <div class="form-group">
+              <label>Map Layout:</label>
+              <select id="layout-type">
+                <option value="rectangle">Rectangle</option>
+                <option value="square">Square</option>
+                <option value="box">Box (Courtyard)</option>
+                <option value="cross">Cross</option>
+                <option value="dagger">Dagger</option>
+                <option value="saltire">Saltire (X-Shape)</option>
+                <option value="keep">Keep (Castle)</option>
+                <option value="hexagon">Hexagon</option>
+                <option value="round">Round</option>
+                <option value="cavernous">Cavernous</option>
+              </select>
+              <small class="help-text">Overall shape and structure of the dungeon</small>
+            </div>
           </div>
         </div>
 
-        <div class="option-group">
-          <h3>Corridor Configuration</h3>
-          <div class="form-group">
-            <label>Corridor Type:</label>
-            <select id="corridor-type">
-              <option value="straight">Straight</option>
-              <option value="winding">Winding</option>
-              <option value="maze">Maze</option>
-              <option value="mixed">Mixed</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Corridor Width (tiles):</label>
-            <select id="corridor-width">
-              <option value="1">1 (Narrow)</option>
-              <option value="2">2 (Standard)</option>
-              <option value="3">3 (Wide)</option>
-            </select>
-          </div>
-          <div class="checkbox-group">
-            <input type="checkbox" id="allow-deadends" checked>
-            <label for="allow-deadends">Allow Deadends</label>
-          </div>
-        </div>
-
-        <div class="option-group">
-          <h3>Special Features</h3>
-          <div class="checkbox-group">
-            <input type="checkbox" id="stairs-up">
-            <label for="stairs-up">Stairs Up</label>
-          </div>
-          <div class="checkbox-group">
-            <input type="checkbox" id="stairs-down">
-            <label for="stairs-down">Stairs Down</label>
-          </div>
-          <div class="checkbox-group">
-            <input type="checkbox" id="entrance-periphery">
-            <label for="entrance-periphery">Entrance from Periphery</label>
+        <div class="option-group" data-group="rooms">
+          <h3 onclick="toggleOptionGroup('rooms')">Room Configuration <span class="toggle-icon">▼</span></h3>
+          <div class="option-group-content">
+            <div class="form-group">
+              <label>Room Layout:</label>
+              <select id="room-layout">
+                <option value="scattered">Scattered</option>
+                <option value="sparse">Sparse</option>
+                <option value="dense">Dense</option>
+                <option value="symmetric">Symmetric</option>
+              </select>
+              <small class="help-text">How rooms are distributed in the dungeon</small>
+            </div>
+            <div class="form-group">
+              <label>Room Size:</label>
+              <select id="room-size">
+                <option value="medium">Medium</option>
+                <option value="small">Small</option>
+                <option value="large">Large</option>
+                <option value="mixed">Mixed</option>
+              </select>
+              <small class="help-text">Preferred size of generated rooms</small>
+            </div>
+            <div class="form-group">
+              <label>Room Shape:</label>
+              <select id="room-shape">
+                <option value="rectangular">Rectangular</option>
+                <option value="diverse">Diverse (All shapes)</option>
+                <option value="hex-preference">Hex Preference</option>
+                <option value="circular-preference">Circular Preference</option>
+                <option value="small-preference">Small Preference</option>
+                <option value="mixed">Mixed</option>
+              </select>
+              <small class="help-text">Shape variety and style preferences for rooms</small>
+            </div>
           </div>
         </div>
 
-        <div class="option-group">
-          <h3>Map Rendering</h3>
-          <div class="form-group">
-            <label>Map Style:</label>
-            <select id="map-style">
-              <option value="classic">Classic</option>
-              <option value="hand-drawn">Technical Pen (Hand-drawn)</option>
-            </select>
+        <div class="option-group" data-group="corridors">
+          <h3 onclick="toggleOptionGroup('corridors')">Corridor Configuration <span class="toggle-icon">▼</span></h3>
+          <div class="option-group-content">
+            <div class="form-group">
+              <label>Corridor Type:</label>
+              <select id="corridor-type">
+                <option value="straight">Straight</option>
+                <option value="winding">Winding</option>
+                <option value="maze">Maze</option>
+                <option value="mixed">Mixed</option>
+              </select>
+              <small class="help-text">Style of corridors connecting rooms</small>
+            </div>
+            <div class="form-group">
+              <label>Corridor Width (tiles):</label>
+              <select id="corridor-width">
+                <option value="1">1 (Narrow)</option>
+                <option value="2">2 (Standard)</option>
+                <option value="3">3 (Wide)</option>
+              </select>
+              <small class="help-text">Width of corridors in map tiles</small>
+            </div>
+            <div class="checkbox-group">
+              <input type="checkbox" id="allow-deadends" checked>
+              <label for="allow-deadends">Allow Deadends</label>
+              <small class="help-text">Permit corridors that lead to dead ends</small>
+            </div>
           </div>
-          <div class="form-group">
-            <label>Color Theme:</label>
-            <select id="color-theme">
-              <option value="light">Light</option>
-              <option value="dark">Dark</option>
-              <option value="sepia">Sepia</option>
-            </select>
+        </div>
+
+        <div class="option-group" data-group="features">
+          <h3 onclick="toggleOptionGroup('features')">Special Features <span class="toggle-icon">▼</span></h3>
+          <div class="option-group-content">
+            <div class="checkbox-group">
+              <input type="checkbox" id="stairs-up">
+              <label for="stairs-up">Stairs Up</label>
+            </div>
+            <div class="checkbox-group">
+              <input type="checkbox" id="stairs-down">
+              <label for="stairs-down">Stairs Down</label>
+            </div>
+            <div class="checkbox-group">
+              <input type="checkbox" id="entrance-periphery">
+              <label for="entrance-periphery">Entrance from Periphery</label>
+            </div>
           </div>
-          <div class="checkbox-group" id="grid-toggle-group" style="display: none;">
-            <input type="checkbox" id="show-grid">
-            <label for="show-grid">Show Graph Paper Grid</label>
+        </div>
+
+        <div class="option-group collapsed" data-group="content">
+          <h3 onclick="toggleOptionGroup('content')">Content Settings <span class="toggle-icon">▶</span></h3>
+          <div class="option-group-content">
+            <div class="form-group">
+              <label>Sources (System-specific):</label>
+              <select id="sources" multiple>
+                <option value="">All Sources</option>
+              </select>
+              <small class="help-text">Hold Ctrl/Cmd to select multiple sources</small>
+            </div>
+            <div class="form-group">
+              <label>Monster Tags:</label>
+              <input type="text" id="monster-tags" placeholder="Enter tags separated by commas">
+              <small class="help-text">Filter monsters by tags (e.g., undead, fire, boss)</small>
+            </div>
+            <div class="form-group">
+              <label>Trap Tags:</label>
+              <input type="text" id="trap-tags" placeholder="Enter tags separated by commas">
+              <small class="help-text">Filter traps by tags (e.g., magical, mechanical, deadly)</small>
+            </div>
+            <div class="form-group">
+              <label>Treasure Tags:</label>
+              <input type="text" id="treasure-tags" placeholder="Enter tags separated by commas">
+              <small class="help-text">Filter treasure by tags (e.g., magic, valuable, cursed)</small>
+            </div>
           </div>
-          <div class="form-group" id="wobble-intensity-group" style="display: none;">
-            <label>Line Wobble:</label>
-            <select id="wobble-intensity">
-              <option value="0.5">Minimal</option>
-              <option value="1" selected>Normal</option>
-              <option value="1.5">Heavy</option>
-              <option value="2">Maximum</option>
-            </select>
-          </div>
-          <div class="form-group" id="wall-thickness-group" style="display: none;">
-            <label>Wall Thickness:</label>
-            <select id="wall-thickness">
-              <option value="0.5">Thin</option>
-              <option value="1" selected>Normal</option>
-              <option value="1.5">Thick</option>
-              <option value="2">Very Thick</option>
-            </select>
+        </div>
+
+        <div class="option-group collapsed" data-group="rendering">
+          <h3 onclick="toggleOptionGroup('rendering')">Map Rendering <span class="toggle-icon">▶</span></h3>
+          <div class="option-group-content">
+            <div class="form-group">
+              <label>Map Style:</label>
+              <select id="map-style">
+                <option value="classic">Classic</option>
+                <option value="hand-drawn">Technical Pen (Hand-drawn)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Color Theme:</label>
+              <select id="color-theme">
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+                <option value="sepia">Sepia</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Background Texture:</label>
+              <select id="texture">
+                <option value="none">None</option>
+                <option value="paper">Paper</option>
+              </select>
+              <small class="help-text">Add texture to the map background</small>
+            </div>
+            <div class="checkbox-group" id="grid-toggle-group" style="display: none;">
+              <input type="checkbox" id="show-grid">
+              <label for="show-grid">Show Graph Paper Grid</label>
+            </div>
+            <div class="form-group" id="wobble-intensity-group" style="display: none;">
+              <label>Line Wobble:</label>
+              <select id="wobble-intensity">
+                <option value="0.5">Minimal</option>
+                <option value="1" selected>Normal</option>
+                <option value="1.5">Heavy</option>
+                <option value="2">Maximum</option>
+              </select>
+            </div>
+            <div class="form-group" id="wall-thickness-group" style="display: none;">
+              <label>Wall Thickness:</label>
+              <select id="wall-thickness">
+                <option value="0.5">Thin</option>
+                <option value="1" selected>Normal</option>
+                <option value="1.5">Thick</option>
+                <option value="2">Very Thick</option>
+              </select>
+            </div>
           </div>
         </div>
       </div>
@@ -689,6 +826,17 @@
         </div>
         <button id="generate">Generate Dungeon</button>
         <a id="download-svg" download="dungeon.svg" class="download-link">Download SVG</a>
+      </div>
+
+      <div class="configuration-summary">
+        <div class="summary-header" onclick="toggleSummary()">
+          <h3>📋 Configuration Summary <span id="summary-toggle">▼</span></h3>
+        </div>
+        <div class="summary-content" id="summary-content">
+          <div id="config-summary-text">
+            Configuration will appear here after first generation...
+          </div>
+        </div>
       </div>
 
       <div id="map" class="map-container"></div>
