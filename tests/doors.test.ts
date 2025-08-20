@@ -24,8 +24,9 @@ describe('doors', () => {
   it('generateDoor produces consistent ids with same RNG', () => {
     const r1 = rng('doorIds');
     const r2 = rng('doorIds');
-    const ids1 = Array.from({ length: 10 }, () => generateDoor(r1, { fromRoom: 'X' }).id);
-    const ids2 = Array.from({ length: 10 }, () => generateDoor(r2, { fromRoom: 'X' }).id);
+    const ids1 = Array.from({ length: 5 }, () => generateDoor(r1, { fromRoom: 'X' }).id);
+    const ids2 = Array.from({ length: 5 }, () => generateDoor(r2, { fromRoom: 'X' }).id);
+    expect(ids1).toEqual(['door-1', 'door-2', 'door-3', 'door-4', 'door-5']);
     expect(ids1).toEqual(ids2);
   });
 
