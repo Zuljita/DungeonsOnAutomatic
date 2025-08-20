@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { canKeyOpenDoor, checkDoorLock } from '../src/services/locks';
+import { canKeyOpenDoor, checkDoorLock, LockService } from '../src/services/locks';
 import {
   Dungeon,
   Door,
@@ -53,5 +53,24 @@ describe('checkDoorLock', () => {
     const result = checkDoorLock(dungeon, lockedDoor.id);
     expect(result.locked).toBe(true);
     expect(result.requiredKey).toBeUndefined();
+  });
+});
+
+describe('LockService', () => {
+  it('locks doors according to percentage and supports magical locks', () => {
+    const dungeon: Dungeon = {
+      seed: 's',
+      rooms: [],
+      corridors: [],
+      doors: [
+        { id: 'd1', type: 'normal', status: 'warded' },
+        { id: 'd2', type: 'normal', status: 'secret' },
+      ],
+    };
+    const service = new LockService(() => 0); // deterministic
+    const locks = service.generateLocks(dungeon, { lockPercentage: 1, allowMagicalLocks: true });
+    expect(locks.length).toBe(2);
+    expect(dungeon.doors.every((d) => d.status === 'locked')).toBe(true);
+    expect(locks.some((l) => l.quality === 'magical')).toBe(true);
   });
 });

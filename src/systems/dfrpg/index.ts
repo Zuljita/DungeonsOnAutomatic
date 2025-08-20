@@ -115,7 +115,20 @@ function getThreatRating(cer: number): 'fodder' | 'worthy' | 'boss' {
 export const dfrpg: SystemModule = {
   id: 'dfrpg',
   label: 'GURPS Dungeon Fantasy',
-  async enrich(d: Dungeon, opts?: { sources?: string[]; rng?: () => number; level?: number; useDFRPGTreasure?: boolean; useEnhancedTraps?: boolean; useEnvironmentalChallenges?: boolean; environmentComplexity?: 'minimal' | 'moderate' | 'challenging' | 'extreme'; tags?: TaggedSelectionOptions }): Promise<Dungeon> {
+  async enrich(
+    d: Dungeon,
+    opts?: {
+      sources?: string[];
+      rng?: () => number;
+      level?: number;
+      useDFRPGTreasure?: boolean;
+      useEnhancedTraps?: boolean;
+      useEnvironmentalChallenges?: boolean;
+      environmentComplexity?: 'minimal' | 'moderate' | 'challenging' | 'extreme';
+      tags?: TaggedSelectionOptions;
+      lockOptions?: LockGenerationOptions;
+    },
+  ): Promise<Dungeon> {
     const R = opts?.rng ?? Math.random;
     const encounters = { ...d.encounters };
     const dungeonLevel = opts?.level ?? 1;
@@ -413,7 +426,8 @@ export const dfrpg: SystemModule = {
     const lockGenerationOptions: LockGenerationOptions = {
       lockPercentage: 0.3, // 30% of doors get locks
       preferImportantDoors: true,
-      allowMagicalLocks: true // DFRPG supports magical locks
+      allowMagicalLocks: true, // DFRPG supports magical locks
+      ...(opts?.lockOptions || {}),
     };
 
     const keyPlacementOptions: KeyPlacementOptions = {

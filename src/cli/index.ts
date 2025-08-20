@@ -95,6 +95,12 @@ program
     "color palette (light, dark, sepia)",
     "light",
   )
+  .option(
+    "--lock-percentage <n>",
+    "fraction of doors to lock (0-1)",
+    (v) => parseFloat(v),
+  )
+  .option("--magical-locks", "allow magical locks")
   .option("--ascii", "render an ASCII map instead of JSON output")
   .option("--svg", "render an SVG map instead of JSON output")
   .option("--foundry", "output FoundryVTT-compatible JSON")
@@ -161,7 +167,22 @@ program
               treasure: opts.treasureTag.length ? { requiredTags: opts.treasureTag } : undefined,
             }
           : undefined;
-      const enriched = await sys.enrich(d, { sources: opts.source, tags: tagOptions });
+      const lockOptions =
+        opts.lockPercentage !== undefined || opts.magicalLocks
+          ? {
+              lockOptions: {
+                ...(opts.lockPercentage !== undefined
+                  ? { lockPercentage: opts.lockPercentage }
+                  : {}),
+                ...(opts.magicalLocks ? { allowMagicalLocks: true } : {}),
+              },
+            }
+          : undefined;
+      const enriched = await sys.enrich(d, {
+        sources: opts.source,
+        tags: tagOptions,
+        ...(lockOptions || {}),
+      });
       
       // Handle exports
       if (opts.svg) {
