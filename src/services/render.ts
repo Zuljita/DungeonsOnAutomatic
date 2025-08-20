@@ -30,6 +30,23 @@ export const darkTheme: RenderTheme = {
   textFill: "#ffffff",
 };
 
+export const sepiaTheme: RenderTheme = {
+  background: "#fdf5e6",
+  corridorFill: "#e2d3b5",
+  roomFill: "#fffaf0",
+  roomStroke: "#5b4636",
+  textFill: "#5b4636",
+};
+
+export interface RenderOptions {
+  /** Style variant for SVG rendering */
+  style?: "classic" | "hand-drawn";
+  /** Intensity multiplier for line jitter */
+  sketchIntensity?: number;
+  /** Background texture option */
+  texture?: "none" | "paper";
+}
+
 /**
  * Render a simple ASCII map of the dungeon. Rooms are drawn with '#' borders
  * and '.' interiors; corridor tiles are marked with '+'. Door locations are
@@ -333,8 +350,13 @@ function distanceFromPointToLineSegment(point: { x: number; y: number }, p1: { x
 export function renderSvg(
   d: Dungeon,
   theme: RenderTheme = lightTheme,
+  opts: RenderOptions = {},
 ): string {
   const cell = 20; // pixel size of a single grid square
+  const style = opts.style ?? "classic";
+  const intensity = opts.sketchIntensity ?? 1;
+  const texture = opts.texture ?? "none";
+  const rng = d.rng ?? Math.random;
   const points: { x: number; y: number }[] = [];
   for (const r of d.rooms) {
     if (r.shape === 'rectangular' || !r.shapePoints) {
@@ -354,14 +376,33 @@ export function renderSvg(
   const height = maxY * cell;
   const parts: string[] = [
     `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">`,
-    `<rect x="0" y="0" width="${width}" height="${height}" fill="${theme.background}"/>`,
   ];
+  if (style === "hand-drawn" && texture === "paper") {
+    parts.push(
+      `<defs><filter id="paper"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="2" result="noise"/><feColorMatrix in="noise" type="saturate" values="0"/></filter></defs>`,
+    );
+    parts.push(
+      `<rect x="0" y="0" width="${width}" height="${height}" fill="${theme.background}" filter="url(#paper)"/>`,
+    );
+  } else {
+    parts.push(
+      `<rect x="0" y="0" width="${width}" height="${height}" fill="${theme.background}"/>`,
+    );
+  }
 
   for (const c of d.corridors) {
     for (const p of c.path) {
-      parts.push(
-        `<rect x="${p.x * cell}" y="${p.y * cell}" width="${cell}" height="${cell}" fill="${theme.corridorFill}" stroke="none"/>`,
-      );
+      if (style === "hand-drawn") {
+        const jx = (rng() - 0.5) * intensity * cell * 0.3;
+        const jy = (rng() - 0.5) * intensity * cell * 0.3;
+        parts.push(
+          `<rect x="${p.x * cell + jx}" y="${p.y * cell + jy}" width="${cell}" height="${cell}" fill="${theme.corridorFill}" stroke="none"/>`,
+        );
+      } else {
+        parts.push(
+          `<rect x="${p.x * cell}" y="${p.y * cell}" width="${cell}" height="${cell}" fill="${theme.corridorFill}" stroke="none"/>`,
+        );
+      }
     }
     if (c.path.length > 0) {
       const start = c.path[0];
@@ -374,7 +415,9 @@ export function renderSvg(
         const edge = doorEdge(fromRoom, doorPosition);
         if (edge)
           parts.push(
-            `<line x1="${edge.x1 * cell}" y1="${edge.y1 * cell}" x2="${edge.x2 * cell}" y2="${edge.y2 * cell}" stroke="${theme.roomStroke}" stroke-width="${cell * 0.2}"/>`,
+            style === "hand-drawn"
+              ? `<line x1="${edge.x1 * cell + (rng() - 0.5) * intensity * cell * 0.3}" y1="${edge.y1 * cell + (rng() - 0.5) * intensity * cell * 0.3}" x2="${edge.x2 * cell + (rng() - 0.5) * intensity * cell * 0.3}" y2="${edge.y2 * cell + (rng() - 0.5) * intensity * cell * 0.3}" stroke="${theme.roomStroke}" stroke-width="${cell * 0.2}" stroke-linecap="round"/>`
+              : `<line x1="${edge.x1 * cell}" y1="${edge.y1 * cell}" x2="${edge.x2 * cell}" y2="${edge.y2 * cell}" stroke="${theme.roomStroke}" stroke-width="${cell * 0.2}"/>`,
           );
       }
       if (toRoom) {
@@ -383,14 +426,42 @@ export function renderSvg(
         const edge = doorEdge(toRoom, doorPosition);
         if (edge)
           parts.push(
-            `<line x1="${edge.x1 * cell}" y1="${edge.y1 * cell}" x2="${edge.x2 * cell}" y2="${edge.y2 * cell}" stroke="${theme.roomStroke}" stroke-width="${cell * 0.2}"/>`,
+            style === "hand-drawn"
+              ? `<line x1="${edge.x1 * cell + (rng() - 0.5) * intensity * cell * 0.3}" y1="${edge.y1 * cell + (rng() - 0.5) * intensity * cell * 0.3}" x2="${edge.x2 * cell + (rng() - 0.5) * intensity * cell * 0.3}" y2="${edge.y2 * cell + (rng() - 0.5) * intensity * cell * 0.3}" stroke="${theme.roomStroke}" stroke-width="${cell * 0.2}" stroke-linecap="round"/>`
+              : `<line x1="${edge.x1 * cell}" y1="${edge.y1 * cell}" x2="${edge.x2 * cell}" y2="${edge.y2 * cell}" stroke="${theme.roomStroke}" stroke-width="${cell * 0.2}"/>`,
           );
       }
     }
   }
 
   d.rooms.forEach((r, i) => {
-    if (r.shape === 'rectangular' || !r.shapePoints) {
+    if (style === "hand-drawn") {
+      const jitter = () => (rng() - 0.5) * intensity * cell * 0.3;
+      let pts: string;
+      if (r.shape === "rectangular" || !r.shapePoints) {
+        const roomPts = [
+          { x: r.x * cell + jitter(), y: r.y * cell + jitter() },
+          { x: (r.x + r.w) * cell + jitter(), y: r.y * cell + jitter() },
+          { x: (r.x + r.w) * cell + jitter(), y: (r.y + r.h) * cell + jitter() },
+          { x: r.x * cell + jitter(), y: (r.y + r.h) * cell + jitter() },
+        ];
+        pts = roomPts.map((p) => `${p.x},${p.y}`).join(" ");
+      } else {
+        pts = r
+          .shapePoints!
+          .map((p) => `${p.x * cell + jitter()},${p.y * cell + jitter()}`)
+          .join(" ");
+      }
+      parts.push(
+        `<polygon points="${pts}" fill="${theme.roomFill}" stroke="${theme.roomStroke}" stroke-linecap="round" stroke-linejoin="round" stroke-width="${cell * 0.1}"/>`,
+      );
+      const cx = (r.x + r.w / 2) * cell + jitter();
+      const cy = (r.y + r.h / 2) * cell + jitter();
+      const rot = (rng() - 0.5) * 10 * intensity;
+      parts.push(
+        `<text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" font-size="${cell * 0.6}" fill="${theme.textFill}" font-family="cursive" transform="rotate(${rot},${cx},${cy})">${i + 1}</text>`,
+      );
+    } else if (r.shape === "rectangular" || !r.shapePoints) {
       // Render rectangular rooms as before
       parts.push(
         `<rect x="${r.x * cell}" y="${r.y * cell}" width="${r.w * cell}" height="${r.h * cell}" fill="${theme.roomFill}" stroke="${theme.roomStroke}"/>`,
@@ -402,7 +473,7 @@ export function renderSvg(
       );
     } else {
       // Render shaped rooms as polygons
-      const points = r.shapePoints!.map(p => `${p.x * cell},${p.y * cell}`).join(' ');
+      const points = r.shapePoints!.map((p) => `${p.x * cell},${p.y * cell}`).join(" ");
       parts.push(
         `<polygon points="${points}" fill="${theme.roomFill}" stroke="${theme.roomStroke}"/>`,
       );
