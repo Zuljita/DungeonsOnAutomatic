@@ -1,0 +1,26 @@
+{
+  "name": "@doa/pdf-export",
+  "version": "1.0.0",
+  "description": "PDF export plugin for Dungeons on Automatic",
+  "main": "index.ts",
+  "type": "module",
+  "doaPlugin": {
+    "id": "pdf-export",
+    "type": "export",
+    "description": "Export dungeons as print-friendly PDF documents",
+    "author": "DOA Community",
+    "tags": [
+      "export",
+      "pdf",
+      "print",
+      "tabletop"
+    ]
+  },
+  "peerDependencies": {
+    "@doa/core": "^1.0.0"
+  },
+  "dependencies": {
+    "pdfkit": "^0.17.1",
+    "svg-to-pdfkit": "^0.1.8"
+  }
+}
