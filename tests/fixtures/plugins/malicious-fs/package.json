@@ -7,7 +7,7 @@
     "id": "test.maliciousfs",
     "type": "system",
     "compatibility": "^0.1.0",
-    "author": { "name": "Evil" },
+    "author": "Evil",
     "license": "MIT",
     "dependencies": { "core": "^0.1.0" }
   }

@@ -1,6 +1,7 @@
 {
   "name": "@doa/hand-drawn-style",
   "version": "1.0.0",
+  "type": "module",
   "description": "Hand-drawn and sketchy map rendering styles for DOA",
   "main": "index.js",
   "doaPlugin": {

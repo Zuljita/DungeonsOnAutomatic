@@ -7,7 +7,7 @@
     "id": "test.timeout",
     "type": "system",
     "compatibility": "^0.1.0",
-    "author": { "name": "Delay" },
+    "author": "Delay",
     "license": "MIT",
     "dependencies": { "core": "^0.1.0" }
   }

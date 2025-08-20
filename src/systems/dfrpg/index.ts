@@ -158,7 +158,7 @@ export const dfrpg: SystemModule = {
       MONSTERS = customDataLoader.getMonsters('dfrpg');
       // For custom monsters, we'll need to convert them or work around this
       DFRPG_MONSTERS = []; // TODO: Handle custom monsters properly
-      console.log(`Using ${MONSTERS.length} custom DFRPG monsters`);
+      console.error(`Using ${MONSTERS.length} custom DFRPG monsters`);
     } else {
       // Original logic for default monsters
       let pool = RAW_MONSTERS;
@@ -229,7 +229,7 @@ export const dfrpg: SystemModule = {
       : TRAPS;
 
     if (customDataLoader.hasCustomData('dfrpg', 'traps')) {
-      console.log(`Using ${CURRENT_TRAPS.length} custom DFRPG traps`);
+      console.error(`Using ${CURRENT_TRAPS.length} custom DFRPG traps`);
     }
 
     d.rooms.forEach((r) => {
@@ -351,12 +351,12 @@ export const dfrpg: SystemModule = {
     const tempDungeon = { ...d, encounters };
     const wanderingMonsters = wanderingMonsterService.generateWanderingMonsters(tempDungeon);
     if (wanderingMonsters.length > 0) {
-      console.log(`DFRPG: Generated ${wanderingMonsters.length} wandering monster entries`);
+      console.error(`DFRPG: Generated ${wanderingMonsters.length} wandering monster entries`);
     }
 
     // Generate dungeon defaults (name, mana level, sanctity, nature's strength)
     const dungeonDefaults = defaultsService.generateDefaults();
-    console.log(`DFRPG: Generated dungeon "${dungeonDefaults.name}" with mana: ${dungeonDefaults.manaLevel}, sanctity: ${dungeonDefaults.sanctity}, nature: ${dungeonDefaults.nature}`);
+    console.error(`DFRPG: Generated dungeon "${dungeonDefaults.name}" with mana: ${dungeonDefaults.manaLevel}, sanctity: ${dungeonDefaults.sanctity}, nature: ${dungeonDefaults.nature}`);
 
     // Add environmental challenges to rooms
     const modifiedRooms = d.rooms.map((room) => {
@@ -446,15 +446,15 @@ export const dfrpg: SystemModule = {
     const locks = lockService.generateLocks(enrichedDungeon, lockGenerationOptions);
     
     if (locks.length > 0) {
-      console.log(`DFRPG: Generated ${locks.length} locks for doors`);
+      console.error(`DFRPG: Generated ${locks.length} locks for doors`);
       
       // Create keys for the locks
       const keys = keyItemService.createKeysForLocks(locks);
-      console.log(`DFRPG: Created ${keys.length} keys`);
+      console.error(`DFRPG: Created ${keys.length} keys`);
       
       // Place keys strategically in the dungeon
       keyItemService.placeKeys(enrichedDungeon, keys, keyPlacementOptions);
-      console.log(`DFRPG: Placed keys in rooms`);
+      console.error(`DFRPG: Placed keys in rooms`);
       
       // Validate that the dungeon is solvable
       const validation = validateDungeonSolvability(enrichedDungeon);
@@ -469,7 +469,7 @@ export const dfrpg: SystemModule = {
         const fixed = fixDungeonSolvability(enrichedDungeon);
         
         if (fixed) {
-          console.log('DFRPG: Successfully fixed dungeon solvability with key relocation');
+          console.error('DFRPG: Successfully fixed dungeon solvability with key relocation');
         } else {
           console.warn('DFRPG: Key relocation failed - adding fallback solutions');
           
@@ -479,13 +479,13 @@ export const dfrpg: SystemModule = {
           // Final validation
           const finalValidation = validateDungeonSolvability(enrichedDungeon);
           if (finalValidation.solvable) {
-            console.log('DFRPG: Dungeon made solvable with fallback solutions');
+            console.error('DFRPG: Dungeon made solvable with fallback solutions');
           } else {
             console.warn('DFRPG: Could not ensure dungeon solvability - manual intervention may be needed');
           }
         }
       } else {
-        console.log('DFRPG: Dungeon is solvable with key placement');
+        console.error('DFRPG: Dungeon is solvable with key placement');
       }
     }
 
