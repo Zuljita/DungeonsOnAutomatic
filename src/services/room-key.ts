@@ -195,7 +195,7 @@ export function htmlRoomDetails(d: Dungeon, details: Record<ID, RoomDetail>): st
         }
       }
       
-      const parts: string[] = [`<section class="room"><h3>${roomTitle}</h3>`];
+      const parts: string[] = [`<section class="room" id="room-${index + 1}" data-room="${index + 1}"><h3>${roomTitle}</h3>`];
       
       // Add room type as a subtitle for special rooms
       if (room.kind === 'special') {
@@ -295,13 +295,13 @@ export function htmlRoomDetails(d: Dungeon, details: Record<ID, RoomDetail>): st
         const keyDetails = keysInRoom.map(key => {
           // Find which door this key unlocks
           const unlockedDoor = d.doors?.find(door => door.id === key.doorId);
-          const doorDescription = unlockedDoor 
-            ? `unlocks ${unlockedDoor.type} door ${unlockedDoor.id}` 
+          const doorDescription = unlockedDoor
+            ? `unlocks ${unlockedDoor.type} door ${unlockedDoor.id}`
             : `unlocks door ${key.doorId}`;
-          
-          return `<strong>${key.name}</strong> (${doorDescription})${key.description ? ` - ${key.description}` : ''}`;
+
+          return `<span id="key-${key.id}" data-key="${key.id}"><strong>${key.name}</strong> (${doorDescription})${key.description ? ` - ${key.description}` : ''}</span>`;
         });
-        
+
         parts.push(`<p><strong>Keys Found:</strong> ${keyDetails.join(', ')}</p>`);
       }
 

@@ -434,7 +434,7 @@ export async function renderSvg(
         const edge = doorEdge(fromRoom, doorPosition);
         if (edge)
           parts.push(
-            `<line x1="${edge.x1 * cell}" y1="${edge.y1 * cell}" x2="${edge.x2 * cell}" y2="${edge.y2 * cell}" stroke="${theme.roomStroke}" stroke-width="${cell * 0.2}"/>`,
+            `<line class="door-icon" data-door="${c.id}-start" x1="${edge.x1 * cell}" y1="${edge.y1 * cell}" x2="${edge.x2 * cell}" y2="${edge.y2 * cell}" stroke="${theme.roomStroke}" stroke-width="${cell * 0.2}"/>`,
           );
       }
       if (toRoom) {
@@ -442,7 +442,7 @@ export async function renderSvg(
         const edge = doorEdge(toRoom, doorPosition);
         if (edge)
           parts.push(
-            `<line x1="${edge.x1 * cell}" y1="${edge.y1 * cell}" x2="${edge.x2 * cell}" y2="${edge.y2 * cell}" stroke="${theme.roomStroke}" stroke-width="${cell * 0.2}"/>`,
+            `<line class="door-icon" data-door="${c.id}-end" x1="${edge.x1 * cell}" y1="${edge.y1 * cell}" x2="${edge.x2 * cell}" y2="${edge.y2 * cell}" stroke="${theme.roomStroke}" stroke-width="${cell * 0.2}"/>`,
           );
       }
     }
@@ -451,24 +451,34 @@ export async function renderSvg(
   d.rooms.forEach((r, i) => {
     if (r.shape === "rectangular" || !r.shapePoints) {
       parts.push(
-        `<rect x="${r.x * cell}" y="${r.y * cell}" width="${r.w * cell}" height="${r.h * cell}" fill="${theme.roomFill}" stroke="${theme.roomStroke}"/>`,
+        `<rect class="room-shape" data-room="${i + 1}" x="${r.x * cell}" y="${r.y * cell}" width="${r.w * cell}" height="${r.h * cell}" fill="${theme.roomFill}" stroke="${theme.roomStroke}"/>`,
       );
       const cx = (r.x + r.w / 2) * cell;
       const cy = (r.y + r.h / 2) * cell;
       parts.push(
-        `<text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" font-size="${cell * 0.6}" fill="${theme.textFill}">${i + 1}</text>`,
+        `<text class="room-number" data-room="${i + 1}" x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" font-size="${cell * 0.6}" fill="${theme.textFill}">${i + 1}</text>`,
       );
     } else {
       const points = r.shapePoints!.map((p) => `${p.x * cell},${p.y * cell}`).join(" ");
       parts.push(
-        `<polygon points="${points}" fill="${theme.roomFill}" stroke="${theme.roomStroke}"/>`,
+        `<polygon class="room-shape" data-room="${i + 1}" points="${points}" fill="${theme.roomFill}" stroke="${theme.roomStroke}"/>`,
       );
       const cx = r.x * cell;
       const cy = r.y * cell;
       parts.push(
-        `<text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" font-size="${cell * 0.6}" fill="${theme.textFill}">${i + 1}</text>`,
+        `<text class="room-number" data-room="${i + 1}" x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" font-size="${cell * 0.6}" fill="${theme.textFill}">${i + 1}</text>`,
       );
     }
+  });
+
+  (d.keyItems || []).forEach(key => {
+    const room = d.rooms.find(r => r.id === key.locationId);
+    if (!room) return;
+    const cx = (room.x + room.w / 2) * cell;
+    const cy = (room.y + room.h / 2) * cell - cell * 0.4;
+    parts.push(
+      `<text class="key-icon" data-key="${key.id}" x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" font-size="${cell * 0.5}" fill="${theme.textFill}">&#x1F511;</text>`
+    );
   });
 
   parts.push("</svg>");
