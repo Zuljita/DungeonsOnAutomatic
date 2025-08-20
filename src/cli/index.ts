@@ -168,7 +168,7 @@ program
         let theme = lightTheme;
         if (opts.palette === "dark") theme = darkTheme;
         else if (opts.palette === "sepia") theme = sepiaTheme;
-        const svg = renderSvg(enriched, theme, {
+        const svg = await renderSvg(enriched, theme, {
           style: opts.mapStyle,
           wobbleIntensity: opts.sketchIntensity || 1,
           wallThickness: 1,

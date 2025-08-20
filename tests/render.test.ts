@@ -14,9 +14,9 @@ describe('renderAscii', () => {
 });
 
 describe('renderSvg', () => {
-  it('includes door lines', () => {
+  it('includes door lines', async () => {
     const d = buildDungeon({ rooms: 2, seed: 'svgDoor' });
-    const svg = renderSvg(d);
+    const svg = await renderSvg(d);
     expect(svg).toMatch(/<line/);
   });
 });

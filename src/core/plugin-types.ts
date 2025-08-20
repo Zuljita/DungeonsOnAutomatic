@@ -132,6 +132,35 @@ export interface RoomShapePlugin extends BasePlugin {
   getKindPreferences(roomKind: string): Partial<ShapePreferences>;
 }
 
+// === Render Plugin Interface ===
+
+export interface RenderOptions extends Record<string, unknown> {
+  style?: string;
+  theme?: 'light' | 'dark' | 'sepia';
+  cellSize?: number;
+  showGrid?: boolean;
+  wobbleIntensity?: number;
+  wallThickness?: number;
+  customOptions?: Record<string, unknown>;
+}
+
+export interface RenderResult {
+  format: string;
+  data: string; // SVG content or other format data
+  contentType: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface RenderPlugin extends BasePlugin {
+  supportedStyles: string[]; // e.g., ['hand-drawn', 'sketchy']
+  
+  render(
+    dungeon: Dungeon, 
+    style: string,
+    options?: RenderOptions
+  ): Promise<RenderResult> | RenderResult;
+}
+
 // === Encounter Plugin Interface ===
 
 export interface EncounterContext {
@@ -247,6 +276,10 @@ export function isRoomGeneratorPlugin(plugin: BasePlugin): plugin is RoomGenerat
 
 export function isRoomShapePlugin(plugin: BasePlugin): plugin is RoomShapePlugin {
   return 'generateShape' in plugin && 'generateShapePoints' in plugin && typeof plugin.generateShape === 'function';
+}
+
+export function isRenderPlugin(plugin: BasePlugin): plugin is RenderPlugin {
+  return 'supportedStyles' in plugin && 'render' in plugin && typeof plugin.render === 'function';
 }
 
 export function isEncounterPlugin(plugin: BasePlugin): plugin is EncounterPlugin {
