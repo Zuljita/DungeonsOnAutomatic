@@ -98,6 +98,30 @@ describe('cli', () => {
     expect(enc?.treasure.every((t) => t.tags?.includes('coins'))).toBe(true);
   });
 
+  it('allows controlling lock generation via CLI', () => {
+    const result = spawnSync(
+      process.execPath,
+      [
+        '--import',
+        'tsx',
+        cliPath,
+        'generate',
+        '--rooms',
+        '2',
+        '--seed',
+        'cli',
+        '--system',
+        'dfrpg',
+        '--lock-percentage',
+        '1',
+      ],
+      { encoding: 'utf-8' },
+    );
+    expect(result.status).toBe(0);
+    const d = JSON.parse(result.stdout) as Dungeon;
+    expect(d.doors.every((door) => door.status === 'locked')).toBe(true);
+  });
+
   it('supports hand-drawn svg output', () => {
     const result = spawnSync(
       process.execPath,
