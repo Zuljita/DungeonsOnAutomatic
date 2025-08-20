@@ -74,32 +74,11 @@ program
     (v, p) => [...p, v],
     [] as string[],
   )
-  .option(
-    "--map-style <style>",
-    "map rendering style (classic, hand-drawn, hex)",
-    "classic",
-  )
-  .option(
-    "--sketch-intensity <n>",
-    "hand-drawn sketch intensity",
-    (v) => parseFloat(v),
-    1,
-  )
-  .option(
-    "--texture <name>",
-    "background texture (none, paper)",
-    "none",
-  )
-  .option(
-    "--palette <name>",
-    "color palette (light, dark, sepia)",
-    "light",
-  )
-  .option(
-    "--lock-percentage <n>",
-    "fraction of doors to lock (0-1)",
-    (v) => parseFloat(v),
-  )
+  .option("--map-style <style>", "map rendering style (classic, hand-drawn, hex)", "classic")
+  .option("--sketch-intensity <n>", "hand-drawn sketch intensity", (v) => parseFloat(v), 1)
+  .option("--texture <name>", "background texture (none, paper)", "none")
+  .option("--palette <name>", "color palette (light, dark, sepia)", "light")
+  .option("--lock-percentage <n>", "fraction of doors to lock (0-1)", (v) => parseFloat(v))
   .option("--magical-locks", "allow magical locks")
   .option("--ascii", "render an ASCII map instead of JSON output")
   .option("--svg", "render an SVG map instead of JSON output")
