@@ -525,6 +525,12 @@ async function generate(): Promise<void> {
     // Setup pan and zoom functionality
     setupMapPanZoom(mapEl);
     setupZoomControls(mapEl);
+    
+    // Create minimap from the rendered SVG
+    const svgElement = mapContentEl.querySelector('svg');
+    if (svgElement) {
+      createMinimap(svgElement);
+    }
 
     // Generate room details using populateRooms to get proper format with features
     const details = populateRooms(enriched, enriched.rng ?? Math.random, system);
@@ -1339,6 +1345,240 @@ function setupMapKeyInteractions(mapEl: HTMLElement, roomKeyEl: HTMLElement): vo
   });
 }
 
+// Minimap functionality
+interface MinimapState {
+  isVisible: boolean;
+  isCollapsed: boolean;
+  scale: number;
+  svgWidth: number;
+  svgHeight: number;
+  containerWidth: number;
+  containerHeight: number;
+}
+
+let minimapState: MinimapState = {
+  isVisible: false,
+  isCollapsed: false,
+  scale: 1,
+  svgWidth: 0,
+  svgHeight: 0,
+  containerWidth: 200,
+  containerHeight: 126 // 150 - 24 (header height)
+};
+
+function createMinimap(originalSvg: SVGElement): void {
+  const minimapContainer = document.getElementById('minimap-svg-container');
+  const minimap = document.getElementById('minimap');
+  
+  if (!minimapContainer || !minimap || !originalSvg) return;
+
+  // Clone the original SVG for the minimap
+  const clonedSvg = originalSvg.cloneNode(true) as SVGElement;
+  clonedSvg.classList.add('minimap-svg');
+  clonedSvg.removeAttribute('id'); // Avoid duplicate IDs
+  
+  // Get original SVG dimensions
+  const originalViewBox = originalSvg.getAttribute('viewBox');
+  const originalWidth = parseFloat(originalSvg.getAttribute('width') || '800');
+  const originalHeight = parseFloat(originalSvg.getAttribute('height') || '600');
+  
+  minimapState.svgWidth = originalWidth;
+  minimapState.svgHeight = originalHeight;
+  
+  // Calculate scale to fit minimap container
+  const scaleX = minimapState.containerWidth / originalWidth;
+  const scaleY = minimapState.containerHeight / originalHeight;
+  minimapState.scale = Math.min(scaleX, scaleY);
+  
+  // Set minimap SVG dimensions
+  const minimapWidth = originalWidth * minimapState.scale;
+  const minimapHeight = originalHeight * minimapState.scale;
+  
+  clonedSvg.setAttribute('width', minimapWidth.toString());
+  clonedSvg.setAttribute('height', minimapHeight.toString());
+  
+  if (originalViewBox) {
+    clonedSvg.setAttribute('viewBox', originalViewBox);
+  }
+  
+  // Clear previous content and add new minimap
+  minimapContainer.innerHTML = '';
+  minimapContainer.appendChild(clonedSvg);
+  
+  // Show minimap
+  minimap.style.display = 'block';
+  minimapState.isVisible = true;
+  
+  // Setup minimap interactions
+  setupMinimapInteractions();
+  
+  // Initial viewport rectangle update
+  updateMinimapViewport();
+}
+
+function setupMinimapInteractions(): void {
+  const minimapToggle = document.getElementById('minimap-toggle');
+  const minimap = document.getElementById('minimap');
+  const minimapSvgContainer = document.getElementById('minimap-svg-container');
+  
+  if (!minimapToggle || !minimap || !minimapSvgContainer) return;
+  
+  // Toggle collapse/expand
+  minimapToggle.addEventListener('click', () => {
+    minimapState.isCollapsed = !minimapState.isCollapsed;
+    
+    if (minimapState.isCollapsed) {
+      minimap.classList.add('collapsed');
+      minimapToggle.setAttribute('title', 'Expand');
+      minimapToggle.textContent = '+';
+    } else {
+      minimap.classList.remove('collapsed');
+      minimapToggle.setAttribute('title', 'Collapse'); 
+      minimapToggle.textContent = '−';
+    }
+  });
+  
+  // Expand when clicking collapsed minimap
+  minimap.addEventListener('click', () => {
+    if (minimapState.isCollapsed) {
+      minimapState.isCollapsed = false;
+      minimap.classList.remove('collapsed');
+      minimapToggle.setAttribute('title', 'Collapse');
+      minimapToggle.textContent = '−';
+    }
+  });
+  
+  // Click to navigate
+  minimapSvgContainer.addEventListener('click', (e) => {
+    if (minimapState.isCollapsed) return;
+    
+    const rect = minimapSvgContainer.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const clickY = e.clientY - rect.top;
+    
+    navigateToMinimapPoint(clickX, clickY);
+  });
+  
+  // Drag viewport rectangle
+  setupViewportDragging();
+}
+
+function navigateToMinimapPoint(minimapX: number, minimapY: number): void {
+  const mapContainer = document.getElementById('map');
+  if (!mapContainer) return;
+  
+  // Convert minimap coordinates to main map coordinates
+  const mainMapX = (minimapX / minimapState.scale);
+  const mainMapY = (minimapY / minimapState.scale);
+  
+  // Get main map container dimensions
+  const containerRect = mapContainer.getBoundingClientRect();
+  const centerX = containerRect.width / 2;
+  const centerY = containerRect.height / 2;
+  
+  // Calculate scroll position to center the clicked point
+  const targetScrollX = (mainMapX * mapViewState.scale) - centerX;
+  const targetScrollY = (mainMapY * mapViewState.scale) - centerY;
+  
+  // Apply scroll with bounds checking
+  mapContainer.scrollLeft = Math.max(0, targetScrollX);
+  mapContainer.scrollTop = Math.max(0, targetScrollY);
+  
+  // Update viewport rectangle
+  updateMinimapViewport();
+}
+
+function setupViewportDragging(): void {
+  const viewportRect = document.getElementById('minimap-viewport');
+  const minimapContainer = document.getElementById('minimap-svg-container');
+  
+  if (!viewportRect || !minimapContainer) return;
+  
+  let isDragging = false;
+  let startX = 0;
+  let startY = 0;
+  let startScrollX = 0;
+  let startScrollY = 0;
+  
+  viewportRect.addEventListener('mousedown', (e) => {
+    isDragging = true;
+    viewportRect.classList.add('dragging');
+    
+    startX = e.clientX;
+    startY = e.clientY;
+    
+    const mapContainer = document.getElementById('map');
+    if (mapContainer) {
+      startScrollX = mapContainer.scrollLeft;
+      startScrollY = mapContainer.scrollTop;
+    }
+    
+    e.preventDefault();
+    e.stopPropagation(); // Prevent minimap click navigation
+  });
+  
+  document.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+    
+    const deltaX = e.clientX - startX;
+    const deltaY = e.clientY - startY;
+    
+    // Convert minimap movement to main map scroll
+    const scrollDeltaX = (deltaX / minimapState.scale) * mapViewState.scale;
+    const scrollDeltaY = (deltaY / minimapState.scale) * mapViewState.scale;
+    
+    const mapContainer = document.getElementById('map');
+    if (mapContainer) {
+      mapContainer.scrollLeft = Math.max(0, startScrollX + scrollDeltaX);
+      mapContainer.scrollTop = Math.max(0, startScrollY + scrollDeltaY);
+    }
+    
+    updateMinimapViewport();
+  });
+  
+  document.addEventListener('mouseup', () => {
+    if (isDragging) {
+      isDragging = false;
+      if (viewportRect) {
+        viewportRect.classList.remove('dragging');
+        viewportRect.style.pointerEvents = 'none';
+      }
+    }
+  });
+}
+
+function updateMinimapViewport(): void {
+  const mapContainer = document.getElementById('map');
+  const viewportRect = document.getElementById('minimap-viewport');
+  const minimapContainer = document.getElementById('minimap-svg-container');
+  
+  if (!mapContainer || !viewportRect || !minimapContainer || !minimapState.isVisible || minimapState.isCollapsed) {
+    return;
+  }
+  
+  // Get main map scroll position and container dimensions
+  const scrollX = mapContainer.scrollLeft;
+  const scrollY = mapContainer.scrollTop;
+  const containerRect = mapContainer.getBoundingClientRect();
+  const containerWidth = containerRect.width;
+  const containerHeight = containerRect.height;
+  
+  // Convert to minimap coordinates
+  const minimapScrollX = (scrollX / mapViewState.scale) * minimapState.scale;
+  const minimapScrollY = (scrollY / mapViewState.scale) * minimapState.scale;
+  const minimapViewWidth = (containerWidth / mapViewState.scale) * minimapState.scale;
+  const minimapViewHeight = (containerHeight / mapViewState.scale) * minimapState.scale;
+  
+  // Position and size the viewport rectangle
+  viewportRect.style.left = minimapScrollX + 'px';
+  viewportRect.style.top = minimapScrollY + 'px';
+  viewportRect.style.width = minimapViewWidth + 'px';
+  viewportRect.style.height = minimapViewHeight + 'px';
+  
+  // Ensure viewport rectangle is visible
+  viewportRect.style.display = 'block';
+}
+
 // Map pan and zoom functionality
 interface MapViewState {
   scale: number;
@@ -1416,6 +1656,9 @@ function setupMapPanZoom(mapEl: HTMLElement): void {
     // Update scroll position (subtract delta to invert direction for natural feel)
     mapEl.scrollLeft = scrollLeft - deltaX;
     mapEl.scrollTop = scrollTop - deltaY;
+    
+    // Update minimap viewport
+    updateMinimapViewport();
   };
 
   const onMouseUp = () => {
@@ -1436,6 +1679,9 @@ function setupMapPanZoom(mapEl: HTMLElement): void {
     const newScale = Math.max(0.1, Math.min(5, mapViewState.scale + delta));
     
     zoomToPoint(mapEl, svg, e.clientX, e.clientY, newScale);
+    
+    // Update minimap viewport after zoom
+    setTimeout(() => updateMinimapViewport(), 50);
   };
 
   // Event listeners
@@ -1468,6 +1714,9 @@ function setupMapPanZoom(mapEl: HTMLElement): void {
       
       mapEl.scrollLeft = touchScrollLeft - deltaX;
       mapEl.scrollTop = touchScrollTop - deltaY;
+      
+      // Update minimap viewport
+      updateMinimapViewport();
     }
   }, { passive: false });
 }
@@ -1517,6 +1766,7 @@ function setupZoomControls(mapEl: HTMLElement): void {
     const centerX = rect.width / 2;
     const centerY = rect.height / 2;
     zoomToPoint(mapEl, svg, rect.left + centerX, rect.top + centerY, newScale);
+    setTimeout(() => updateMinimapViewport(), 50);
   });
 
   zoomOutBtn?.addEventListener('click', () => {
@@ -1525,6 +1775,7 @@ function setupZoomControls(mapEl: HTMLElement): void {
     const centerX = rect.width / 2;
     const centerY = rect.height / 2;
     zoomToPoint(mapEl, svg, rect.left + centerX, rect.top + centerY, newScale);
+    setTimeout(() => updateMinimapViewport(), 50);
   });
 
   resetViewBtn?.addEventListener('click', () => {
@@ -1539,6 +1790,9 @@ function setupZoomControls(mapEl: HTMLElement): void {
       
       mapEl.scrollLeft = Math.max(0, (svgRect.width - containerRect.width) / 2);
       mapEl.scrollTop = Math.max(0, (svgRect.height - containerRect.height) / 2);
+      
+      // Update minimap viewport
+      updateMinimapViewport();
     }, 50);
   });
 }
