@@ -170,8 +170,9 @@ program
         else if (opts.palette === "sepia") theme = sepiaTheme;
         const svg = renderSvg(enriched, theme, {
           style: opts.mapStyle,
-          sketchIntensity: opts.sketchIntensity,
-          texture: opts.texture,
+          wobbleIntensity: opts.sketchIntensity || 1,
+          wallThickness: 1,
+          showGrid: false,
         });
         process.stdout.write(svg + "\n");
       } else if (opts.ascii) {

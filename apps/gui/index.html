@@ -639,6 +639,47 @@
             <label for="entrance-periphery">Entrance from Periphery</label>
           </div>
         </div>
+
+        <div class="option-group">
+          <h3>Map Rendering</h3>
+          <div class="form-group">
+            <label>Map Style:</label>
+            <select id="map-style">
+              <option value="classic">Classic</option>
+              <option value="hand-drawn">Technical Pen (Hand-drawn)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Color Theme:</label>
+            <select id="color-theme">
+              <option value="light">Light</option>
+              <option value="dark">Dark</option>
+              <option value="sepia">Sepia</option>
+            </select>
+          </div>
+          <div class="checkbox-group" id="grid-toggle-group" style="display: none;">
+            <input type="checkbox" id="show-grid">
+            <label for="show-grid">Show Graph Paper Grid</label>
+          </div>
+          <div class="form-group" id="wobble-intensity-group" style="display: none;">
+            <label>Line Wobble:</label>
+            <select id="wobble-intensity">
+              <option value="0.5">Minimal</option>
+              <option value="1" selected>Normal</option>
+              <option value="1.5">Heavy</option>
+              <option value="2">Maximum</option>
+            </select>
+          </div>
+          <div class="form-group" id="wall-thickness-group" style="display: none;">
+            <label>Wall Thickness:</label>
+            <select id="wall-thickness">
+              <option value="0.5">Thin</option>
+              <option value="1" selected>Normal</option>
+              <option value="1.5">Thick</option>
+              <option value="2">Very Thick</option>
+            </select>
+          </div>
+        </div>
       </div>
 
       <div class="preview-controls">
