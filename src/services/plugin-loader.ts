@@ -65,8 +65,12 @@ export class PluginLoader {
               installed: true,
               enabled: true,
               loadPath: path.join(dir, entry.name, pkgJson.main || 'index.js'),
+              rawMetadata: doaPlugin, // Store full doaPlugin section for compatibility/deps checks
             };
-            this.registry.set(metadata.id, info);
+            // Don't overwrite existing plugins from earlier directories
+            if (!this.registry.has(metadata.id)) {
+              this.registry.set(metadata.id, info);
+            }
           } catch (err) {
             if ((err as NodeJS.ErrnoException).code !== 'ENOENT') {
               console.warn(`Failed to parse plugin at ${pkgPath}:`, err);
@@ -101,14 +105,15 @@ export class PluginLoader {
     const sandbox = opts.sandbox !== false;
     const timeout = opts.timeout ?? 3000;
     // Check core compatibility (optional for simple plugins)
-    const compatibility = (info.metadata as any).compatibility;
+    const rawMeta = (info as any).rawMetadata || {};
+    const compatibility = rawMeta.compatibility;
     if (compatibility && !semver.satisfies(CORE_VERSION, compatibility)) {
       throw new Error(
         `Plugin ${id} requires DOA version ${compatibility} but current version is ${CORE_VERSION}`
       );
     }
     // Check dependencies (optional for simple plugins)
-    const deps = (info.metadata as any).dependencies;
+    const deps = rawMeta.dependencies;
     if (deps?.systems) {
       for (const dep of deps.systems) {
         if (!this.registry.has(dep)) {

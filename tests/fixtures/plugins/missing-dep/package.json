@@ -7,7 +7,7 @@
     "id": "test.missingdep",
     "type": "system",
     "compatibility": "^0.1.0",
-    "author": { "name": "Tester" },
+    "author": "Tester",
     "license": "MIT",
     "dependencies": { "core": "^0.1.0", "systems": ["unknown.sys"] }
   }

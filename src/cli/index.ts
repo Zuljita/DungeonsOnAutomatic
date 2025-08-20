@@ -63,7 +63,7 @@ program
     (v, p) => [...p, v],
     [] as string[],
   )
-  .option("--map-style <style>", "map rendering style (classic, hand-drawn)", "classic")
+  .option("--map-style <style>", "map rendering style (classic, hand-drawn, hex)", "classic")
   .option("--sketch-intensity <n>", "hand-drawn sketch intensity", (v) => parseFloat(v), 1)
   .option("--texture <name>", "background texture (none, paper)", "none")
   .option("--palette <name>", "color palette (light, dark, sepia)", "light")

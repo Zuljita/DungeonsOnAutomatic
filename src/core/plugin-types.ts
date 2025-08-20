@@ -218,6 +218,7 @@ export interface PluginInfo {
   loadPath?: string;
   source?: string; // Where it was installed from
   installDate?: Date;
+  rawMetadata?: any; // Store full doaPlugin section for compatibility/deps checks
 }
 
 export interface PluginQuery {

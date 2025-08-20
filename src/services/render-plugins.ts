@@ -32,7 +32,7 @@ class RenderPluginService {
       for (const info of pluginInfos) {
         if (info.type === 'render' || info.metadata.tags?.includes('render')) {
           try {
-            const plugin = await this.pluginLoader.load(info.metadata.id);
+            const plugin = await this.pluginLoader.load(info.metadata.id, { sandbox: false });
             if (isRenderPlugin(plugin)) {
               this.plugins.set(info.metadata.id, plugin);
             }

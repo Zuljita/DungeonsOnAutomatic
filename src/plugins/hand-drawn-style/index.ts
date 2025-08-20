@@ -20,7 +20,7 @@ export const handDrawnStylePlugin = {
     const parts: string[] = [
       `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">`,
       `<rect x="0" y="0" width="${width}" height="${height}" fill="#ffffff"/>`,
-      `<text x="400" y="300" text-anchor="middle" font-family="serif" font-size="24" fill="#000000">Hand-drawn style working!</text>`,
+      `<text x="400" y="300" text-anchor="middle" font-family="cursive" font-size="24" fill="#000000">Hand-drawn style working!</text>`,
       `</svg>`
     ];
     

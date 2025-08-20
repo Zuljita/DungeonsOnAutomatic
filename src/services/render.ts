@@ -1,5 +1,6 @@
 import { Dungeon, Room } from "../core/types";
 import { roomShapeService } from "./room-shapes";
+import { axialToPixel } from "./hex-grid";
 
 export interface RenderTheme {
   /** Color of the SVG background */
@@ -40,13 +41,15 @@ export const sepiaTheme: RenderTheme = {
 
 export interface RenderOptions {
   /** Style variant for SVG rendering */
-  style?: "classic" | "hand-drawn";
+  style?: "classic" | "hand-drawn" | "hex";
   /** Show subtle grid background for technical pen style */
   showGrid?: boolean;
   /** Line wobble intensity for hand-drawn style (0-2) */
   wobbleIntensity?: number;
   /** Wall thickness multiplier for hand-drawn style */
   wallThickness?: number;
+  /** Radius of a single hex in pixels for hex style */
+  hexSize?: number;
 }
 
 /**
@@ -355,13 +358,20 @@ export async function renderSvg(
   theme: RenderTheme = lightTheme,
   opts: RenderOptions = {},
 ): Promise<string> {
-  const cell = 20; // pixel size of a single grid square
   const style = opts.style ?? "classic";
   const showGrid = opts.showGrid ?? false;
+  const hexSize = opts.hexSize ?? 20;
   const wobbleIntensity = opts.wobbleIntensity ?? 1;
   const wallThickness = opts.wallThickness ?? 1;
   const rng = d.rng ?? Math.random;
-  
+
+  // Built-in hex rendering
+  if (style === "hex") {
+    return renderHexSvg(d, theme, { hexSize, showGrid });
+  }
+
+  const cell = 20; // pixel size of a single grid square
+
   // Try to use render plugin first if style is supported (Node.js only)
   if (style !== "classic" && typeof window === 'undefined') {
     try {
@@ -460,6 +470,106 @@ export async function renderSvg(
       );
     }
   });
+
+  parts.push("</svg>");
+  return parts.join("");
+}
+
+interface HexRenderOptions {
+  hexSize: number;
+  showGrid: boolean;
+}
+
+function hexPolygonPoints(cx: number, cy: number, size: number): string {
+  const pts: string[] = [];
+  for (let i = 0; i < 6; i++) {
+    const angle = (Math.PI / 180) * (60 * i - 30);
+    const x = cx + size * Math.cos(angle);
+    const y = cy + size * Math.sin(angle);
+    pts.push(`${x},${y}`);
+  }
+  return pts.join(" ");
+}
+
+function renderHexSvg(
+  d: Dungeon,
+  theme: RenderTheme,
+  opts: HexRenderOptions,
+): string {
+  const size = opts.hexSize;
+  const cells: { q: number; r: number; type: "room" | "corridor" }[] = [];
+
+  for (const r of d.rooms) {
+    for (let y = r.y; y < r.y + r.h; y++) {
+      for (let x = r.x; x < r.x + r.w; x++) {
+        cells.push({ q: x, r: y, type: "room" });
+      }
+    }
+  }
+  for (const c of d.corridors) {
+    for (const p of c.path) {
+      cells.push({ q: p.x, r: p.y, type: "corridor" });
+    }
+  }
+
+  if (!cells.length) {
+    return '<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" />';
+  }
+
+  let minQ = Infinity, maxQ = -Infinity, minR = Infinity, maxR = -Infinity;
+  for (const c of cells) {
+    if (c.q < minQ) minQ = c.q;
+    if (c.q > maxQ) maxQ = c.q;
+    if (c.r < minR) minR = c.r;
+    if (c.r > maxR) maxR = c.r;
+  }
+
+  const hexWidth = Math.sqrt(3) * size;
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  for (let q = minQ - 1; q <= maxQ + 1; q++) {
+    for (let r = minR - 1; r <= maxR + 1; r++) {
+      const { x, y } = axialToPixel({ q, r }, size);
+      const left = x - hexWidth / 2;
+      const right = x + hexWidth / 2;
+      const top = y - size;
+      const bottom = y + size;
+      if (left < minX) minX = left;
+      if (right > maxX) maxX = right;
+      if (top < minY) minY = top;
+      if (bottom > maxY) maxY = bottom;
+    }
+  }
+
+  const width = maxX - minX;
+  const height = maxY - minY;
+  const parts: string[] = [
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">`,
+    `<rect x="0" y="0" width="${width}" height="${height}" fill="${theme.background}"/>`,
+  ];
+
+  if (opts.showGrid) {
+    for (let r = minR - 1; r <= maxR + 1; r++) {
+      for (let q = minQ - 1; q <= maxQ + 1; q++) {
+        const { x, y } = axialToPixel({ q, r }, size);
+        const cx = x - minX;
+        const cy = y - minY;
+        const pts = hexPolygonPoints(cx, cy, size);
+        parts.push(
+          `<polygon class="hex-grid" points="${pts}" fill="none" stroke="${theme.corridorFill}" stroke-width="0.5"/>`,
+        );
+      }
+    }
+  }
+
+  for (const cell of cells) {
+    const { x, y } = axialToPixel({ q: cell.q, r: cell.r }, size);
+    const cx = x - minX;
+    const cy = y - minY;
+    const pts = hexPolygonPoints(cx, cy, size);
+    const fill = cell.type === "room" ? theme.roomFill : theme.corridorFill;
+    const stroke = cell.type === "room" ? theme.roomStroke : "none";
+    parts.push(`<polygon class="hex-cell" points="${pts}" fill="${fill}" stroke="${stroke}"/>`);
+  }
 
   parts.push("</svg>");
   return parts.join("");

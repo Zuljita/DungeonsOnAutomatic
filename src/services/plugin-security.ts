@@ -24,7 +24,7 @@ export async function analyzePluginCode(filePath: string, maxFileSize = 1024 * 1
       throw new Error(`Forbidden API usage detected in ${path.basename(filePath)}`);
     }
   }
-  if (/\bimport\s.+from\s+['"].+['"]/.test(code)) {
+  if (/\bimport\s+.+\s+from\s+['"].+['"]/.test(code)) {
     throw new Error(`Imports are not allowed in plugin files: ${path.basename(filePath)}`);
   }
 }
@@ -82,6 +82,11 @@ export function validatePluginCapabilities(plugin: BasePlugin, type: PluginType)
     case 'room-shape':
       if (typeof (plugin as any).generateShape !== 'function' || typeof (plugin as any).generateShapePoints !== 'function') {
         throw new Error(`Plugin ${plugin.metadata?.id} missing required room-shape capabilities`);
+      }
+      break;
+    case 'render':
+      if (typeof (plugin as any).render !== 'function') {
+        throw new Error(`Plugin ${plugin.metadata?.id} missing required capability "render" for type render`);
       }
       break;
     default:
