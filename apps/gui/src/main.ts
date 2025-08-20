@@ -400,7 +400,7 @@ async function generate(): Promise<void> {
     };
 
     // Render the map
-    const svg = renderSvg(enriched, selectedTheme, renderOptions);
+    const svg = await renderSvg(enriched, selectedTheme, renderOptions);
     mapEl.innerHTML = svg;
 
     // Generate room details using populateRooms to get proper format with features
