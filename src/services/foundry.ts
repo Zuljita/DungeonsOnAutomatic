@@ -1,5 +1,6 @@
 import { Dungeon, Room } from "../core/types";
 import { roomShapeService } from "./room-shapes";
+import { distance, segmentLength, getEdgeVector, isPointOnLineSegmentLegacy } from '../utils/geometry';
 
 export interface FoundryWall {
   c: [number, number, number, number];
@@ -121,11 +122,12 @@ export function exportFoundry(d: Dungeon, grid = 100): FoundryScene {
       // Check if the door position lies on or near this edge segment
       if (isPointOnLineSegmentFoundry(doorPosition, p1, p2)) {
         // For Foundry, create a door segment along the edge
-        const edgeLength = Math.sqrt((p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2);
+        const edgeLength = segmentLength(p1, p2);
         if (edgeLength > 0) {
           // Create a door segment of standard length (1 unit) centered on the door position
-          const edgeVectorX = (p2.x - p1.x) / edgeLength;
-          const edgeVectorY = (p2.y - p1.y) / edgeLength;
+          const edgeVector = getEdgeVector(p1, p2);
+          const edgeVectorX = edgeVector.x;
+          const edgeVectorY = edgeVector.y;
           const doorLength = 1;
           const halfLength = doorLength / 2;
           
@@ -143,13 +145,9 @@ export function exportFoundry(d: Dungeon, grid = 100): FoundryScene {
     return [doorPosition.x - 0.5, doorPosition.y, doorPosition.x + 0.5, doorPosition.y] as const;
   };
 
+  // Use optimized geometry utility for point-on-line-segment checking
   const isPointOnLineSegmentFoundry = (point: { x: number; y: number }, p1: { x: number; y: number }, p2: { x: number; y: number }, tolerance: number = 0.5): boolean => {
-    const d1 = Math.sqrt((point.x - p1.x) ** 2 + (point.y - p1.y) ** 2);
-    const d2 = Math.sqrt((point.x - p2.x) ** 2 + (point.y - p2.y) ** 2);
-    const lineLength = Math.sqrt((p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2);
-    
-    // Check if the point is approximately on the line segment
-    return Math.abs(d1 + d2 - lineLength) < tolerance;
+    return isPointOnLineSegmentLegacy(point, p1, p2, tolerance);
   };
 
   const doorSegments: [number, number, number, number][] = [];

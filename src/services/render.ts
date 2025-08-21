@@ -3,6 +3,7 @@ import { roomShapeService } from "./room-shapes";
 import { axialToPixel } from "./hex-grid";
 import { calculateGridBounds, createGrid, createGridFromPoints, isInBounds, Point } from '../utils/grid-utils';
 import { isRectangularRoom, isPointOnRoomBorder } from '../utils/room-utils';
+import { distance, distanceFromPointToLineSegment, getEdgeVector, segmentLength } from '../utils/geometry';
 
 export interface RenderTheme {
   /** Color of the SVG background */
@@ -286,15 +287,14 @@ function renderShapedRoomDoor(room: Room, doorPosition: { x: number; y: number }
   }
   
   if (closestEdge) {
-    // Calculate the direction ALONG the wall edge (parallel to the wall)
-    const edgeVectorX = closestEdge.p2.x - closestEdge.p1.x;
-    const edgeVectorY = closestEdge.p2.y - closestEdge.p1.y;
-    const edgeLength = Math.sqrt(edgeVectorX * edgeVectorX + edgeVectorY * edgeVectorY);
+    // Calculate the direction ALONG the wall edge (parallel to the wall) using geometry utils
+    const edgeVector = getEdgeVector(closestEdge.p1, closestEdge.p2);
+    const edgeLength = segmentLength(closestEdge.p1, closestEdge.p2);
     
     if (edgeLength > 0) {
-      // Normalize the edge vector (direction along the wall)
-      const edgeDirX = edgeVectorX / edgeLength;
-      const edgeDirY = edgeVectorY / edgeLength;
+      // Use the normalized edge vector (direction along the wall)
+      const edgeDirX = edgeVector.x;
+      const edgeDirY = edgeVector.y;
       
       // Create a door line ALONG the wall edge, ensuring it stays within the edge segment
       const doorWidth = 0.8;
@@ -344,35 +344,8 @@ function isPointOnLineSegment(point: { x: number; y: number }, p1: { x: number; 
   return Math.abs(d1 + d2 - lineLength) < tolerance;
 }
 
-function distance(p1: { x: number; y: number }, p2: { x: number; y: number }): number {
-  const dx = p2.x - p1.x;
-  const dy = p2.y - p1.y;
-  return Math.sqrt(dx * dx + dy * dy);
-}
-
-function distanceFromPointToLineSegment(point: { x: number; y: number }, p1: { x: number; y: number }, p2: { x: number; y: number }): number {
-  const dx = p2.x - p1.x;
-  const dy = p2.y - p1.y;
-  const length = dx * dx + dy * dy;
-  
-  if (length === 0) {
-    // p1 and p2 are the same point
-    return distance(point, p1);
-  }
-  
-  // Calculate the parameter t for the closest point on the line
-  let t = ((point.x - p1.x) * dx + (point.y - p1.y) * dy) / length;
-  
-  // Clamp t to the line segment [0, 1]
-  t = Math.max(0, Math.min(1, t));
-  
-  // Calculate the closest point on the line segment
-  const closestX = p1.x + t * dx;
-  const closestY = p1.y + t * dy;
-  
-  // Return distance from point to closest point on segment
-  return distance(point, { x: closestX, y: closestY });
-}
+// Geometry functions now imported from utils/geometry.ts
+// These replace the custom implementations with flatten-js optimized versions
 
 
 export async function renderSvg(

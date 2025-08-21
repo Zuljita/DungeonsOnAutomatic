@@ -5,6 +5,7 @@ import { generateDoor } from './doors';
 import { roomShapeService, ShapePreferences } from './room-shapes';
 import { connectRooms, type EnhancedPathfindingOptions } from './corridors';
 import { createSimpleUnionFind } from '../utils/union-find';
+import { distance } from '../utils/geometry';
 
 // A* pathfinding node for corridor generation
 interface PathNode {
@@ -719,9 +720,10 @@ export class MapGenerator {
       if (i > j) [i, j] = [j, i];
       const key = `${i}-${j}`;
       if (!edgeMap.has(key)) {
-        const dx = centers[i][0] - centers[j][0];
-        const dy = centers[i][1] - centers[j][1];
-        const d = Math.sqrt(dx * dx + dy * dy);
+        const d = distance(
+          { x: centers[i][0], y: centers[i][1] }, 
+          { x: centers[j][0], y: centers[j][1] }
+        );
         edgeMap.set(key, { a: i, b: j, d });
       }
     };
@@ -747,9 +749,10 @@ export class MapGenerator {
         let bestD = Infinity;
         for (let j = 0; j < rooms.length; j++) {
           if (i === j) continue;
-          const dx = centers[i][0] - centers[j][0];
-          const dy = centers[i][1] - centers[j][1];
-          const d = Math.sqrt(dx * dx + dy * dy);
+          const d = distance(
+            { x: centers[i][0], y: centers[i][1] }, 
+            { x: centers[j][0], y: centers[j][1] }
+          );
           if (d < bestD) {
             bestD = d;
             best = j;
@@ -782,9 +785,10 @@ export class MapGenerator {
       const complete: { a: number; b: number; d: number }[] = [];
       for (let i = 0; i < rooms.length; i++) {
         for (let j = i + 1; j < rooms.length; j++) {
-          const dx = centers[i][0] - centers[j][0];
-          const dy = centers[i][1] - centers[j][1];
-          const d = Math.sqrt(dx * dx + dy * dy);
+          const d = distance(
+            { x: centers[i][0], y: centers[i][1] }, 
+            { x: centers[j][0], y: centers[j][1] }
+          );
           complete.push({ a: i, b: j, d });
         }
       }
