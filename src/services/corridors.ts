@@ -1,6 +1,7 @@
 import { Corridor, Room } from '../core/types';
 import { id } from './random';
 import { roomShapeService } from './room-shapes';
+import { createSimpleUnionFind } from '../utils/union-find';
 
 // Enhanced pathfinding options
 export interface EnhancedPathfindingOptions {
@@ -220,54 +221,44 @@ function findPathAStar(
   return manhattanPath(start, goal, () => 0.5);
 }
 
-export function connectRooms(rooms: Room[], r: () => number): Corridor[] {
+/**
+ * Generate corridors connecting rooms using either enhanced pathfinding or Manhattan fallback
+ */
+export function connectRooms(
+  rooms: Room[], 
+  r: () => number, 
+  options: EnhancedPathfindingOptions = { algorithm: 'manhattan', usePathfindingLib: false }
+): Corridor[] {
   if (rooms.length < 2) return [];
-  const centers = rooms.map(rm => ({ x: rm.x + Math.floor(rm.w/2), y: rm.y + Math.floor(rm.h/2) }));
+  
+  // Calculate room centers for MST generation
+  const centers = rooms.map(rm => ({ 
+    x: rm.x + Math.floor(rm.w/2), 
+    y: rm.y + Math.floor(rm.h/2) 
+  }));
+  
+  // Generate edges using Kruskal's algorithm for minimum spanning tree
   const edges: Edge[] = [];
-  for (let i=0;i<rooms.length;i++) {
-    for (let j=i+1;j<rooms.length;j++) {
+  for (let i = 0; i < rooms.length; i++) {
+    for (let j = i + 1; j < rooms.length; j++) {
       const d = Math.abs(centers[i].x - centers[j].x) + Math.abs(centers[i].y - centers[j].y);
       edges.push({ a: i, b: j, d });
     }
   }
   edges.sort((e1, e2) => e1.d - e2.d);
 
-  // Kruskal
-  const parent = Array.from({ length: rooms.length }, (_, i) => i);
-  const find = (x: number): number => (parent[x] === x ? x : (parent[x] = find(parent[x])));
-  const unite = (a: number, b: number): void => {
-    parent[find(a)] = find(b);
-  };
+  const unionFind = createSimpleUnionFind(rooms.length);
   const corridors: Corridor[] = [];
-  for (const e of edges) {
-    if (find(e.a) !== find(e.b)) {
-      unite(e.a, e.b);
-      const from = rooms[e.a].id,
-        to = rooms[e.b].id;
-      
-      // Calculate door connection points for classic pathfinding too
-      const doorPoints = calculateDoorConnectionPoints(rooms[e.a], rooms[e.b]);
-      
-      let path = manhattanPath(centers[e.a], centers[e.b], r);
-      path = trimPath(path, rooms[e.a], rooms[e.b]);
-      
-      // Ensure path starts and ends at door points
-      if (path.length > 0) {
-        path[0] = doorPoints.start;
-        path[path.length - 1] = doorPoints.end;
-      }
-      
-      corridors.push({ 
-        id: id('cor', r), 
-        from, 
-        to, 
-        path,
-        doorStart: doorPoints.start,
-        doorEnd: doorPoints.end
-      });
-    }
+  
+  // Try enhanced pathfinding if available and enabled
+  const useEnhanced = options.usePathfindingLib && PF && options.algorithm !== 'manhattan';
+  if (useEnhanced) {
+    console.log(`🚀 Using enhanced door-to-door pathfinding: ${options.algorithm}`);
+    return connectWithEnhancedPathfinding(rooms, r, options, edges, centers);
+  } else {
+    console.log('📏 Using classic Manhattan pathfinding');
+    return connectWithManhattanPathfinding(rooms, r, edges, centers);
   }
-  return corridors;
 }
 
 function manhattanPath(a:{x:number;y:number}, b:{x:number;y:number}, r: () => number) {
@@ -359,28 +350,15 @@ function getClosestEdgePoint(point: { x: number; y: number }, room: Room): { x: 
 }
 
 /**
- * Enhanced corridor generation using PathFinding.js library when available
+ * Connect rooms using enhanced PathFinding.js algorithms
  */
-export function connectRoomsEnhanced(
+function connectWithEnhancedPathfinding(
   rooms: Room[], 
   r: () => number, 
-  options: EnhancedPathfindingOptions = { algorithm: 'astar', usePathfindingLib: true }
+  options: EnhancedPathfindingOptions,
+  edges: Edge[],
+  centers: { x: number; y: number }[]
 ): Corridor[] {
-  if (rooms.length < 2) return [];
-  
-  // Fall back to original algorithm if PathFinding.js not available or disabled
-  if (!options.usePathfindingLib || !PF || options.algorithm === 'manhattan') {
-    return connectRooms(rooms, r);
-  }
-  
-  console.log(`🚀 Using enhanced door-to-door pathfinding: ${options.algorithm}`);
-  
-  // Calculate room centers for MST generation
-  const centers = rooms.map(rm => ({ 
-    x: rm.x + Math.floor(rm.w/2), 
-    y: rm.y + Math.floor(rm.h/2) 
-  }));
-  
   // Calculate dungeon bounds with padding
   const minX = Math.min(...rooms.map(r => r.x)) - 5;
   const maxX = Math.max(...rooms.map(r => r.x + r.w)) + 5;
@@ -389,38 +367,19 @@ export function connectRoomsEnhanced(
   const width = maxX - minX;
   const height = maxY - minY;
   
-  // Offset everything to grid coordinates
-  const offsetCenters = centers.map(c => ({
-    x: c.x - minX,
-    y: c.y - minY
-  }));
-  
+  // Offset rooms to grid coordinates
   const offsetRooms = rooms.map(room => ({
     ...room,
     x: room.x - minX,
     y: room.y - minY
   }));
-  // Generate edges using Kruskal's algorithm for minimum spanning tree
-  const edges: Edge[] = [];
-  for (let i = 0; i < rooms.length; i++) {
-    for (let j = i + 1; j < rooms.length; j++) {
-      const d = Math.abs(centers[i].x - centers[j].x) + Math.abs(centers[i].y - centers[j].y);
-      edges.push({ a: i, b: j, d });
-    }
-  }
-  edges.sort((e1, e2) => e1.d - e2.d);
 
-  const parent = Array.from({ length: rooms.length }, (_, i) => i);
-  const find = (x: number): number => (parent[x] === x ? x : (parent[x] = find(parent[x])));
-  const unite = (a: number, b: number): void => {
-    parent[find(a)] = find(b);
-  };
-  
+  const unionFind = createSimpleUnionFind(rooms.length);
   const corridors: Corridor[] = [];
   
   for (const e of edges) {
-    if (find(e.a) !== find(e.b)) {
-      unite(e.a, e.b);
+    if (!unionFind.connected(e.a, e.b)) {
+      unionFind.union(e.a, e.b);
       
       const from = rooms[e.a].id;
       const to = rooms[e.b].id;
@@ -474,6 +433,40 @@ export function connectRoomsEnhanced(
 }
 
 /**
+ * Connect rooms using classic Manhattan pathfinding
+ */
+function connectWithManhattanPathfinding(
+  rooms: Room[], 
+  r: () => number, 
+  edges: Edge[],
+  centers: { x: number; y: number }[]
+): Corridor[] {
+  const unionFind = createSimpleUnionFind(rooms.length);
+  const corridors: Corridor[] = [];
+  
+  for (const e of edges) {
+    if (!unionFind.connected(e.a, e.b)) {
+      unionFind.union(e.a, e.b);
+      const from = rooms[e.a].id;
+      const to = rooms[e.b].id;
+      
+      // Use classic center-to-center Manhattan pathfinding (preserves randomization)
+      let path = manhattanPath(centers[e.a], centers[e.b], r);
+      path = trimPath(path, rooms[e.a], rooms[e.b]);
+      
+      corridors.push({ 
+        id: id('cor', r), 
+        from, 
+        to, 
+        path
+      });
+    }
+  }
+  
+  return corridors;
+}
+
+/**
  * Create a cost grid for PathFinding.js (0 = walkable, 1 = blocked)
  */
 function createPathfindingGrid(rooms: Room[], width: number, height: number): number[][] {
@@ -504,7 +497,7 @@ function findPathWithPathfindingJS(
   rooms: Room[],
   width: number,
   height: number,
-  algorithm: 'astar' | 'jumppoint' | 'dijkstra' = 'astar'
+  algorithm: 'astar' | 'jumppoint' | 'dijkstra' | 'manhattan' = 'astar'
 ): { x: number; y: number }[] {
   const costGrid = createPathfindingGrid(rooms, width, height);
   

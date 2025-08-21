@@ -98,13 +98,29 @@ See `PROJECT_PLAN.md` for the roadmap.
 
 ## Contributing
 
-Contributions are welcome! Please make sure to run the lint and test
-scripts before submitting a pull request:
+Contributions are welcome! Please follow these guidelines:
+
+### Code Quality Standards
+
+**Eliminate duplicate code patterns:**
+- Check if similar functionality already exists in `/src/utils/` or services
+- Create reusable utilities instead of copy-pasting code blocks
+- Consolidate similar functions into single, well-designed implementations
+
+**Use existing infrastructure:**
+- Leverage utilities in `/src/utils/` for grid operations, room checking, algorithms
+- Follow patterns established in existing services and plugins
+- Prefer existing libraries over custom implementations when possible
+
+### Before Submitting
 
 ```bash
-pnpm lint
-pnpm test
+pnpm lint     # Check code style and quality
+pnpm test     # Run full test suite
+pnpm build    # Verify TypeScript compilation
 ```
+
+See [CLAUDE.md](./CLAUDE.md) for detailed development practices and architecture guidance.
 
 ## Attribution
 

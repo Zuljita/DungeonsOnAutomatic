@@ -1,9 +1,10 @@
 import { Dungeon, Room, Corridor, Door, RoomShape } from '../core/types';
-import { rng } from './random';
+import { rng, id } from './random';
 import Delaunator from 'delaunator';
 import { generateDoor } from './doors';
 import { roomShapeService, ShapePreferences } from './room-shapes';
-import { connectRooms, connectRoomsEnhanced, type EnhancedPathfindingOptions } from './corridors';
+import { connectRooms, type EnhancedPathfindingOptions } from './corridors';
+import { createSimpleUnionFind } from '../utils/union-find';
 
 // A* pathfinding node for corridor generation
 interface PathNode {
@@ -679,6 +680,9 @@ export class MapGenerator {
    * Generate corridors using graph algorithms
    */
   private generateCorridors(rooms: Room[], type: string, pathfindingAlgorithm: string, width: number, allowDeadends: boolean, mapWidth: number, mapHeight: number): Corridor[] {
+    // Build room graph with deadend handling
+    const roomConnections = this.buildRoomGraph(rooms, allowDeadends);
+    
     // Use enhanced corridor generation based on pathfinding algorithm
     const useEnhanced = pathfindingAlgorithm !== 'manhattan';
     
@@ -687,15 +691,8 @@ export class MapGenerator {
       usePathfindingLib: useEnhanced
     };
     
-    let corridors: Corridor[];
-    
-    if (useEnhanced) {
-      console.log(`🚀 Using enhanced pathfinding: ${pathfindingAlgorithm}`);
-      corridors = connectRoomsEnhanced(rooms, this.R, pathfindingOptions);
-    } else {
-      console.log('📏 Using classic Manhattan pathfinding');
-      corridors = connectRooms(rooms, this.R);
-    }
+    // Generate corridors using the room connections and unified pathfinding
+    let corridors = this.connectRoomsWithGraph(rooms, roomConnections, pathfindingOptions);
     
     // Expand corridors to desired width for battle map compatibility if needed
     if (width > 1) {
@@ -765,16 +762,12 @@ export class MapGenerator {
     let edges = Array.from(edgeMap.values()).sort((e1, e2) => e1.d - e2.d);
 
     const buildMST = (edgesList: { a: number; b: number; d: number }[]) => {
-      const parent = Array.from({ length: rooms.length }, (_, i) => i);
-      const find = (x: number): number => (parent[x] === x ? x : (parent[x] = find(parent[x])));
-      const unite = (a: number, b: number): void => {
-        parent[find(a)] = find(b);
-      };
+      const unionFind = createSimpleUnionFind(rooms.length);
       const mstEdges: Array<[number, number]> = [];
       const extra: { a: number; b: number; d: number }[] = [];
       for (const e of edgesList) {
-        if (find(e.a) !== find(e.b)) {
-          unite(e.a, e.b);
+        if (!unionFind.connected(e.a, e.b)) {
+          unionFind.union(e.a, e.b);
           mstEdges.push([e.a, e.b]);
         } else {
           extra.push(e);
@@ -812,6 +805,138 @@ export class MapGenerator {
     }
 
     return mst;
+  }
+
+  /**
+   * Connect rooms using pre-calculated room graph and pathfinding options
+   */
+  private connectRoomsWithGraph(rooms: Room[], connections: Array<[number, number]>, options: EnhancedPathfindingOptions): Corridor[] {
+    const corridors: Corridor[] = [];
+    
+    for (const [a, b] of connections) {
+      const roomA = rooms[a];
+      const roomB = rooms[b];
+      const from = roomA.id;
+      const to = roomB.id;
+      
+      // Use enhanced pathfinding if available and enabled
+      const useEnhanced = options.usePathfindingLib && options.algorithm !== 'manhattan';
+      
+      if (useEnhanced) {
+        // Try enhanced door-to-door pathfinding
+        const doorPoints = this.calculateDoorConnectionPoints(roomA, roomB);
+        
+        corridors.push({ 
+          id: id('cor', this.R), 
+          from, 
+          to, 
+          path: [doorPoints.start, doorPoints.end],
+          doorStart: doorPoints.start,
+          doorEnd: doorPoints.end
+        });
+      } else {
+        // Use Manhattan pathfinding with trimming (classic behavior)
+        const centerA = { x: roomA.x + Math.floor(roomA.w/2), y: roomA.y + Math.floor(roomA.h/2) };
+        const centerB = { x: roomB.x + Math.floor(roomB.w/2), y: roomB.y + Math.floor(roomB.h/2) };
+        
+        let path = this.manhattanPath(centerA, centerB);
+        path = this.trimPath(path, roomA, roomB);
+        
+        // Calculate door points for door placement
+        const doorPoints = this.calculateDoorConnectionPoints(roomA, roomB);
+        
+        corridors.push({ 
+          id: id('cor', this.R), 
+          from, 
+          to, 
+          path,
+          doorStart: doorPoints.start,
+          doorEnd: doorPoints.end
+        });
+      }
+    }
+    
+    return corridors;
+  }
+
+  /**
+   * Calculate optimal door connection points between two rooms
+   */
+  private calculateDoorConnectionPoints(room1: Room, room2: Room): {
+    start: { x: number; y: number };
+    end: { x: number; y: number };
+  } {
+    const center1 = { x: room1.x + Math.floor(room1.w / 2), y: room1.y + Math.floor(room1.h / 2) };
+    const center2 = { x: room2.x + Math.floor(room2.w / 2), y: room2.y + Math.floor(room2.h / 2) };
+    
+    const dx = center2.x - center1.x;
+    const dy = center2.y - center1.y;
+    
+    let startDirection: 'top' | 'bottom' | 'left' | 'right';
+    let endDirection: 'top' | 'bottom' | 'left' | 'right';
+    
+    if (Math.abs(dx) > Math.abs(dy)) {
+      // Horizontal connection
+      if (dx > 0) {
+        startDirection = 'right';
+        endDirection = 'left';
+      } else {
+        startDirection = 'left';
+        endDirection = 'right';
+      }
+    } else {
+      // Vertical connection
+      if (dy > 0) {
+        startDirection = 'bottom';
+        endDirection = 'top';
+      } else {
+        startDirection = 'top';
+        endDirection = 'bottom';
+      }
+    }
+    
+    const start = roomShapeService.findClosestEdgePoint(room1, startDirection, center2);
+    const end = roomShapeService.findClosestEdgePoint(room2, endDirection, center1);
+    
+    return { start, end };
+  }
+
+  /**
+   * Generate Manhattan path between two points
+   */
+  private manhattanPath(a: {x: number; y: number}, b: {x: number; y: number}): {x: number; y: number}[] {
+    const path = [] as {x: number; y: number}[];
+    const xStep = a.x < b.x ? 1 : -1;
+    const yStep = a.y < b.y ? 1 : -1;
+    
+    // Randomize whether to move horizontally or vertically first
+    if (this.R() < 0.5) {
+      for (let x = a.x; x !== b.x; x += xStep) path.push({x, y: a.y});
+      for (let y = a.y; y !== b.y; y += yStep) path.push({x: b.x, y});
+    } else {
+      for (let y = a.y; y !== b.y; y += yStep) path.push({x: a.x, y});
+      for (let x = a.x; x !== b.x; x += xStep) path.push({x, y: b.y});
+    }
+    path.push({x: b.x, y: b.y});
+    return path;
+  }
+
+  /**
+   * Trim path to remove points inside rooms and ensure connection at room edges
+   */
+  private trimPath(
+    path: { x: number; y: number }[],
+    a: Room,
+    b: Room,
+  ): { x: number; y: number }[] {
+    const inside = (p: { x: number; y: number }, r: Room): boolean =>
+      p.x >= r.x && p.x < r.x + r.w && p.y >= r.y && p.y < r.y + r.h;
+    
+    // Remove points inside rooms
+    while (path.length && inside(path[0], a)) path.shift();
+    while (path.length && inside(path[path.length - 1], b)) path.pop();
+    
+    return path;
   }
 
   /**

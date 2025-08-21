@@ -119,7 +119,11 @@ describe('cli', () => {
     );
     expect(result.status).toBe(0);
     const d = JSON.parse(result.stdout) as Dungeon;
-    expect(d.doors.every((door) => door.status === 'locked')).toBe(true);
+    // With 100% lock percentage, all lockable doors should be locked
+    // (arches can't be locked, so we filter them out)
+    const lockableDoors = d.doors.filter(door => door.type !== 'arch');
+    expect(lockableDoors.every((door) => door.status === 'locked')).toBe(true);
+    expect(lockableDoors.length).toBeGreaterThan(0); // Ensure we have at least one lockable door
   });
 
   it('supports hand-drawn svg output', () => {

@@ -1,5 +1,6 @@
 import { Dungeon } from "../core/types";
 import { roomShapeService } from "./room-shapes";
+import { createGrid } from '../utils/grid-utils';
 
 export interface DebugAsciiOptions {
   /** Scale factor for resolution (default: 10 for 10x more detail) */
@@ -64,7 +65,7 @@ export function renderDebugAscii(d: Dungeon, options: DebugAsciiOptions = {}): s
   // Create high-resolution grid
   const width = Math.ceil((maxX - minX) * scale);
   const height = Math.ceil((maxY - minY) * scale);
-  const grid: string[][] = Array.from({ length: height }, () => Array(width).fill(' '));
+  const grid = createGrid(width, height, ' ');
   
   // Helper function to convert world coordinates to grid coordinates
   const worldToGrid = (x: number, y: number) => ({

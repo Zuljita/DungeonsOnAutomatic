@@ -140,6 +140,38 @@ This is a pnpm workspace with the main package and GUI as separate workspaces. T
 3. "Is this core domain logic that justifies custom implementation?"
 4. "Would using a library significantly improve maintainability and reduce bugs?"
 
+### Code Duplication Prevention
+
+**ALWAYS eliminate duplicate code patterns by creating reusable utilities:**
+
+1. **Identify duplication early**: When you see similar code in 2+ locations, consolidate it immediately
+2. **Create utility modules**: Place reusable functions in `/src/utils/` with clear, descriptive names
+3. **Look for common patterns**: Grid operations, data transformations, validation logic, algorithm implementations
+4. **Maintain single source of truth**: Each piece of logic should exist in exactly one place
+
+**Utility Organization:**
+- `/src/utils/grid-utils.ts` - Grid bounds calculation, creation, coordinate transformation
+- `/src/utils/room-utils.ts` - Room shape checking, border detection, point operations  
+- `/src/utils/union-find.ts` - Disjoint set operations for graph algorithms
+- Add new utilities as patterns emerge
+
+**Examples of successfully consolidated patterns:**
+- ✅ **Grid bounds calculation** - Eliminated from 7+ files using `calculateGridBounds()`
+- ✅ **Room shape checking** - Eliminated from 15+ files using `isRectangularRoom()`
+- ✅ **Union-Find algorithm** - Eliminated from 4+ files using `createSimpleUnionFind()`
+- ✅ **Grid creation** - Eliminated from 5+ files using `createGrid()`
+
+**Before writing new code, check:**
+1. "Does this logic already exist somewhere in the codebase?"
+2. "Could this pattern be useful in other parts of the system?"
+3. "Is this similar enough to existing code that it should be consolidated?"
+4. "Would extracting this to a utility improve testability and maintainability?"
+
+**Red flags indicating duplication:**
+- Copy-pasting code blocks between files
+- Similar function names with slight variations (`connectRooms` vs `connectRoomsEnhanced`)
+- Repeated patterns in loops, conditionals, or data processing
+- Multiple implementations of the same algorithm or data structure
 # important-instruction-reminders
 Do what has been asked; nothing more, nothing less.
 NEVER create files unless they're absolutely necessary for achieving your goal.
