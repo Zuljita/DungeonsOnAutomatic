@@ -4,6 +4,7 @@ import Delaunator from 'delaunator';
 import { generateDoor } from './doors';
 import { roomShapeService, ShapePreferences } from './room-shapes';
 import { connectRooms, type EnhancedPathfindingOptions } from './corridors';
+import { createSimpleUnionFind } from '../utils/union-find';
 
 // A* pathfinding node for corridor generation
 interface PathNode {
@@ -761,16 +762,12 @@ export class MapGenerator {
     let edges = Array.from(edgeMap.values()).sort((e1, e2) => e1.d - e2.d);
 
     const buildMST = (edgesList: { a: number; b: number; d: number }[]) => {
-      const parent = Array.from({ length: rooms.length }, (_, i) => i);
-      const find = (x: number): number => (parent[x] === x ? x : (parent[x] = find(parent[x])));
-      const unite = (a: number, b: number): void => {
-        parent[find(a)] = find(b);
-      };
+      const unionFind = createSimpleUnionFind(rooms.length);
       const mstEdges: Array<[number, number]> = [];
       const extra: { a: number; b: number; d: number }[] = [];
       for (const e of edgesList) {
-        if (find(e.a) !== find(e.b)) {
-          unite(e.a, e.b);
+        if (!unionFind.connected(e.a, e.b)) {
+          unionFind.union(e.a, e.b);
           mstEdges.push([e.a, e.b]);
         } else {
           extra.push(e);

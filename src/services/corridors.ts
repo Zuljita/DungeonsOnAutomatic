@@ -1,6 +1,7 @@
 import { Corridor, Room } from '../core/types';
 import { id } from './random';
 import { roomShapeService } from './room-shapes';
+import { createSimpleUnionFind } from '../utils/union-find';
 
 // Enhanced pathfinding options
 export interface EnhancedPathfindingOptions {
@@ -246,12 +247,7 @@ export function connectRooms(
   }
   edges.sort((e1, e2) => e1.d - e2.d);
 
-  const parent = Array.from({ length: rooms.length }, (_, i) => i);
-  const find = (x: number): number => (parent[x] === x ? x : (parent[x] = find(parent[x])));
-  const unite = (a: number, b: number): void => {
-    parent[find(a)] = find(b);
-  };
-
+  const unionFind = createSimpleUnionFind(rooms.length);
   const corridors: Corridor[] = [];
   
   // Try enhanced pathfinding if available and enabled
@@ -378,17 +374,12 @@ function connectWithEnhancedPathfinding(
     y: room.y - minY
   }));
 
-  const parent = Array.from({ length: rooms.length }, (_, i) => i);
-  const find = (x: number): number => (parent[x] === x ? x : (parent[x] = find(parent[x])));
-  const unite = (a: number, b: number): void => {
-    parent[find(a)] = find(b);
-  };
-  
+  const unionFind = createSimpleUnionFind(rooms.length);
   const corridors: Corridor[] = [];
   
   for (const e of edges) {
-    if (find(e.a) !== find(e.b)) {
-      unite(e.a, e.b);
+    if (!unionFind.connected(e.a, e.b)) {
+      unionFind.union(e.a, e.b);
       
       const from = rooms[e.a].id;
       const to = rooms[e.b].id;
@@ -450,17 +441,12 @@ function connectWithManhattanPathfinding(
   edges: Edge[],
   centers: { x: number; y: number }[]
 ): Corridor[] {
-  const parent = Array.from({ length: rooms.length }, (_, i) => i);
-  const find = (x: number): number => (parent[x] === x ? x : (parent[x] = find(parent[x])));
-  const unite = (a: number, b: number): void => {
-    parent[find(a)] = find(b);
-  };
-  
+  const unionFind = createSimpleUnionFind(rooms.length);
   const corridors: Corridor[] = [];
   
   for (const e of edges) {
-    if (find(e.a) !== find(e.b)) {
-      unite(e.a, e.b);
+    if (!unionFind.connected(e.a, e.b)) {
+      unionFind.union(e.a, e.b);
       const from = rooms[e.a].id;
       const to = rooms[e.b].id;
       
