@@ -17,7 +17,7 @@ test.describe('Minimap Navigation', () => {
     // Check minimap components
     await expect(page.locator('.minimap-header')).toBeVisible();
     await expect(page.locator('#minimap-toggle')).toBeVisible();
-    await expect(page.locator('#minimap-svg-container img')).toBeVisible();
+    await expect(page.locator('#minimap-svg-container svg')).toBeVisible();
     await expect(page.locator('#minimap-viewport')).toBeVisible();
   });
 
@@ -155,14 +155,14 @@ test.describe('Minimap Navigation', () => {
   });
 
   test('should work with different map styles', async ({ page }) => {
-    // Test with hex grid style
-    await page.selectOption('#map-style', 'hex');
+    // Test with hand-drawn style (valid option)
+    await page.selectOption('#map-style', 'hand-drawn');
     await page.locator('#generate').click();
     await expect(page.locator('#map-content svg')).toBeVisible({ timeout: 10000 });
     
     // Minimap should still be visible and functional
     await expect(page.locator('#minimap')).toBeVisible();
-    await expect(page.locator('#minimap-svg-container img')).toBeVisible();
+    await expect(page.locator('#minimap-svg-container svg')).toBeVisible();
     
     // Test navigation still works
     const minimapSvg = page.locator('#minimap-svg-container');
@@ -226,18 +226,18 @@ test.describe('Minimap Navigation', () => {
     // Note: In current implementation, minimap state resets on generation
     // This test documents the current behavior - minimap will be expanded again
     await expect(page.locator('#minimap')).toBeVisible();
-    await expect(page.locator('#minimap-svg-container img')).toBeVisible();
+    await expect(page.locator('#minimap-svg-container svg')).toBeVisible();
   });
 
   test('should display correct minimap proportions', async ({ page }) => {
     const mainSvg = page.locator('#map-content svg');
-    const minimapImg = page.locator('#minimap-svg-container img');
-
-    // Get dimensions of both images
+    const minimapSvg = page.locator('#minimap-svg-container svg');
+    
+    // Get dimensions of both SVGs
     const mainWidth = await mainSvg.evaluate(el => el.getBoundingClientRect().width);
     const mainHeight = await mainSvg.evaluate(el => el.getBoundingClientRect().height);
-    const minimapWidth = await minimapImg.evaluate(el => el.getBoundingClientRect().width);
-    const minimapHeight = await minimapImg.evaluate(el => el.getBoundingClientRect().height);
+    const minimapWidth = await minimapSvg.evaluate(el => el.getBoundingClientRect().width);
+    const minimapHeight = await minimapSvg.evaluate(el => el.getBoundingClientRect().height);
     
     // Calculate aspect ratios
     const mainAspectRatio = mainWidth / mainHeight;

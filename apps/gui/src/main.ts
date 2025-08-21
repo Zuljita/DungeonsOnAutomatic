@@ -7,6 +7,7 @@ import { buildDungeon } from '@src/services/assembler';
 import { dungeonTemplateService } from '@src/services/dungeon-templates';
 import { roomShapeService } from '@src/services/room-shapes';
 import { presetStorage, type DungeonPreset, type PresetConfiguration } from './preset-system';
+import Panzoom from '@panzoom/panzoom';
 
 let importWizard: ImportWizardComponent | null = null;
 const STORAGE_KEY = 'doa-generator-settings';
@@ -180,6 +181,7 @@ function applyTemplate(templateId: string) {
   const roomSizeInput = document.getElementById('room-size') as HTMLSelectElement;
   const roomShapeInput = document.getElementById('room-shape') as HTMLSelectElement;
   const corridorTypeInput = document.getElementById('corridor-type') as HTMLSelectElement;
+  const pathfindingAlgorithmInput = document.getElementById('pathfinding-algorithm') as HTMLSelectElement;
   const corridorWidthInput = document.getElementById('corridor-width') as HTMLSelectElement;
   const allowDeadendsInput = document.getElementById('allow-deadends') as HTMLInputElement;
   const stairsUpInput = document.getElementById('stairs-up') as HTMLInputElement;
@@ -198,6 +200,7 @@ function applyTemplate(templateId: string) {
   if (options.roomSize) roomSizeInput.value = options.roomSize;
   if (options.roomShape) roomShapeInput.value = options.roomShape;
   if (options.corridorType) corridorTypeInput.value = options.corridorType;
+  if (options.pathfindingAlgorithm) pathfindingAlgorithmInput.value = options.pathfindingAlgorithm;
   if (options.corridorWidth !== undefined) corridorWidthInput.value = String(options.corridorWidth);
   if (options.allowDeadends !== undefined) allowDeadendsInput.checked = options.allowDeadends;
   if (options.stairsUp !== undefined) stairsUpInput.checked = options.stairsUp;
@@ -308,6 +311,7 @@ function loadGeneratorSettings() {
     roomSizeInput.value = settings.roomSize ?? '';
     roomShapeInput.value = settings.roomShape ?? '';
     corridorTypeInput.value = settings.corridorType ?? '';
+    pathfindingAlgorithmInput.value = settings.pathfindingAlgorithm ?? 'manhattan';
     corridorWidthInput.value = settings.corridorWidth !== undefined ? String(settings.corridorWidth) : '1';
     allowDeadendsInput.checked = !!settings.allowDeadends;
     stairsUpInput.checked = !!settings.stairsUp;
@@ -355,6 +359,7 @@ async function generate(): Promise<void> {
   const roomSizeInput = document.getElementById('room-size') as HTMLSelectElement;
   const roomShapeInput = document.getElementById('room-shape') as HTMLSelectElement;
   const corridorTypeInput = document.getElementById('corridor-type') as HTMLSelectElement;
+  const pathfindingAlgorithmInput = document.getElementById('pathfinding-algorithm') as HTMLSelectElement;
   const corridorWidthInput = document.getElementById('corridor-width') as HTMLSelectElement;
   const allowDeadendsInput = document.getElementById('allow-deadends') as HTMLInputElement;
   const stairsUpInput = document.getElementById('stairs-up') as HTMLInputElement;
@@ -387,6 +392,7 @@ async function generate(): Promise<void> {
   const roomSize = roomSizeInput.value as any || 'medium';
   const roomShape = roomShapeInput.value as any || 'rectangular';
   const corridorType = corridorTypeInput.value as any || 'straight';
+  const pathfindingAlgorithm = pathfindingAlgorithmInput.value as any || 'manhattan';
   const corridorWidth = parseInt(corridorWidthInput.value) || 1;
   const allowDeadends = allowDeadendsInput.checked;
   const stairsUp = stairsUpInput.checked;
@@ -431,6 +437,7 @@ async function generate(): Promise<void> {
       roomSize,
       roomShape,
       corridorType,
+      pathfindingAlgorithm,
       corridorWidth,
       allowDeadends,
       stairsUp,
@@ -526,10 +533,12 @@ async function generate(): Promise<void> {
     setupMapPanZoom(mapEl);
     setupZoomControls(mapEl);
     
-    // Create minimap from the rendered SVG
+    // Create minimap from the rendered SVG (after panzoom is ready)
     const svgElement = mapContentEl.querySelector('svg');
     if (svgElement) {
-      createMinimap(svgElement);
+      setTimeout(() => {
+        createMinimap(svgElement);
+      }, 300);
     }
 
     // Generate room details using populateRooms to get proper format with features
@@ -805,6 +814,7 @@ function getCurrentConfiguration(): PresetConfiguration {
   const roomSizeInput = document.getElementById('room-size') as HTMLSelectElement;
   const roomShapeInput = document.getElementById('room-shape') as HTMLSelectElement;
   const corridorTypeInput = document.getElementById('corridor-type') as HTMLSelectElement;
+  const pathfindingAlgorithmInput = document.getElementById('pathfinding-algorithm') as HTMLSelectElement;
   const corridorWidthInput = document.getElementById('corridor-width') as HTMLSelectElement;
   const allowDeadendsInput = document.getElementById('allow-deadends') as HTMLInputElement;
   const stairsUpInput = document.getElementById('stairs-up') as HTMLInputElement;
@@ -837,6 +847,7 @@ function getCurrentConfiguration(): PresetConfiguration {
     roomSize: roomSizeInput.value || undefined,
     roomShape: roomShapeInput.value || undefined,
     corridorType: corridorTypeInput.value || undefined,
+    pathfindingAlgorithm: pathfindingAlgorithmInput.value || undefined,
     corridorWidth: parseInt(corridorWidthInput.value) || undefined,
     allowDeadends: allowDeadendsInput.checked,
     stairsUp: stairsUpInput.checked,
@@ -865,6 +876,7 @@ function applyConfiguration(config: PresetConfiguration): void {
   const roomSizeInput = document.getElementById('room-size') as HTMLSelectElement;
   const roomShapeInput = document.getElementById('room-shape') as HTMLSelectElement;
   const corridorTypeInput = document.getElementById('corridor-type') as HTMLSelectElement;
+  const pathfindingAlgorithmInput = document.getElementById('pathfinding-algorithm') as HTMLSelectElement;
   const corridorWidthInput = document.getElementById('corridor-width') as HTMLSelectElement;
   const allowDeadendsInput = document.getElementById('allow-deadends') as HTMLInputElement;
   const stairsUpInput = document.getElementById('stairs-up') as HTMLInputElement;
@@ -899,6 +911,7 @@ function applyConfiguration(config: PresetConfiguration): void {
   
   // Apply corridor settings
   if (config.corridorType !== undefined) corridorTypeInput.value = config.corridorType;
+  if (config.pathfindingAlgorithm !== undefined) pathfindingAlgorithmInput.value = config.pathfindingAlgorithm;
   if (config.corridorWidth !== undefined) corridorWidthInput.value = String(config.corridorWidth);
   if (config.allowDeadends !== undefined) allowDeadendsInput.checked = config.allowDeadends;
   
@@ -1366,47 +1379,53 @@ let minimapState: MinimapState = {
   containerHeight: 126 // 150 - 24 (header height)
 };
 
-let minimapInitialized = false;
-
 function createMinimap(originalSvg: SVGElement): void {
   const minimapContainer = document.getElementById('minimap-svg-container');
   const minimap = document.getElementById('minimap');
-
+  
   if (!minimapContainer || !minimap || !originalSvg) return;
 
-  const serializer = new XMLSerializer();
-  const svgString = serializer.serializeToString(originalSvg);
-
+  // Clone the original SVG for the minimap
+  const clonedSvg = originalSvg.cloneNode(true) as SVGElement;
+  clonedSvg.classList.add('minimap-svg');
+  clonedSvg.removeAttribute('id'); // Avoid duplicate IDs
+  
+  // Get original SVG dimensions
+  const originalViewBox = originalSvg.getAttribute('viewBox');
   const originalWidth = parseFloat(originalSvg.getAttribute('width') || '800');
   const originalHeight = parseFloat(originalSvg.getAttribute('height') || '600');
-
+  
   minimapState.svgWidth = originalWidth;
   minimapState.svgHeight = originalHeight;
-
+  
+  // Calculate scale to fit minimap container
   const scaleX = minimapState.containerWidth / originalWidth;
   const scaleY = minimapState.containerHeight / originalHeight;
   minimapState.scale = Math.min(scaleX, scaleY);
-
+  
+  // Set minimap SVG dimensions
   const minimapWidth = originalWidth * minimapState.scale;
   const minimapHeight = originalHeight * minimapState.scale;
-
-  const img = document.createElement('img');
-  img.src = 'data:image/svg+xml,' + encodeURIComponent(svgString);
-  img.classList.add('minimap-svg');
-  img.setAttribute('width', minimapWidth.toString());
-  img.setAttribute('height', minimapHeight.toString());
-
+  
+  clonedSvg.setAttribute('width', minimapWidth.toString());
+  clonedSvg.setAttribute('height', minimapHeight.toString());
+  
+  if (originalViewBox) {
+    clonedSvg.setAttribute('viewBox', originalViewBox);
+  }
+  
+  // Clear previous content and add new minimap
   minimapContainer.innerHTML = '';
-  minimapContainer.appendChild(img);
-
+  minimapContainer.appendChild(clonedSvg);
+  
+  // Show minimap
   minimap.style.display = 'block';
   minimapState.isVisible = true;
-
-  if (!minimapInitialized) {
-    setupMinimapInteractions();
-    minimapInitialized = true;
-  }
-
+  
+  // Setup minimap interactions
+  setupMinimapInteractions();
+  
+  // Initial viewport rectangle update
   updateMinimapViewport();
 }
 
@@ -1459,27 +1478,46 @@ function setupMinimapInteractions(): void {
 
 function navigateToMinimapPoint(minimapX: number, minimapY: number): void {
   const mapContainer = document.getElementById('map');
-  if (!mapContainer) return;
+  const minimapSvg = document.querySelector('.minimap-svg') as SVGElement;
+  if (!mapContainer || !minimapSvg || !panzoomInstance) {
+    console.warn('Minimap navigation failed: missing elements or panzoom instance');
+    return;
+  }
   
-  // Convert minimap coordinates to main map coordinates
-  const mainMapX = (minimapX / minimapState.scale);
-  const mainMapY = (minimapY / minimapState.scale);
+  // Get the minimap SVG's bounding rect to account for centering
+  const minimapSvgRect = minimapSvg.getBoundingClientRect();
+  const minimapContainerRect = document.getElementById('minimap-svg-container')?.getBoundingClientRect();
   
-  // Get main map container dimensions
+  if (!minimapContainerRect) return;
+  
+  // Adjust coordinates to account for SVG centering within container
+  const svgOffsetX = (minimapContainerRect.width - minimapSvgRect.width) / 2;
+  const svgOffsetY = (minimapContainerRect.height - minimapSvgRect.height) / 2;
+  
+  const adjustedX = minimapX - svgOffsetX;
+  const adjustedY = minimapY - svgOffsetY;
+  
+  // Convert minimap coordinates to original SVG coordinates
+  const svgX = adjustedX / minimapState.scale;
+  const svgY = adjustedY / minimapState.scale;
+  
+  // Get container dimensions for centering
   const containerRect = mapContainer.getBoundingClientRect();
   const centerX = containerRect.width / 2;
   const centerY = containerRect.height / 2;
   
-  // Calculate scroll position to center the clicked point
-  const targetScrollX = (mainMapX * mapViewState.scale) - centerX;
-  const targetScrollY = (mainMapY * mapViewState.scale) - centerY;
+  // Get current transform by parsing CSS transform
+  const svg = document.querySelector('#map-content svg') as SVGElement;
+  const transform = svg?.style.transform || 'matrix(1, 0, 0, 1, 0, 0)';
+  const matrix = transform.match(/matrix\(([^)]+)\)/);
+  const currentScale = matrix ? parseFloat(matrix[1].split(',')[0]) : 1;
   
-  // Apply scroll with bounds checking
-  mapContainer.scrollLeft = Math.max(0, targetScrollX);
-  mapContainer.scrollTop = Math.max(0, targetScrollY);
+  // Calculate new pan position to center the clicked point
+  const newX = -(svgX * currentScale) + centerX;
+  const newY = -(svgY * currentScale) + centerY;
   
-  // Update viewport rectangle
-  updateMinimapViewport();
+  // Apply the new transform
+  panzoomInstance.pan(newX, newY, { animate: true });
 }
 
 function setupViewportDragging(): void {
@@ -1545,27 +1583,54 @@ function updateMinimapViewport(): void {
   const mapContainer = document.getElementById('map');
   const viewportRect = document.getElementById('minimap-viewport');
   const minimapContainer = document.getElementById('minimap-svg-container');
+  const minimapSvg = document.querySelector('.minimap-svg') as SVGElement;
   
-  if (!mapContainer || !viewportRect || !minimapContainer || !minimapState.isVisible || minimapState.isCollapsed) {
+  if (!mapContainer || !viewportRect || !minimapContainer || !minimapSvg || !minimapState.isVisible || minimapState.isCollapsed) {
     return;
   }
   
-  // Get main map scroll position and container dimensions
-  const scrollX = mapContainer.scrollLeft;
-  const scrollY = mapContainer.scrollTop;
-  const containerRect = mapContainer.getBoundingClientRect();
-  const containerWidth = containerRect.width;
-  const containerHeight = containerRect.height;
+  // If panzoom isn't ready yet, hide viewport and return
+  if (!panzoomInstance) {
+    viewportRect.style.display = 'none';
+    return;
+  }
   
-  // Convert to minimap coordinates
-  const minimapScrollX = (scrollX / mapViewState.scale) * minimapState.scale;
-  const minimapScrollY = (scrollY / mapViewState.scale) * minimapState.scale;
-  const minimapViewWidth = (containerWidth / mapViewState.scale) * minimapState.scale;
-  const minimapViewHeight = (containerHeight / mapViewState.scale) * minimapState.scale;
+  // Get transform from the SVG's style instead of getTransform
+  const svg = document.querySelector('#map-content svg') as SVGElement;
+  if (!svg) return;
+  
+  const transform = svg.style.transform || 'matrix(1, 0, 0, 1, 0, 0)';
+  const matrix = transform.match(/matrix\(([^)]+)\)/);
+  
+  let scale = mapViewState.scale || 1;
+  let translateX = 0;
+  let translateY = 0;
+  
+  if (matrix) {
+    const values = matrix[1].split(',').map(v => parseFloat(v.trim()));
+    scale = values[0] || 1;
+    translateX = values[4] || 0;
+    translateY = values[5] || 0;
+  }
+  
+  const containerRect = mapContainer.getBoundingClientRect();
+  
+  // Get minimap SVG position within its container (for centering offset)
+  const minimapSvgRect = minimapSvg.getBoundingClientRect();
+  const minimapContainerRect = minimapContainer.getBoundingClientRect();
+  
+  const svgOffsetX = (minimapContainerRect.width - minimapSvgRect.width) / 2;
+  const svgOffsetY = (minimapContainerRect.height - minimapSvgRect.height) / 2;
+  
+  // Convert main map transform to minimap coordinates
+  const minimapX = (-translateX / scale) * minimapState.scale + svgOffsetX;
+  const minimapY = (-translateY / scale) * minimapState.scale + svgOffsetY;
+  const minimapViewWidth = (containerRect.width / scale) * minimapState.scale;
+  const minimapViewHeight = (containerRect.height / scale) * minimapState.scale;
   
   // Position and size the viewport rectangle
-  viewportRect.style.left = minimapScrollX + 'px';
-  viewportRect.style.top = minimapScrollY + 'px';
+  viewportRect.style.left = minimapX + 'px';
+  viewportRect.style.top = minimapY + 'px';
   viewportRect.style.width = minimapViewWidth + 'px';
   viewportRect.style.height = minimapViewHeight + 'px';
   
@@ -1596,198 +1661,91 @@ let mapViewState: MapViewState = {
   dragStartScrollY: 0
 };
 
+// Global panzoom instance for external access
+let panzoomInstance: any = null;
+
 function setupMapPanZoom(mapEl: HTMLElement): void {
   const mapContentEl = mapEl.querySelector('#map-content') as HTMLElement;
   const svg = mapContentEl?.querySelector('svg');
   if (!svg || !mapContentEl) return;
 
+  // Clean up any existing panzoom instance
+  if (panzoomInstance) {
+    try {
+      panzoomInstance.destroy();
+    } catch (e) {
+      // Ignore errors during cleanup
+    }
+    panzoomInstance = null;
+  }
+
   // Add class to SVG for CSS transitions
   svg.classList.add('map-svg');
   
-  // Ensure the SVG has a minimum size to enable scrolling
-  const svgRect = svg.getBoundingClientRect();
-  const containerRect = mapEl.getBoundingClientRect();
+  // Test if Panzoom is available
+  if (typeof Panzoom === 'undefined') {
+    console.error('Panzoom library not loaded!');
+    return;
+  }
   
-  // If SVG is smaller than container, artificially expand it for pan functionality
-  if (svgRect.width <= containerRect.width) {
-    svg.style.minWidth = (containerRect.width + 200) + 'px';
+  // Try the simplest possible panzoom setup
+  try {
+    panzoomInstance = Panzoom(svg, {
+      // Minimal options
+      maxScale: 3,
+      minScale: 0.5
+    });
+    
+    console.log('Panzoom created on SVG element');
+    
+    // Add wheel zoom to parent
+    mapEl.addEventListener('wheel', panzoomInstance.zoomWithWheel);
+    
+    // Update minimap when changes occur
+    svg.addEventListener('panzoomchange', (event: any) => {
+      if (panzoomInstance) {
+        // Use the event detail instead of getTransform
+        const transform = event.detail || { scale: 1, x: 0, y: 0 };
+        mapViewState.scale = transform.scale;
+        updateMinimapViewport();
+      }
+    });
+    
+  } catch (error) {
+    console.error('Failed to create panzoom:', error);
+    return;
   }
-  if (svgRect.height <= containerRect.height) {
-    svg.style.minHeight = (containerRect.height + 200) + 'px';
-  }
-
-  // Pan functionality - using scroll-based approach for better performance
-  let isDragging = false;
-  let startX = 0, startY = 0;
-  let scrollLeft = 0, scrollTop = 0;
-
-  const onMouseDown = (e: MouseEvent) => {
-    // Don't interfere with clickable elements
-    const target = e.target as Element;
-    if (target.closest('.room-number, .door-icon, .key-icon, .map-control-btn')) {
-      return;
-    }
-
-    isDragging = true;
-    mapEl.classList.add('dragging');
-    
-    // Use clientX/Y instead of pageX/Y for better cross-browser compatibility
-    startX = e.clientX;
-    startY = e.clientY;
-    scrollLeft = mapEl.scrollLeft;
-    scrollTop = mapEl.scrollTop;
-    e.preventDefault();
-  };
-
-  const onMouseMove = (e: MouseEvent) => {
-    if (!isDragging) return;
-    e.preventDefault();
-    
-    // Calculate the movement delta
-    const deltaX = e.clientX - startX;
-    const deltaY = e.clientY - startY;
-    
-    // Update scroll position (subtract delta to invert direction for natural feel)
-    mapEl.scrollLeft = scrollLeft - deltaX;
-    mapEl.scrollTop = scrollTop - deltaY;
-    
-    // Update minimap viewport
+  
+  // Initial minimap update after panzoom is ready
+  setTimeout(() => {
     updateMinimapViewport();
-  };
-
-  const onMouseUp = () => {
-    isDragging = false;
-    mapEl.classList.remove('dragging');
-  };
-
-  const onMouseLeave = () => {
-    isDragging = false;
-    mapEl.classList.remove('dragging');
-  };
-
-  // Mouse wheel zoom functionality
-  const onWheel = (e: WheelEvent) => {
-    e.preventDefault();
-    
-    const delta = e.deltaY > 0 ? -0.1 : 0.1;
-    const newScale = Math.max(0.1, Math.min(5, mapViewState.scale + delta));
-    
-    zoomToPoint(mapEl, svg, e.clientX, e.clientY, newScale);
-    
-    // Update minimap viewport after zoom
-    setTimeout(() => updateMinimapViewport(), 50);
-  };
-
-  // Event listeners
-  mapEl.addEventListener('mousedown', onMouseDown);
-  mapEl.addEventListener('mousemove', onMouseMove);
-  mapEl.addEventListener('mouseup', onMouseUp);
-  mapEl.addEventListener('mouseleave', onMouseLeave);
-  mapEl.addEventListener('wheel', onWheel, { passive: false });
-
-  // Touch support for mobile
-  let touchStartX = 0, touchStartY = 0;
-  let touchScrollLeft = 0, touchScrollTop = 0;
-
-  mapEl.addEventListener('touchstart', (e) => {
-    if (e.touches.length === 1) {
-      const touch = e.touches[0];
-      touchStartX = touch.clientX;
-      touchStartY = touch.clientY;
-      touchScrollLeft = mapEl.scrollLeft;
-      touchScrollTop = mapEl.scrollTop;
-    }
-  }, { passive: true });
-
-  mapEl.addEventListener('touchmove', (e) => {
-    if (e.touches.length === 1) {
-      e.preventDefault();
-      const touch = e.touches[0];
-      const deltaX = touch.clientX - touchStartX;
-      const deltaY = touch.clientY - touchStartY;
-      
-      mapEl.scrollLeft = touchScrollLeft - deltaX;
-      mapEl.scrollTop = touchScrollTop - deltaY;
-      
-      // Update minimap viewport
-      updateMinimapViewport();
-    }
-  }, { passive: false });
+  }, 100);
 }
 
 function zoomToPoint(mapEl: HTMLElement, svg: SVGElement, clientX: number, clientY: number, newScale: number): void {
-  const rect = mapEl.getBoundingClientRect();
-  const containerX = clientX - rect.left;
-  const containerY = clientY - rect.top;
+  if (!panzoomInstance) return;
   
-  // Get current scroll position
-  const scrollLeft = mapEl.scrollLeft;
-  const scrollTop = mapEl.scrollTop;
-  
-  // Calculate the point in the SVG coordinate system
-  const svgPoint = {
-    x: (containerX + scrollLeft) / mapViewState.scale,
-    y: (containerY + scrollTop) / mapViewState.scale
-  };
-  
-  // Update scale
-  const oldScale = mapViewState.scale;
-  mapViewState.scale = newScale;
-  
-  // Apply scale transform
-  svg.style.transform = `scale(${newScale})`;
-  
-  // Calculate new scroll position to keep the zoom point fixed
-  const newScrollLeft = svgPoint.x * newScale - containerX;
-  const newScrollTop = svgPoint.y * newScale - containerY;
-  
-  mapEl.scrollLeft = newScrollLeft;
-  mapEl.scrollTop = newScrollTop;
+  // Use panzoom's built-in zoom functionality
+  panzoomInstance.zoomToPoint(newScale, { clientX, clientY });
 }
 
 function setupZoomControls(mapEl: HTMLElement): void {
-  const mapContentEl = mapEl.querySelector('#map-content') as HTMLElement;
-  const svg = mapContentEl?.querySelector('svg');
-  if (!svg || !mapContentEl) return;
+  if (!panzoomInstance) return;
 
   const zoomInBtn = document.getElementById('zoom-in');
   const zoomOutBtn = document.getElementById('zoom-out');
   const resetViewBtn = document.getElementById('reset-view');
 
   zoomInBtn?.addEventListener('click', () => {
-    const newScale = Math.min(5, mapViewState.scale + 0.2);
-    const rect = mapEl.getBoundingClientRect();
-    const centerX = rect.width / 2;
-    const centerY = rect.height / 2;
-    zoomToPoint(mapEl, svg, rect.left + centerX, rect.top + centerY, newScale);
-    setTimeout(() => updateMinimapViewport(), 50);
+    panzoomInstance.zoomIn();
   });
 
   zoomOutBtn?.addEventListener('click', () => {
-    const newScale = Math.max(0.1, mapViewState.scale - 0.2);
-    const rect = mapEl.getBoundingClientRect();
-    const centerX = rect.width / 2;
-    const centerY = rect.height / 2;
-    zoomToPoint(mapEl, svg, rect.left + centerX, rect.top + centerY, newScale);
-    setTimeout(() => updateMinimapViewport(), 50);
+    panzoomInstance.zoomOut();
   });
 
   resetViewBtn?.addEventListener('click', () => {
-    // Reset zoom
-    mapViewState.scale = 1;
-    svg.style.transform = 'scale(1)';
-    
-    // Center the map
-    setTimeout(() => {
-      const svgRect = svg.getBoundingClientRect();
-      const containerRect = mapEl.getBoundingClientRect();
-      
-      mapEl.scrollLeft = Math.max(0, (svgRect.width - containerRect.width) / 2);
-      mapEl.scrollTop = Math.max(0, (svgRect.height - containerRect.height) / 2);
-      
-      // Update minimap viewport
-      updateMinimapViewport();
-    }, 50);
+    panzoomInstance.reset();
   });
 }
 

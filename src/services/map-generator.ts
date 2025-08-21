@@ -3,6 +3,7 @@ import { rng } from './random';
 import Delaunator from 'delaunator';
 import { generateDoor } from './doors';
 import { roomShapeService, ShapePreferences } from './room-shapes';
+import { connectRooms, connectRoomsEnhanced, type EnhancedPathfindingOptions } from './corridors';
 
 // A* pathfinding node for corridor generation
 interface PathNode {
@@ -43,6 +44,7 @@ export interface MapGenerationOptions {
   
   // Corridor Configuration
   corridorType: 'maze' | 'winding' | 'straight' | 'mixed';
+  pathfindingAlgorithm?: 'manhattan' | 'astar' | 'jumppoint' | 'dijkstra';
   corridorWidth: 1 | 2 | 3; // Width in tiles for battle map compatibility
   allowDeadends: boolean;
   
@@ -84,7 +86,7 @@ export class MapGenerator {
     const seed = options.seed ?? this.R().toString(36).slice(2, 10);
     this.R = rng(seed);
 
-    const { rooms, width, height, layoutType, roomLayout, roomSize, roomShape, corridorType, corridorWidth, allowDeadends, stairsUp, stairsDown, entranceFromPeriphery } = options;
+    const { rooms, width, height, layoutType, roomLayout, roomSize, roomShape, corridorType, pathfindingAlgorithm = 'manhattan', corridorWidth, allowDeadends, stairsUp, stairsDown, entranceFromPeriphery } = options;
 
     // Generate layout boundaries based on type
     const boundaries = this.generateLayoutBoundaries(layoutType, width, height);
@@ -107,7 +109,7 @@ export class MapGenerator {
     const allRooms = [...dungeonRooms, ...specialRooms];
     
     // Generate corridors based on type (including special rooms)
-    const corridors = this.generateCorridors(allRooms, corridorType, corridorWidth, allowDeadends, width, height);
+    const corridors = this.generateCorridors(allRooms, corridorType, pathfindingAlgorithm, corridorWidth, allowDeadends, width, height);
     
     // Generate doors
     const doors = this.generateDoors(corridors);
@@ -676,33 +678,32 @@ export class MapGenerator {
   /**
    * Generate corridors using graph algorithms
    */
-  private generateCorridors(rooms: Room[], type: string, width: number, allowDeadends: boolean, mapWidth: number, mapHeight: number): Corridor[] {
-    const edges = this.buildRoomGraph(rooms, allowDeadends);
-    const corridors: Corridor[] = [];
-
-    const pickType = (): string =>
-      type === 'mixed'
-        ? ['maze', 'winding', 'straight'][Math.floor(this.R() * 3)]
-        : type;
-
-    edges.forEach(([a, b], i) => {
-      const room1 = rooms[a];
-      const room2 = rooms[b];
-      const corridorType = pickType();
-      const pathResult = this.createPath(corridorType, room1, room2, rooms, mapWidth, mapHeight);
-      if (pathResult.path.length > 0) {
-        // Expand path to desired width for battle map compatibility
-        const path = this.expandCorridorToWidth(pathResult.path, width);
-        corridors.push({
-          id: `corridor-${i}`,
-          from: room1.id,
-          to: room2.id,
-          path,
-          doorStart: pathResult.doorStart,
-          doorEnd: pathResult.doorEnd
-        });
-      }
-    });
+  private generateCorridors(rooms: Room[], type: string, pathfindingAlgorithm: string, width: number, allowDeadends: boolean, mapWidth: number, mapHeight: number): Corridor[] {
+    // Use enhanced corridor generation based on pathfinding algorithm
+    const useEnhanced = pathfindingAlgorithm !== 'manhattan';
+    
+    const pathfindingOptions: EnhancedPathfindingOptions = {
+      algorithm: pathfindingAlgorithm as any,
+      usePathfindingLib: useEnhanced
+    };
+    
+    let corridors: Corridor[];
+    
+    if (useEnhanced) {
+      console.log(`🚀 Using enhanced pathfinding: ${pathfindingAlgorithm}`);
+      corridors = connectRoomsEnhanced(rooms, this.R, pathfindingOptions);
+    } else {
+      console.log('📏 Using classic Manhattan pathfinding');
+      corridors = connectRooms(rooms, this.R);
+    }
+    
+    // Expand corridors to desired width for battle map compatibility if needed
+    if (width > 1) {
+      corridors = corridors.map(corridor => ({
+        ...corridor,
+        path: this.expandCorridorToWidth(corridor.path, width)
+      }));
+    }
 
     return corridors;
   }

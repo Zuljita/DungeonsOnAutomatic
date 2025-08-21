@@ -1,6 +1,24 @@
 import { Corridor, Room } from '../core/types';
 import { id } from './random';
 
+// Enhanced pathfinding options
+export interface EnhancedPathfindingOptions {
+  algorithm: 'astar' | 'jumppoint' | 'dijkstra' | 'manhattan';
+  usePathfindingLib: boolean;
+}
+
+// Try to load PathFinding.js library if available
+let PF: any = null;
+try {
+  // In browser environment, this might fail gracefully
+  if (typeof window === 'undefined') {
+    // Node.js environment - try to load pathfinding
+    PF = eval('require')('pathfinding');
+  }
+} catch (error) {
+  console.log('PathFinding.js library not available, using fallback algorithms');
+}
+
 type Edge = { a: number; b: number; d: number };
 
 // A* pathfinding node
@@ -277,4 +295,174 @@ function getClosestEdgePoint(point: { x: number; y: number }, room: Room): { x: 
     
     return closestCorner;
   }
+}
+
+/**
+ * Enhanced corridor generation using PathFinding.js library when available
+ */
+export function connectRoomsEnhanced(
+  rooms: Room[], 
+  r: () => number, 
+  options: EnhancedPathfindingOptions = { algorithm: 'astar', usePathfindingLib: true }
+): Corridor[] {
+  if (rooms.length < 2) return [];
+  
+  // Fall back to original algorithm if PathFinding.js not available or disabled
+  if (!options.usePathfindingLib || !PF || options.algorithm === 'manhattan') {
+    return connectRooms(rooms, r);
+  }
+  
+  const centers = rooms.map(rm => ({ 
+    x: rm.x + Math.floor(rm.w/2), 
+    y: rm.y + Math.floor(rm.h/2) 
+  }));
+  
+  // Calculate dungeon bounds with padding
+  const minX = Math.min(...rooms.map(r => r.x)) - 5;
+  const maxX = Math.max(...rooms.map(r => r.x + r.w)) + 5;
+  const minY = Math.min(...rooms.map(r => r.y)) - 5;
+  const maxY = Math.max(...rooms.map(r => r.y + r.h)) + 5;
+  const width = maxX - minX;
+  const height = maxY - minY;
+  
+  // Offset everything to grid coordinates
+  const offsetCenters = centers.map(c => ({
+    x: c.x - minX,
+    y: c.y - minY
+  }));
+  
+  const offsetRooms = rooms.map(room => ({
+    ...room,
+    x: room.x - minX,
+    y: room.y - minY
+  }));
+
+  // Generate edges using Kruskal's algorithm for minimum spanning tree
+  const edges: Edge[] = [];
+  for (let i = 0; i < rooms.length; i++) {
+    for (let j = i + 1; j < rooms.length; j++) {
+      const d = Math.abs(centers[i].x - centers[j].x) + Math.abs(centers[i].y - centers[j].y);
+      edges.push({ a: i, b: j, d });
+    }
+  }
+  edges.sort((e1, e2) => e1.d - e2.d);
+
+  const parent = Array.from({ length: rooms.length }, (_, i) => i);
+  const find = (x: number): number => (parent[x] === x ? x : (parent[x] = find(parent[x])));
+  const unite = (a: number, b: number): void => {
+    parent[find(a)] = find(b);
+  };
+  
+  const corridors: Corridor[] = [];
+  
+  for (const e of edges) {
+    if (find(e.a) !== find(e.b)) {
+      unite(e.a, e.b);
+      
+      const from = rooms[e.a].id;
+      const to = rooms[e.b].id;
+      
+      let path: { x: number; y: number }[];
+      
+      try {
+        // Use PathFinding.js for enhanced pathfinding
+        path = findPathWithPathfindingJS(
+          offsetCenters[e.a],
+          offsetCenters[e.b],
+          offsetRooms,
+          width,
+          height,
+          options.algorithm
+        );
+        
+        // Convert back to original coordinates
+        path = path.map(p => ({ x: p.x + minX, y: p.y + minY }));
+      } catch (error) {
+        console.warn('PathFinding.js failed, falling back to Manhattan:', (error as Error).message);
+        // Fallback to Manhattan path
+        path = manhattanPath(centers[e.a], centers[e.b], r);
+      }
+      
+      // Trim path to avoid room interiors
+      path = trimPath(path, rooms[e.a], rooms[e.b]);
+      
+      corridors.push({ id: id('cor', r), from, to, path });
+    }
+  }
+  
+  return corridors;
+}
+
+/**
+ * Create a cost grid for PathFinding.js (0 = walkable, 1 = blocked)
+ */
+function createPathfindingGrid(rooms: Room[], width: number, height: number): number[][] {
+  // Initialize all as walkable
+  const grid: number[][] = Array(height).fill(null).map(() => Array(width).fill(0));
+  
+  // Block room interiors but keep edges walkable for door placement
+  for (const room of rooms) {
+    // Block room interiors
+    for (let y = room.y + 1; y < room.y + room.h - 1; y++) {
+      for (let x = room.x + 1; x < room.x + room.w - 1; x++) {
+        if (x >= 0 && x < width && y >= 0 && y < height) {
+          grid[y][x] = 1; // Block interior
+        }
+      }
+    }
+  }
+  
+  return grid;
+}
+
+/**
+ * Enhanced pathfinding using PathFinding.js library
+ */
+function findPathWithPathfindingJS(
+  start: { x: number; y: number },
+  goal: { x: number; y: number },
+  rooms: Room[],
+  width: number,
+  height: number,
+  algorithm: 'astar' | 'jumppoint' | 'dijkstra' = 'astar'
+): { x: number; y: number }[] {
+  const costGrid = createPathfindingGrid(rooms, width, height);
+  
+  // Ensure start and goal are walkable
+  if (start.x >= 0 && start.x < width && start.y >= 0 && start.y < height) {
+    costGrid[start.y][start.x] = 0;
+  }
+  if (goal.x >= 0 && goal.x < width && goal.y >= 0 && goal.y < height) {
+    costGrid[goal.y][goal.x] = 0;
+  }
+  
+  const grid = new PF.Grid(costGrid);
+  
+  // Select pathfinding algorithm
+  let finder;
+  switch (algorithm) {
+    case 'jumppoint':
+      finder = new PF.JumpPointFinder({
+        diagonalMovement: PF.DiagonalMovement.Never
+      });
+      break;
+    case 'dijkstra':
+      finder = new PF.DijkstraFinder({
+        diagonalMovement: PF.DiagonalMovement.Never
+      });
+      break;
+    default: // 'astar'
+      finder = new PF.AStarFinder({
+        diagonalMovement: PF.DiagonalMovement.Never,
+        heuristic: PF.Heuristic.manhattan
+      });
+  }
+  
+  const path = finder.findPath(start.x, start.y, goal.x, goal.y, grid);
+  
+  if (path.length === 0) {
+    throw new Error(`No path found from (${start.x},${start.y}) to (${goal.x},${goal.y})`);
+  }
+  
+  return path.map(([x, y]: [number, number]) => ({ x, y }));
 }
