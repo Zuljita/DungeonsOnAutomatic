@@ -244,9 +244,27 @@ export function connectRooms(rooms: Room[], r: () => number): Corridor[] {
       unite(e.a, e.b);
       const from = rooms[e.a].id,
         to = rooms[e.b].id;
+      
+      // Calculate door connection points for classic pathfinding too
+      const doorPoints = calculateDoorConnectionPoints(rooms[e.a], rooms[e.b]);
+      
       let path = manhattanPath(centers[e.a], centers[e.b], r);
       path = trimPath(path, rooms[e.a], rooms[e.b]);
-      corridors.push({ id: id('cor', r), from, to, path });
+      
+      // Ensure path starts and ends at door points
+      if (path.length > 0) {
+        path[0] = doorPoints.start;
+        path[path.length - 1] = doorPoints.end;
+      }
+      
+      corridors.push({ 
+        id: id('cor', r), 
+        from, 
+        to, 
+        path,
+        doorStart: doorPoints.start,
+        doorEnd: doorPoints.end
+      });
     }
   }
   return corridors;
