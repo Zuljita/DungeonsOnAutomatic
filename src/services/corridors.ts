@@ -9,46 +9,15 @@ export interface EnhancedPathfindingOptions {
   usePathfindingLib: boolean;
 }
 
-// Try to load PathFinding.js library if available
-let PF: any = null;
-try {
-  // In browser environment, this might fail gracefully
-  if (typeof window === 'undefined') {
-    // Node.js environment - try to load pathfinding
-    PF = eval('require')('pathfinding');
-  }
-} catch (error) {
-  console.log('PathFinding.js library not available, using fallback algorithms');
-}
+// Load PathFinding.js library
+import * as PF from 'pathfinding';
 
 type Edge = { a: number; b: number; d: number };
 
-// A* pathfinding node
-interface PathNode {
+// Pathfinding types for compatibility
+interface PathPoint {
   x: number;
   y: number;
-  g: number; // Cost from start
-  h: number; // Heuristic cost to goal
-  f: number; // Total cost (g + h)
-  parent?: PathNode;
-}
-
-// Priority queue for A* pathfinding
-class PriorityQueue {
-  private items: PathNode[] = [];
-
-  enqueue(node: PathNode): void {
-    this.items.push(node);
-    this.items.sort((a, b) => a.f - b.f);
-  }
-
-  dequeue(): PathNode | undefined {
-    return this.items.shift();
-  }
-
-  isEmpty(): boolean {
-    return this.items.length === 0;
-  }
 }
 
 /**
@@ -133,7 +102,7 @@ function calculateDoorConnectionPoints(room1: Room, room2: Room): {
 }
 
 /**
- * A* pathfinding with cost grid support
+ * A* pathfinding using the pathfinding library with cost grid support
  * Finds optimal path while avoiding high-cost areas (like room interiors)
  */
 function findPathAStar(
@@ -143,78 +112,31 @@ function findPathAStar(
   width: number,
   height: number
 ): { x: number; y: number }[] {
-  const openSet = new PriorityQueue();
-  const closedSet = new Set<string>();
+  // Convert cost grid to binary grid for pathfinding library (0 = walkable, 1 = blocked)
+  const grid = new (PF as any).Grid(width, height);
   
-  // Heuristic function (Manhattan distance)
-  const heuristic = (a: { x: number; y: number }, b: { x: number; y: number }): number => {
-    return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
-  };
-  
-  // Create start node
-  const startNode: PathNode = {
-    x: start.x,
-    y: start.y,
-    g: 0,
-    h: heuristic(start, goal),
-    f: heuristic(start, goal)
-  };
-  
-  openSet.enqueue(startNode);
-  
-  while (!openSet.isEmpty()) {
-    const currentNode = openSet.dequeue()!;
-    const nodeKey = `${currentNode.x},${currentNode.y}`;
-    
-    // Goal reached
-    if (currentNode.x === goal.x && currentNode.y === goal.y) {
-      const path: { x: number; y: number }[] = [];
-      let current: PathNode | undefined = currentNode;
-      while (current) {
-        path.unshift({ x: current.x, y: current.y });
-        current = current.parent;
-      }
-      return path;
+  // Set walkability based on cost (high cost areas become less walkable)
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const cost = costGrid[y][x];
+      // Convert high costs to blocked tiles, but allow some path through room edges
+      const isBlocked = cost > 15; // Block very high cost areas
+      grid.setWalkableAt(x, y, !isBlocked);
     }
-    
-    closedSet.add(nodeKey);
-    
-    // Check neighbors (4-directional movement)
-    const neighbors = [
-      { x: currentNode.x + 1, y: currentNode.y },
-      { x: currentNode.x - 1, y: currentNode.y },
-      { x: currentNode.x, y: currentNode.y + 1 },
-      { x: currentNode.x, y: currentNode.y - 1 }
-    ];
-    
-    for (const neighbor of neighbors) {
-      // Skip if out of bounds
-      if (neighbor.x < 0 || neighbor.x >= width || neighbor.y < 0 || neighbor.y >= height) {
-        continue;
-      }
-      
-      const neighborKey = `${neighbor.x},${neighbor.y}`;
-      
-      // Skip if already evaluated
-      if (closedSet.has(neighborKey)) {
-        continue;
-      }
-      
-      // Calculate cost using the cost grid
-      const moveCost = costGrid[neighbor.y][neighbor.x];
-      const tentativeG = currentNode.g + moveCost;
-      
-      const neighborNode: PathNode = {
-        x: neighbor.x,
-        y: neighbor.y,
-        g: tentativeG,
-        h: heuristic(neighbor, goal),
-        f: tentativeG + heuristic(neighbor, goal),
-        parent: currentNode
-      };
-      
-      openSet.enqueue(neighborNode);
-    }
+  }
+  
+  // Create A* finder with Manhattan heuristic (matches our original heuristic)
+  const finder = new (PF as any).AStarFinder({
+    allowDiagonal: false,
+    heuristic: (PF as any).Heuristic.manhattan
+  });
+  
+  // Find path using optimized A* with heap-based priority queue
+  const path = finder.findPath(start.x, start.y, goal.x, goal.y, grid.clone());
+  
+  // Convert path format to our expected format
+  if (path.length > 0) {
+    return path.map((point: number[]) => ({ x: point[0], y: point[1] }));
   }
   
   // No path found, fallback to Manhattan path
@@ -509,25 +431,25 @@ function findPathWithPathfindingJS(
     costGrid[goal.y][goal.x] = 0;
   }
   
-  const grid = new PF.Grid(costGrid);
+  const grid = new (PF as any).Grid(costGrid);
   
   // Select pathfinding algorithm
   let finder;
   switch (algorithm) {
     case 'jumppoint':
-      finder = new PF.JumpPointFinder({
-        diagonalMovement: PF.DiagonalMovement.Never
+      finder = new (PF as any).JumpPointFinder({
+        diagonalMovement: (PF as any).DiagonalMovement.Never
       });
       break;
     case 'dijkstra':
-      finder = new PF.DijkstraFinder({
-        diagonalMovement: PF.DiagonalMovement.Never
+      finder = new (PF as any).DijkstraFinder({
+        diagonalMovement: (PF as any).DiagonalMovement.Never
       });
       break;
     default: // 'astar'
-      finder = new PF.AStarFinder({
-        diagonalMovement: PF.DiagonalMovement.Never,
-        heuristic: PF.Heuristic.manhattan
+      finder = new (PF as any).AStarFinder({
+        diagonalMovement: (PF as any).DiagonalMovement.Never,
+        heuristic: (PF as any).Heuristic.manhattan
       });
   }
   
