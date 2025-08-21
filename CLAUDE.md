@@ -111,6 +111,35 @@ This is a pnpm workspace with the main package and GUI as separate workspaces. T
 - Adding new GUI features
 - Fixing async/await patterns
 
+## Development Best Practices
+
+### Library-First Development Philosophy
+
+**ALWAYS prefer existing, well-maintained libraries over custom implementations:**
+
+1. **Search existing ecosystem first**: Before writing custom algorithms or utilities, search for established libraries that solve the same problem
+2. **Check package.json dependencies**: Review existing dependencies to see if functionality is already available
+3. **Evaluate library maturity**: Prefer libraries with active maintenance, good documentation, and TypeScript support
+4. **Consider bundle size**: For browser-facing features, evaluate the impact on bundle size
+
+**Examples from this project:**
+- ✅ **PathFinding.js** - Used for corridor pathfinding instead of custom A* implementation
+- ✅ **panzoom.js** - Used for interactive map navigation instead of custom pan/zoom logic
+- ✅ **Commander.js** - Used for CLI parsing instead of manual argument processing
+- ❌ **Custom ASCII rendering** - Justified because it's core domain logic specific to dungeon generation
+
+**When custom code is appropriate:**
+- Core domain logic unique to dungeon generation (room placement, corridor generation)
+- Integration glue between libraries
+- Performance-critical algorithms where libraries don't meet specific needs
+- When existing libraries don't support required features and can't be easily extended
+
+**Before implementing custom solutions, ask:**
+1. "Does an npm package already solve this problem?"
+2. "Can existing project dependencies be extended to handle this use case?"
+3. "Is this core domain logic that justifies custom implementation?"
+4. "Would using a library significantly improve maintainability and reduce bugs?"
+
 # important-instruction-reminders
 Do what has been asked; nothing more, nothing less.
 NEVER create files unless they're absolutely necessary for achieving your goal.
