@@ -1,5 +1,6 @@
 import { Corridor, Room } from '../core/types';
 import { id } from './random';
+import { roomShapeService } from './room-shapes';
 
 // Enhanced pathfinding options
 export interface EnhancedPathfindingOptions {
@@ -86,6 +87,48 @@ function generateCostGrid(rooms: Room[], width: number, height: number): number[
   }
   
   return costGrid;
+}
+
+/**
+ * Calculate optimal door connection points between two rooms
+ */
+function calculateDoorConnectionPoints(room1: Room, room2: Room): {
+  start: { x: number; y: number };
+  end: { x: number; y: number };
+} {
+  const center1 = { x: room1.x + Math.floor(room1.w / 2), y: room1.y + Math.floor(room1.h / 2) };
+  const center2 = { x: room2.x + Math.floor(room2.w / 2), y: room2.y + Math.floor(room2.h / 2) };
+  
+  const dx = center2.x - center1.x;
+  const dy = center2.y - center1.y;
+  
+  let startDirection: 'top' | 'bottom' | 'left' | 'right';
+  let endDirection: 'top' | 'bottom' | 'left' | 'right';
+  
+  if (Math.abs(dx) > Math.abs(dy)) {
+    // Horizontal connection
+    if (dx > 0) {
+      startDirection = 'right';
+      endDirection = 'left';
+    } else {
+      startDirection = 'left';
+      endDirection = 'right';
+    }
+  } else {
+    // Vertical connection
+    if (dy > 0) {
+      startDirection = 'bottom';
+      endDirection = 'top';
+    } else {
+      startDirection = 'top';
+      endDirection = 'bottom';
+    }
+  }
+  
+  const start = roomShapeService.findClosestEdgePoint(room1, startDirection, center2);
+  const end = roomShapeService.findClosestEdgePoint(room2, endDirection, center1);
+  
+  return { start, end };
 }
 
 /**
@@ -312,6 +355,9 @@ export function connectRoomsEnhanced(
     return connectRooms(rooms, r);
   }
   
+  console.log(`🚀 Using enhanced door-to-door pathfinding: ${options.algorithm}`);
+  
+  // Calculate room centers for MST generation
   const centers = rooms.map(rm => ({ 
     x: rm.x + Math.floor(rm.w/2), 
     y: rm.y + Math.floor(rm.h/2) 
@@ -325,18 +371,9 @@ export function connectRoomsEnhanced(
   const width = maxX - minX;
   const height = maxY - minY;
   
-  // Offset everything to grid coordinates
-  const offsetCenters = centers.map(c => ({
-    x: c.x - minX,
-    y: c.y - minY
-  }));
+  // Generate cost grid that discourages going through room interiors
+  const costGrid = generateCostGrid(rooms, width, height);
   
-  const offsetRooms = rooms.map(room => ({
-    ...room,
-    x: room.x - minX,
-    y: room.y - minY
-  }));
-
   // Generate edges using Kruskal's algorithm for minimum spanning tree
   const edges: Edge[] = [];
   for (let i = 0; i < rooms.length; i++) {
@@ -362,14 +399,25 @@ export function connectRoomsEnhanced(
       const from = rooms[e.a].id;
       const to = rooms[e.b].id;
       
+      // Calculate optimal door connection points
+      const doorPoints = calculateDoorConnectionPoints(rooms[e.a], rooms[e.b]);
+      
+      // Offset door points for grid coordinates
+      const startPoint = { x: doorPoints.start.x - minX, y: doorPoints.start.y - minY };
+      const endPoint = { x: doorPoints.end.x - minX, y: doorPoints.end.y - minY };
+      
       let path: { x: number; y: number }[];
       
       try {
-        // Use PathFinding.js for enhanced pathfinding
+        // Use PathFinding.js for enhanced door-to-door pathfinding
         path = findPathWithPathfindingJS(
-          offsetCenters[e.a],
-          offsetCenters[e.b],
-          offsetRooms,
+          startPoint,
+          endPoint,
+          rooms.map(room => ({
+            ...room,
+            x: room.x - minX,
+            y: room.y - minY
+          })),
           width,
           height,
           options.algorithm
@@ -377,20 +425,86 @@ export function connectRoomsEnhanced(
         
         // Convert back to original coordinates
         path = path.map(p => ({ x: p.x + minX, y: p.y + minY }));
+        
+        // Ensure path starts and ends at the door points
+        if (path.length > 0) {
+          path[0] = doorPoints.start;
+          path[path.length - 1] = doorPoints.end;
+        }
       } catch (error) {
         console.warn('PathFinding.js failed, falling back to Manhattan:', (error as Error).message);
-        // Fallback to Manhattan path
-        path = manhattanPath(centers[e.a], centers[e.b], r);
+        // Fallback to door-aware Manhattan path
+        path = [doorPoints.start, doorPoints.end];
       }
       
-      // Trim path to avoid room interiors
-      path = trimPath(path, rooms[e.a], rooms[e.b]);
-      
-      corridors.push({ id: id('cor', r), from, to, path });
+      corridors.push({ 
+        id: id('cor', r), 
+        from, 
+        to, 
+        path,
+        doorStart: doorPoints.start,
+        doorEnd: doorPoints.end
+      });
     }
   }
   
   return corridors;
+}
+
+/**
+ * Use PathFinding.js library for enhanced pathfinding
+ */
+function findPathWithPathfindingJS(
+  start: { x: number; y: number },
+  goal: { x: number; y: number },
+  rooms: Room[],
+  width: number,
+  height: number,
+  algorithm: 'astar' | 'jumppoint' | 'dijkstra' | 'manhattan'
+): { x: number; y: number }[] {
+  if (!PF) throw new Error('PathFinding.js not available');
+  
+  // Create grid (0 = walkable, 1 = blocked)
+  const grid = createPathfindingGrid(rooms, width, height);
+  
+  // Create pathfinding grid
+  const pfGrid = new PF.Grid(grid);
+  
+  // Select algorithm
+  let finder: any;
+  switch (algorithm) {
+    case 'astar':
+      finder = new PF.AStarFinder({
+        allowDiagonal: false,
+        heuristic: PF.Heuristic.manhattan
+      });
+      break;
+    case 'jumppoint':
+      finder = new PF.JumpPointFinder({
+        allowDiagonal: false,
+        heuristic: PF.Heuristic.manhattan
+      });
+      break;
+    case 'dijkstra':
+      finder = new PF.DijkstraFinder({
+        allowDiagonal: false
+      });
+      break;
+    default:
+      throw new Error(`Unsupported algorithm: ${algorithm}`);
+  }
+  
+  // Find path
+  const path = finder.findPath(
+    Math.round(start.x), 
+    Math.round(start.y), 
+    Math.round(goal.x), 
+    Math.round(goal.y), 
+    pfGrid
+  );
+  
+  // Convert to our format
+  return path.map(([x, y]: [number, number]) => ({ x, y }));
 }
 
 /**
@@ -402,7 +516,7 @@ function createPathfindingGrid(rooms: Room[], width: number, height: number): nu
   
   // Block room interiors but keep edges walkable for door placement
   for (const room of rooms) {
-    // Block room interiors
+    // Block room interiors (leave 1-tile border for doors)
     for (let y = room.y + 1; y < room.y + room.h - 1; y++) {
       for (let x = room.x + 1; x < room.x + room.w - 1; x++) {
         if (x >= 0 && x < width && y >= 0 && y < height) {
@@ -413,56 +527,4 @@ function createPathfindingGrid(rooms: Room[], width: number, height: number): nu
   }
   
   return grid;
-}
-
-/**
- * Enhanced pathfinding using PathFinding.js library
- */
-function findPathWithPathfindingJS(
-  start: { x: number; y: number },
-  goal: { x: number; y: number },
-  rooms: Room[],
-  width: number,
-  height: number,
-  algorithm: 'astar' | 'jumppoint' | 'dijkstra' = 'astar'
-): { x: number; y: number }[] {
-  const costGrid = createPathfindingGrid(rooms, width, height);
-  
-  // Ensure start and goal are walkable
-  if (start.x >= 0 && start.x < width && start.y >= 0 && start.y < height) {
-    costGrid[start.y][start.x] = 0;
-  }
-  if (goal.x >= 0 && goal.x < width && goal.y >= 0 && goal.y < height) {
-    costGrid[goal.y][goal.x] = 0;
-  }
-  
-  const grid = new PF.Grid(costGrid);
-  
-  // Select pathfinding algorithm
-  let finder;
-  switch (algorithm) {
-    case 'jumppoint':
-      finder = new PF.JumpPointFinder({
-        diagonalMovement: PF.DiagonalMovement.Never
-      });
-      break;
-    case 'dijkstra':
-      finder = new PF.DijkstraFinder({
-        diagonalMovement: PF.DiagonalMovement.Never
-      });
-      break;
-    default: // 'astar'
-      finder = new PF.AStarFinder({
-        diagonalMovement: PF.DiagonalMovement.Never,
-        heuristic: PF.Heuristic.manhattan
-      });
-  }
-  
-  const path = finder.findPath(start.x, start.y, goal.x, goal.y, grid);
-  
-  if (path.length === 0) {
-    throw new Error(`No path found from (${start.x},${start.y}) to (${goal.x},${goal.y})`);
-  }
-  
-  return path.map(([x, y]: [number, number]) => ({ x, y }));
 }
