@@ -82,7 +82,7 @@ test.describe('Dungeons On Automatic GUI', () => {
     await page.waitForLoadState('networkidle');
     
     // Test different room shapes
-    const roomShapes = ['rectangular', 'hexagonal', 'circular', 'octagonal'];
+    const roomShapes = ['rectangular', 'diverse', 'hex-preference', 'circular-preference'];
     
     for (const shape of roomShapes) {
       // Select room shape
@@ -252,7 +252,7 @@ test.describe('Browser Compatibility Issues', () => {
     await page.waitForLoadState('networkidle');
     
     // Exercise room shape functionality
-    await page.selectOption('#room-shape', 'hexagonal');
+    await page.selectOption('#room-shape', 'diverse');
     await page.locator('#generate').click();
     await expect(page.locator('#map-content svg')).toBeVisible({ timeout: 10000 });
     

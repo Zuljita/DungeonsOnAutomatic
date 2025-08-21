@@ -110,7 +110,7 @@ async function getShapePlugin() {
   
   // In browser environment, skip plugin loading and use built-in shapes
   if (isBrowser) {
-    console.info('Browser environment detected, using built-in room shapes');
+    console.log('Browser environment detected, using built-in room shapes');
     shapePlugin = createBuiltInShapePlugin();
     return shapePlugin;
   }

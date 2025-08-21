@@ -132,8 +132,8 @@ test.describe('Map Pan and Zoom Controls', () => {
   });
 
   test('should work with different map styles', async ({ page }) => {
-    // Test with hex grid style
-    await page.selectOption('#map-style', 'hex');
+    // Test with hand-drawn style (valid option)
+    await page.selectOption('#map-style', 'hand-drawn');
     await page.locator('#generate').click();
     await expect(page.locator('#map-content svg')).toBeVisible({ timeout: 10000 });
     
@@ -145,8 +145,8 @@ test.describe('Map Pan and Zoom Controls', () => {
     const transform = await svg.getAttribute('style') || '';
     expect(transform).toContain('scale(');
     
-    // Test with hand-drawn style
-    await page.selectOption('#map-style', 'hand-drawn');
+    // Test with classic style
+    await page.selectOption('#map-style', 'classic');
     await page.locator('#generate').click();
     await expect(page.locator('#map-content svg')).toBeVisible({ timeout: 10000 });
     

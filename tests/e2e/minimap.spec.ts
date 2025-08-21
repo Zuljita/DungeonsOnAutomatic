@@ -155,8 +155,8 @@ test.describe('Minimap Navigation', () => {
   });
 
   test('should work with different map styles', async ({ page }) => {
-    // Test with hex grid style
-    await page.selectOption('#map-style', 'hex');
+    // Test with hand-drawn style (valid option)
+    await page.selectOption('#map-style', 'hand-drawn');
     await page.locator('#generate').click();
     await expect(page.locator('#map-content svg')).toBeVisible({ timeout: 10000 });
     

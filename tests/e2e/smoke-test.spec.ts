@@ -61,7 +61,7 @@ test('Room Shape Service Browser Compatibility', async ({ page }) => {
   await page.waitForLoadState('networkidle');
   
   // Try different room shapes
-  await page.selectOption('#room-shape', 'hexagonal');
+  await page.selectOption('#room-shape', 'diverse');
   await page.locator('#generate').click();
   
   await expect(page.locator('#map-content svg')).toBeVisible({ timeout: 10000 });

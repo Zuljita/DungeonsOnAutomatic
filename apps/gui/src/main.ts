@@ -538,7 +538,7 @@ async function generate(): Promise<void> {
     if (svgElement) {
       setTimeout(() => {
         createMinimap(svgElement);
-      }, 150);
+      }, 300);
     }
 
     // Generate room details using populateRooms to get proper format with features
@@ -1479,7 +1479,10 @@ function setupMinimapInteractions(): void {
 function navigateToMinimapPoint(minimapX: number, minimapY: number): void {
   const mapContainer = document.getElementById('map');
   const minimapSvg = document.querySelector('.minimap-svg') as SVGElement;
-  if (!mapContainer || !minimapSvg || !panzoomInstance) return;
+  if (!mapContainer || !minimapSvg || !panzoomInstance) {
+    console.warn('Minimap navigation failed: missing elements or panzoom instance');
+    return;
+  }
   
   // Get the minimap SVG's bounding rect to account for centering
   const minimapSvgRect = minimapSvg.getBoundingClientRect();
