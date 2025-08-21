@@ -21,6 +21,7 @@
     "gui:preview": "pnpm --filter @doa/gui preview --port 3000"
   },
   "dependencies": {
+    "@panzoom/panzoom": "^4.6.0",
     "commander": "^12.1.0",
     "delaunator": "^5.0.1",
     "pdfkit": "^0.17.1",

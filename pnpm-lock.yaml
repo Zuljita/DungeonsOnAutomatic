@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@panzoom/panzoom':
+        specifier: ^4.6.0
+        version: 4.6.0
       commander:
         specifier: ^12.1.0
         version: 12.1.0
@@ -447,6 +450,9 @@ packages:
   '@nodelib/fs.walk@1.2.8':
     resolution: {integrity: sha512-oGB+UxlgWcgQkgwo8GcEGwemoTFt3FIO9ababBmaGwXIoBKZ+GTy0pP185beGg7Llih/NSHSV2XAs1lnznocSg==}
     engines: {node: '>= 8'}
+
+  '@panzoom/panzoom@4.6.0':
+    resolution: {integrity: sha512-3KxkY1lNKFn98fW5ZFR6vV0YzsXj3I4EQDyFWSXME6/cic86eSS7VjuqIjrA3PEpySo0r5fFtlX8eYCt4JPUFQ==}
 
   '@playwright/test@1.54.2':
     resolution: {integrity: sha512-A+znathYxPf+72riFd1r1ovOLqsIIB0jKIoPjyK2kqEIe30/6jF6BC7QNluHuwUmsD2tv1XZVugN8GqfTMOxsA==}
@@ -1508,6 +1514,8 @@ snapshots:
     dependencies:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.19.1
+
+  '@panzoom/panzoom@4.6.0': {}
 
   '@playwright/test@1.54.2':
     dependencies:

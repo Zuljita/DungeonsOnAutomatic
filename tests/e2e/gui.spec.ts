@@ -66,7 +66,7 @@ test.describe('Dungeons On Automatic GUI', () => {
     await page.locator('#generate').click();
     
     // Wait for generation to complete (look for SVG in map container)
-    await expect(page.locator('#map svg')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('#map-content svg')).toBeVisible({ timeout: 10000 });
     
     // Check that dungeon was generated without errors
     expect(generationErrors.filter(e => 
@@ -92,7 +92,7 @@ test.describe('Dungeons On Automatic GUI', () => {
       await page.locator('#generate').click();
       
       // Wait for generation
-      await expect(page.locator('#map svg')).toBeVisible({ timeout: 10000 });
+      await expect(page.locator('#map-content svg')).toBeVisible({ timeout: 10000 });
       
       // Verify no errors for this shape
       const shapeErrors = await page.evaluate(() => {
@@ -119,7 +119,7 @@ test.describe('Dungeons On Automatic GUI', () => {
     
     // Generate a dungeon to trigger room shape service
     await page.locator('#generate').click();
-    await expect(page.locator('#map svg')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('#map-content svg')).toBeVisible({ timeout: 10000 });
     
     // Should see browser environment detection message
     const browserMessage = roomShapeMessages.find(msg => 
@@ -143,7 +143,7 @@ test.describe('Dungeons On Automatic GUI', () => {
     
     // Generate dungeon
     await page.locator('#generate').click();
-    await expect(page.locator('#map svg')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('#map-content svg')).toBeVisible({ timeout: 10000 });
     
     // Check that room key contains enriched content
     const roomKeyText = await page.locator('#room-key').textContent();
@@ -152,7 +152,7 @@ test.describe('Dungeons On Automatic GUI', () => {
     expect(roomKeyText).toContain('Room Key');
     
     // Verify SVG actually contains rooms (not empty)
-    const svgContent = await page.locator('#map svg').innerHTML();
+    const svgContent = await page.locator('#map-content svg').innerHTML();
     expect(svgContent).toContain('rect'); // Should have room rectangles
   });
 
@@ -165,7 +165,7 @@ test.describe('Dungeons On Automatic GUI', () => {
     
     // Generate dungeon with template
     await page.locator('#generate').click();
-    await expect(page.locator('#map svg')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('#map-content svg')).toBeVisible({ timeout: 10000 });
     
     // Verify no template-related errors
     const templateErrors = await page.evaluate(() => {
@@ -189,7 +189,7 @@ test.describe('Dungeons On Automatic GUI', () => {
     await page.waitForTimeout(1000);
     
     // Should see updated dungeon
-    await expect(page.locator('#map svg')).toBeVisible();
+    await expect(page.locator('#map-content svg')).toBeVisible();
   });
 
   test('should handle tabs switching', async ({ page }) => {
@@ -232,7 +232,7 @@ test.describe('Browser Compatibility Issues', () => {
     
     // Generate a dungeon to exercise the plugin system
     await page.locator('#generate').click();
-    await expect(page.locator('#map svg')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('#map-content svg')).toBeVisible({ timeout: 10000 });
     
     // Should have no Node.js module access attempts
     expect(nodeModuleAttempts).toEqual([]);
@@ -254,7 +254,7 @@ test.describe('Browser Compatibility Issues', () => {
     // Exercise room shape functionality
     await page.selectOption('#room-shape', 'hexagonal');
     await page.locator('#generate').click();
-    await expect(page.locator('#map svg')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('#map-content svg')).toBeVisible({ timeout: 10000 });
     
     // Should not have critical dynamic import errors (warnings are OK)
     const criticalImportErrors = importErrors.filter(error => 

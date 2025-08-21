@@ -7,7 +7,7 @@ test.describe('Map Pan and Zoom Controls', () => {
     
     // Wait for initial generation to complete
     await page.locator('#generate').click();
-    await expect(page.locator('#map svg')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('#map-content svg')).toBeVisible({ timeout: 10000 });
   });
 
   test('should have zoom control buttons visible', async ({ page }) => {

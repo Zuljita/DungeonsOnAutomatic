@@ -32,7 +32,7 @@ test('GUI Smoke Test - No Critical Errors', async ({ page }) => {
   
   // Wait for generation to complete or timeout
   try {
-    await expect(page.locator('#map svg')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('#map-content svg')).toBeVisible({ timeout: 10000 });
   } catch (error) {
     // If generation failed, that's also a critical error
     criticalErrors.push(`Dungeon generation failed: ${error}`);
@@ -64,7 +64,7 @@ test('Room Shape Service Browser Compatibility', async ({ page }) => {
   await page.selectOption('#room-shape', 'hexagonal');
   await page.locator('#generate').click();
   
-  await expect(page.locator('#map svg')).toBeVisible({ timeout: 10000 });
+  await expect(page.locator('#map-content svg')).toBeVisible({ timeout: 10000 });
   
   // Should see browser environment message, not plugin failures
   const hasValidBrowserMessage = roomShapeIssues.some(msg => 

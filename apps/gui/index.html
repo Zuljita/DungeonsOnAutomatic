@@ -168,10 +168,9 @@
       margin-top: 20px;
       border: 1px solid var(--border-primary);
       border-radius: 4px;
-      overflow: auto;
+      overflow: hidden;
       position: relative;
       max-height: 70vh;
-      cursor: grab;
       user-select: none;
     }
     .map-container:active {
@@ -184,6 +183,13 @@
     .door-icon,
     .key-icon {
       cursor: pointer;
+    }
+    .room-number,
+    .door-icon, 
+    .key-icon,
+    .map-control-btn,
+    .minimap {
+      /* Exclude these from panzoom */
     }
     .map-highlight {
       stroke: var(--accent-warning);
