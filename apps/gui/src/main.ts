@@ -282,6 +282,7 @@ function loadGeneratorSettings() {
     const roomSizeInput = document.getElementById('room-size') as HTMLSelectElement;
     const roomShapeInput = document.getElementById('room-shape') as HTMLSelectElement;
     const corridorTypeInput = document.getElementById('corridor-type') as HTMLSelectElement;
+    const pathfindingAlgorithmInput = document.getElementById('pathfinding-algorithm') as HTMLSelectElement;
     const corridorWidthInput = document.getElementById('corridor-width') as HTMLSelectElement;
     const allowDeadendsInput = document.getElementById('allow-deadends') as HTMLInputElement;
     const stairsUpInput = document.getElementById('stairs-up') as HTMLInputElement;
