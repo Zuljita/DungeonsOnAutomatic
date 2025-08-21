@@ -172,7 +172,6 @@ This is a pnpm workspace with the main package and GUI as separate workspaces. T
 - Similar function names with slight variations (`connectRooms` vs `connectRoomsEnhanced`)
 - Repeated patterns in loops, conditionals, or data processing
 - Multiple implementations of the same algorithm or data structure
-
 # important-instruction-reminders
 Do what has been asked; nothing more, nothing less.
 NEVER create files unless they're absolutely necessary for achieving your goal.
