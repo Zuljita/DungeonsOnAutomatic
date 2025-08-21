@@ -41,6 +41,37 @@ plugin type. Metadata in `package.json` describes the plugin to the loader.
 
 5. **Iterate** on the plugin until validation and tests pass.
 
+## Best Practices
+
+### Code Quality and Reusability
+
+**Eliminate duplicate code patterns:**
+- If your plugin contains logic similar to existing DOA utilities, use or extend those utilities instead of reimplementing
+- Check `/src/utils/` for existing utilities (grid operations, room utilities, Union-Find algorithms)
+- If creating functionality that could be useful to other plugins, consider contributing it as a utility
+
+**Leverage existing infrastructure:**
+- Use DOA's existing services like `roomShapeService`, `gridUtils`, `unionFind`
+- Follow established patterns for error handling, validation, and type checking
+- Reuse existing type definitions from `/src/core/types.ts`
+
+### Plugin-Specific Guidelines
+
+**System Plugins:**
+- Focus on domain-specific enrichment (monsters, traps, treasure)
+- Reuse room and corridor utilities rather than reimplementing spatial logic
+- Use existing random number generators for consistency
+
+**Export Plugins:**
+- Utilize grid utilities for bounds calculation and coordinate transformation
+- Reuse room shape checking utilities (`isRectangularRoom`, `isPointOnRoomBorder`)
+- Follow established rendering patterns from existing export plugins
+
+**Room Shape Plugins:**
+- Integrate with existing `roomShapeService` architecture
+- Use utility functions for point operations and bounds checking
+- Ensure browser compatibility by avoiding Node.js-specific modules
+
 ## Publishing
 
 Plugins are regular npm packages. To distribute a plugin:
