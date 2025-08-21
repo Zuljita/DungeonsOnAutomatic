@@ -181,6 +181,7 @@ function applyTemplate(templateId: string) {
   const roomSizeInput = document.getElementById('room-size') as HTMLSelectElement;
   const roomShapeInput = document.getElementById('room-shape') as HTMLSelectElement;
   const corridorTypeInput = document.getElementById('corridor-type') as HTMLSelectElement;
+  const pathfindingAlgorithmInput = document.getElementById('pathfinding-algorithm') as HTMLSelectElement;
   const corridorWidthInput = document.getElementById('corridor-width') as HTMLSelectElement;
   const allowDeadendsInput = document.getElementById('allow-deadends') as HTMLInputElement;
   const stairsUpInput = document.getElementById('stairs-up') as HTMLInputElement;
@@ -199,6 +200,7 @@ function applyTemplate(templateId: string) {
   if (options.roomSize) roomSizeInput.value = options.roomSize;
   if (options.roomShape) roomShapeInput.value = options.roomShape;
   if (options.corridorType) corridorTypeInput.value = options.corridorType;
+  if (options.pathfindingAlgorithm) pathfindingAlgorithmInput.value = options.pathfindingAlgorithm;
   if (options.corridorWidth !== undefined) corridorWidthInput.value = String(options.corridorWidth);
   if (options.allowDeadends !== undefined) allowDeadendsInput.checked = options.allowDeadends;
   if (options.stairsUp !== undefined) stairsUpInput.checked = options.stairsUp;
@@ -309,6 +311,7 @@ function loadGeneratorSettings() {
     roomSizeInput.value = settings.roomSize ?? '';
     roomShapeInput.value = settings.roomShape ?? '';
     corridorTypeInput.value = settings.corridorType ?? '';
+    pathfindingAlgorithmInput.value = settings.pathfindingAlgorithm ?? 'manhattan';
     corridorWidthInput.value = settings.corridorWidth !== undefined ? String(settings.corridorWidth) : '1';
     allowDeadendsInput.checked = !!settings.allowDeadends;
     stairsUpInput.checked = !!settings.stairsUp;
@@ -356,6 +359,7 @@ async function generate(): Promise<void> {
   const roomSizeInput = document.getElementById('room-size') as HTMLSelectElement;
   const roomShapeInput = document.getElementById('room-shape') as HTMLSelectElement;
   const corridorTypeInput = document.getElementById('corridor-type') as HTMLSelectElement;
+  const pathfindingAlgorithmInput = document.getElementById('pathfinding-algorithm') as HTMLSelectElement;
   const corridorWidthInput = document.getElementById('corridor-width') as HTMLSelectElement;
   const allowDeadendsInput = document.getElementById('allow-deadends') as HTMLInputElement;
   const stairsUpInput = document.getElementById('stairs-up') as HTMLInputElement;
@@ -388,6 +392,7 @@ async function generate(): Promise<void> {
   const roomSize = roomSizeInput.value as any || 'medium';
   const roomShape = roomShapeInput.value as any || 'rectangular';
   const corridorType = corridorTypeInput.value as any || 'straight';
+  const pathfindingAlgorithm = pathfindingAlgorithmInput.value as any || 'manhattan';
   const corridorWidth = parseInt(corridorWidthInput.value) || 1;
   const allowDeadends = allowDeadendsInput.checked;
   const stairsUp = stairsUpInput.checked;
@@ -432,6 +437,7 @@ async function generate(): Promise<void> {
       roomSize,
       roomShape,
       corridorType,
+      pathfindingAlgorithm,
       corridorWidth,
       allowDeadends,
       stairsUp,
@@ -808,6 +814,7 @@ function getCurrentConfiguration(): PresetConfiguration {
   const roomSizeInput = document.getElementById('room-size') as HTMLSelectElement;
   const roomShapeInput = document.getElementById('room-shape') as HTMLSelectElement;
   const corridorTypeInput = document.getElementById('corridor-type') as HTMLSelectElement;
+  const pathfindingAlgorithmInput = document.getElementById('pathfinding-algorithm') as HTMLSelectElement;
   const corridorWidthInput = document.getElementById('corridor-width') as HTMLSelectElement;
   const allowDeadendsInput = document.getElementById('allow-deadends') as HTMLInputElement;
   const stairsUpInput = document.getElementById('stairs-up') as HTMLInputElement;
@@ -840,6 +847,7 @@ function getCurrentConfiguration(): PresetConfiguration {
     roomSize: roomSizeInput.value || undefined,
     roomShape: roomShapeInput.value || undefined,
     corridorType: corridorTypeInput.value || undefined,
+    pathfindingAlgorithm: pathfindingAlgorithmInput.value || undefined,
     corridorWidth: parseInt(corridorWidthInput.value) || undefined,
     allowDeadends: allowDeadendsInput.checked,
     stairsUp: stairsUpInput.checked,
@@ -868,6 +876,7 @@ function applyConfiguration(config: PresetConfiguration): void {
   const roomSizeInput = document.getElementById('room-size') as HTMLSelectElement;
   const roomShapeInput = document.getElementById('room-shape') as HTMLSelectElement;
   const corridorTypeInput = document.getElementById('corridor-type') as HTMLSelectElement;
+  const pathfindingAlgorithmInput = document.getElementById('pathfinding-algorithm') as HTMLSelectElement;
   const corridorWidthInput = document.getElementById('corridor-width') as HTMLSelectElement;
   const allowDeadendsInput = document.getElementById('allow-deadends') as HTMLInputElement;
   const stairsUpInput = document.getElementById('stairs-up') as HTMLInputElement;
@@ -902,6 +911,7 @@ function applyConfiguration(config: PresetConfiguration): void {
   
   // Apply corridor settings
   if (config.corridorType !== undefined) corridorTypeInput.value = config.corridorType;
+  if (config.pathfindingAlgorithm !== undefined) pathfindingAlgorithmInput.value = config.pathfindingAlgorithm;
   if (config.corridorWidth !== undefined) corridorWidthInput.value = String(config.corridorWidth);
   if (config.allowDeadends !== undefined) allowDeadendsInput.checked = config.allowDeadends;
   

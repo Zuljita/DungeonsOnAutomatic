@@ -1083,6 +1083,16 @@
               <small class="help-text">Style of corridors connecting rooms</small>
             </div>
             <div class="form-group">
+              <label>Pathfinding Algorithm:</label>
+              <select id="pathfinding-algorithm">
+                <option value="manhattan">Manhattan (Classic)</option>
+                <option value="astar">A* (Enhanced)</option>
+                <option value="jumppoint">Jump Point Search (Fast)</option>
+                <option value="dijkstra">Dijkstra (Optimal)</option>
+              </select>
+              <small class="help-text">🚀 Enhanced algorithms use PathFinding.js for better corridor quality</small>
+            </div>
+            <div class="form-group">
               <label>Corridor Width (tiles):</label>
               <select id="corridor-width">
                 <option value="1">1 (Narrow)</option>

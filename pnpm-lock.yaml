@@ -17,6 +17,9 @@ importers:
       delaunator:
         specifier: ^5.0.1
         version: 5.0.1
+      pathfinding:
+        specifier: ^0.4.18
+        version: 0.4.18
       pdfkit:
         specifier: ^0.17.1
         version: 0.17.1
@@ -918,6 +921,9 @@ packages:
     resolution: {integrity: sha512-EykJT/Q1KjTWctppgIAgfSO0tKVuZUjhgMr17kqTumMl6Afv3EISleU7qZUzoXDFTAHTDC4NOoG/ZxU3EvlMPQ==}
     engines: {node: '>=8'}
 
+  heap@0.2.5:
+    resolution: {integrity: sha512-G7HLD+WKcrOyJP5VQwYZNC3Z6FcQ7YYjEFiFoIj8PfEr73mu421o8B1N5DKUcc8K37EsJ2XXWA8DtrDz/2dReg==}
+
   ignore@5.3.2:
     resolution: {integrity: sha512-hsBTNUqQTDwkWtcdYI2i06Y/nUBEsNEDJKjWdigLvegy8kDuJAS8uRlpkkcQpyEXL0Z/pjDy5HBmMjRCJ2gq+g==}
     engines: {node: '>= 4'}
@@ -1043,6 +1049,9 @@ packages:
 
   pathe@1.1.2:
     resolution: {integrity: sha512-whLdWMYL2TwI08hn8/ZqAbrVemu0LNaNNJZX73O6qaIdCTfXutsLhMkjdENX0qhsQ9uIimo4/aQOmXkoon2nDQ==}
+
+  pathfinding@0.4.18:
+    resolution: {integrity: sha512-R0TGEQ9GRcFCDvAWlJAWC+KGJ9SLbW4c0nuZRcioVlXVTlw+F5RvXQ8SQgSqI9KXWC1ew95vgmIiyaWTlCe9Ag==}
 
   pathval@2.0.1:
     resolution: {integrity: sha512-//nshmD55c46FuFw26xV/xFAaB5HF9Xdap7HJBBnrKdAd6/GxDBaNA1870O79+9ueg61cZLSVc+OaFlfmObYVQ==}
@@ -2037,6 +2046,8 @@ snapshots:
 
   has-flag@4.0.0: {}
 
+  heap@0.2.5: {}
+
   ignore@5.3.2: {}
 
   ignore@7.0.5: {}
@@ -2145,6 +2156,10 @@ snapshots:
   path-key@3.1.1: {}
 
   pathe@1.1.2: {}
+
+  pathfinding@0.4.18:
+    dependencies:
+      heap: 0.2.5
 
   pathval@2.0.1: {}
 
