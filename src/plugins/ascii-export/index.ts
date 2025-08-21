@@ -8,6 +8,7 @@ export interface AsciiExportOptions extends ExportOptions {
     roomInterior?: string;
     corridor?: string;
     door?: string;
+    key?: string;
     empty?: string;
   };
   compact?: boolean;
@@ -34,6 +35,7 @@ function renderAscii(d: Dungeon, options?: AsciiExportOptions): string {
     roomInterior: '.',
     corridor: '+',
     door: 'D',
+    key: 'K',
     empty: ' ',
     ...options?.characters
   };
@@ -92,6 +94,23 @@ function renderAscii(d: Dungeon, options?: AsciiExportOptions): string {
       const end = c.path[c.path.length - 1];
       grid[start.y][start.x] = chars.door;
       grid[end.y][end.x] = chars.door;
+    }
+  }
+
+  // Render keys if they exist
+  if (d.keyItems) {
+    for (const key of d.keyItems) {
+      const room = d.rooms.find(r => r.id === key.locationId);
+      if (room) {
+        // Calculate key position exactly like debug renderer
+        const keyX = Math.floor(room.x + room.w / 2);              // Horizontal center
+        const keyY = Math.floor(room.y + room.h / 2 - 0.4);        // Slightly above center
+        
+        // Ensure key position is within grid bounds
+        if (keyY >= 0 && keyY < maxY && keyX >= 0 && keyX < maxX) {
+          grid[keyY][keyX] = chars.key;  // Use configurable key character
+        }
+      }
     }
   }
 
@@ -159,6 +178,7 @@ export const asciiExportPlugin: ExportPlugin = {
         roomInterior: '.',
         corridor: '+',
         door: 'D',
+        key: 'K',
         empty: ' '
       },
       compact: false,
