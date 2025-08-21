@@ -1,5 +1,6 @@
 import { Corridor, Room } from '../core/types';
 import { id } from './random';
+import { roomShapeService } from './room-shapes';
 
 // Enhanced pathfinding options
 export interface EnhancedPathfindingOptions {
@@ -86,6 +87,48 @@ function generateCostGrid(rooms: Room[], width: number, height: number): number[
   }
   
   return costGrid;
+}
+
+/**
+ * Calculate optimal door connection points between two rooms
+ */
+function calculateDoorConnectionPoints(room1: Room, room2: Room): {
+  start: { x: number; y: number };
+  end: { x: number; y: number };
+} {
+  const center1 = { x: room1.x + Math.floor(room1.w / 2), y: room1.y + Math.floor(room1.h / 2) };
+  const center2 = { x: room2.x + Math.floor(room2.w / 2), y: room2.y + Math.floor(room2.h / 2) };
+  
+  const dx = center2.x - center1.x;
+  const dy = center2.y - center1.y;
+  
+  let startDirection: 'top' | 'bottom' | 'left' | 'right';
+  let endDirection: 'top' | 'bottom' | 'left' | 'right';
+  
+  if (Math.abs(dx) > Math.abs(dy)) {
+    // Horizontal connection
+    if (dx > 0) {
+      startDirection = 'right';
+      endDirection = 'left';
+    } else {
+      startDirection = 'left';
+      endDirection = 'right';
+    }
+  } else {
+    // Vertical connection
+    if (dy > 0) {
+      startDirection = 'bottom';
+      endDirection = 'top';
+    } else {
+      startDirection = 'top';
+      endDirection = 'bottom';
+    }
+  }
+  
+  const start = roomShapeService.findClosestEdgePoint(room1, startDirection, center2);
+  const end = roomShapeService.findClosestEdgePoint(room2, endDirection, center1);
+  
+  return { start, end };
 }
 
 /**
@@ -201,9 +244,27 @@ export function connectRooms(rooms: Room[], r: () => number): Corridor[] {
       unite(e.a, e.b);
       const from = rooms[e.a].id,
         to = rooms[e.b].id;
+      
+      // Calculate door connection points for classic pathfinding too
+      const doorPoints = calculateDoorConnectionPoints(rooms[e.a], rooms[e.b]);
+      
       let path = manhattanPath(centers[e.a], centers[e.b], r);
       path = trimPath(path, rooms[e.a], rooms[e.b]);
-      corridors.push({ id: id('cor', r), from, to, path });
+      
+      // Ensure path starts and ends at door points
+      if (path.length > 0) {
+        path[0] = doorPoints.start;
+        path[path.length - 1] = doorPoints.end;
+      }
+      
+      corridors.push({ 
+        id: id('cor', r), 
+        from, 
+        to, 
+        path,
+        doorStart: doorPoints.start,
+        doorEnd: doorPoints.end
+      });
     }
   }
   return corridors;
@@ -312,6 +373,9 @@ export function connectRoomsEnhanced(
     return connectRooms(rooms, r);
   }
   
+  console.log(`🚀 Using enhanced door-to-door pathfinding: ${options.algorithm}`);
+  
+  // Calculate room centers for MST generation
   const centers = rooms.map(rm => ({ 
     x: rm.x + Math.floor(rm.w/2), 
     y: rm.y + Math.floor(rm.h/2) 
@@ -336,7 +400,6 @@ export function connectRoomsEnhanced(
     x: room.x - minX,
     y: room.y - minY
   }));
-
   // Generate edges using Kruskal's algorithm for minimum spanning tree
   const edges: Edge[] = [];
   for (let i = 0; i < rooms.length; i++) {
@@ -362,13 +425,20 @@ export function connectRoomsEnhanced(
       const from = rooms[e.a].id;
       const to = rooms[e.b].id;
       
+      // Calculate optimal door connection points
+      const doorPoints = calculateDoorConnectionPoints(rooms[e.a], rooms[e.b]);
+      
+      // Offset door points for grid coordinates
+      const startPoint = { x: doorPoints.start.x - minX, y: doorPoints.start.y - minY };
+      const endPoint = { x: doorPoints.end.x - minX, y: doorPoints.end.y - minY };
+      
       let path: { x: number; y: number }[];
       
       try {
-        // Use PathFinding.js for enhanced pathfinding
+        // Use PathFinding.js for enhanced door-to-door pathfinding
         path = findPathWithPathfindingJS(
-          offsetCenters[e.a],
-          offsetCenters[e.b],
+          startPoint,
+          endPoint,
           offsetRooms,
           width,
           height,
@@ -377,16 +447,26 @@ export function connectRoomsEnhanced(
         
         // Convert back to original coordinates
         path = path.map(p => ({ x: p.x + minX, y: p.y + minY }));
+        
+        // Ensure path starts and ends at the door points
+        if (path.length > 0) {
+          path[0] = doorPoints.start;
+          path[path.length - 1] = doorPoints.end;
+        }
       } catch (error) {
         console.warn('PathFinding.js failed, falling back to Manhattan:', (error as Error).message);
-        // Fallback to Manhattan path
-        path = manhattanPath(centers[e.a], centers[e.b], r);
+        // Fallback to door-aware Manhattan path
+        path = [doorPoints.start, doorPoints.end];
       }
       
-      // Trim path to avoid room interiors
-      path = trimPath(path, rooms[e.a], rooms[e.b]);
-      
-      corridors.push({ id: id('cor', r), from, to, path });
+      corridors.push({ 
+        id: id('cor', r), 
+        from, 
+        to, 
+        path,
+        doorStart: doorPoints.start,
+        doorEnd: doorPoints.end
+      });
     }
   }
   
@@ -402,7 +482,7 @@ function createPathfindingGrid(rooms: Room[], width: number, height: number): nu
   
   // Block room interiors but keep edges walkable for door placement
   for (const room of rooms) {
-    // Block room interiors
+    // Block room interiors (leave 1-tile border for doors)
     for (let y = room.y + 1; y < room.y + room.h - 1; y++) {
       for (let x = room.x + 1; x < room.x + room.w - 1; x++) {
         if (x >= 0 && x < width && y >= 0 && y < height) {

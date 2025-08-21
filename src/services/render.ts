@@ -115,6 +115,24 @@ export function renderAscii(d: Dungeon): string {
       grid[end.y][end.x] = "D";
     }
   }
+
+  // Render keys if they exist
+  if (d.keyItems) {
+    for (const key of d.keyItems) {
+      const room = d.rooms.find(r => r.id === key.locationId);
+      if (room) {
+        // Calculate key position exactly like debug renderer
+        const keyX = Math.floor(room.x + room.w / 2);              // Horizontal center
+        const keyY = Math.floor(room.y + room.h / 2 - 0.4);        // Slightly above center
+        
+        // Ensure key position is within grid bounds
+        if (keyY >= 0 && keyY < maxY && keyX >= 0 && keyX < maxX) {
+          grid[keyY][keyX] = "K";  // Use 'K' for key
+        }
+      }
+    }
+  }
+
   return grid.map((row) => row.join("")).join("\n");
 }
 

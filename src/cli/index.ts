@@ -4,6 +4,7 @@ import { buildDungeon } from "../services/assembler";
 import { loadSystemModule } from "../services/system-loader";
 import type { SystemModule } from "../core/types";
 import { renderAscii, renderSvg, lightTheme, darkTheme, sepiaTheme } from "../services/render";
+import { renderDebugAscii } from "../services/debug-ascii-render";
 import { exportFoundry } from "../services/foundry";
 import { dungeonTemplateService } from "../services/dungeon-templates";
 import { createDefaultPluginLoader } from "../services/plugin-loader";
@@ -70,6 +71,8 @@ program
   .option("--lock-percentage <n>", "fraction of doors to lock (0-1)", (v) => parseFloat(v))
   .option("--magical-locks", "allow magical locks")
   .option("--ascii", "render an ASCII map instead of JSON output")
+  .option("--debug-ascii", "render a high-resolution debug ASCII map with coordinates and corridor analysis")
+  .option("--debug-scale <n>", "scale factor for debug ASCII (default: 10)", (v) => parseInt(v))
   .option("--svg", "render an SVG map instead of JSON output")
   .option("--foundry", "output FoundryVTT-compatible JSON")
   .option("--export-format <format>", "use an export plugin for the given format")
@@ -199,6 +202,18 @@ program
         showGrid: false,
       });
       process.stdout.write(svg + "\n");
+    } else if (opts.debugAscii) {
+      // Use high-resolution debug ASCII renderer with corridor analysis
+      const scale = opts.debugScale || 10;  // Default to 10x resolution
+      process.stdout.write(renderDebugAscii(enriched, {
+        scale,
+        showGrid: true,
+        showRoomCenters: true,
+        showDoors: true,
+        showKeys: true,
+        showCorridorConnections: true,
+        showConnectionAnalysis: true
+      }) + "\n");
     } else if (opts.ascii) {
       try {
         const pluginLoader = createDefaultPluginLoader();
