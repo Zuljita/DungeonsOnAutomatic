@@ -5,6 +5,7 @@ import { generateDoor } from './doors';
 import { roomShapeService, ShapePreferences } from './room-shapes';
 import { connectRooms, type EnhancedPathfindingOptions } from './corridors';
 import { createSimpleUnionFind } from '../utils/union-find';
+import { SpatialIndex, roomToSpatialItem, spatialItemsOverlap, pointToSpatialItem } from '../utils/spatial-index';
 
 // A* pathfinding node for corridor generation
 interface PathNode {
@@ -278,7 +279,7 @@ export class MapGenerator {
 
   /**
    * Generate room boundaries based on layout and configuration
-   * Now includes overlap detection to prevent overlapping rooms
+   * Uses spatial indexing for optimal collision detection performance
    */
   private generateRoomBoundaries(
     boundaries: LayoutBoundary[],
@@ -288,6 +289,7 @@ export class MapGenerator {
     shape: string
   ): LayoutBoundary[] {
     const roomBoundaries: LayoutBoundary[] = [];
+    const spatialIndex = new SpatialIndex(); // O(log n) collision detection
     const maxAttempts = roomCount * 50; // Same as rooms.ts
     let attempts = 0;
 
@@ -301,16 +303,6 @@ export class MapGenerator {
       }
     };
 
-    const overlaps = (a: LayoutBoundary, b: LayoutBoundary, customSpacing?: number): boolean => {
-      const spacing = customSpacing ?? getMinSpacing(layout);
-      return !(
-        a.x + a.width + spacing <= b.x ||
-        b.x + b.width + spacing <= a.x ||
-        a.y + a.height + spacing <= b.y ||
-        b.y + b.height + spacing <= a.y
-      );
-    };
-
     const addRoomWithOverlapCheck = (candidateRoom: LayoutBoundary): boolean => {
       // Check if room fits within any boundary
       const fitsInBoundary = boundaries.some(boundary => 
@@ -322,12 +314,35 @@ export class MapGenerator {
 
       if (!fitsInBoundary) return false;
 
-      // Check for overlaps with existing rooms
-      if (roomBoundaries.some(existingRoom => overlaps(existingRoom, candidateRoom))) {
+      // Use spatial index for O(log n) collision detection instead of O(n) linear search
+      const spacing = getMinSpacing(layout);
+      const candidateSpatialItem = roomToSpatialItem(
+        `candidate-${attempts}`,
+        candidateRoom.x,
+        candidateRoom.y,
+        candidateRoom.width,
+        candidateRoom.height,
+        spacing
+      );
+
+      // Check for overlaps using spatial index - much faster than linear search
+      if (spatialIndex.intersects(candidateSpatialItem)) {
         return false;
       }
 
+      // Add room to both arrays and spatial index
       roomBoundaries.push(candidateRoom);
+      const roomSpatialItem = roomToSpatialItem(
+        `room-${roomBoundaries.length}`,
+        candidateRoom.x,
+        candidateRoom.y,
+        candidateRoom.width,
+        candidateRoom.height,
+        0, // Don't double-apply spacing when adding to index
+        candidateRoom
+      );
+      spatialIndex.insert(roomSpatialItem);
+      
       return true;
     };
 
@@ -441,8 +456,27 @@ export class MapGenerator {
             room2.y + room2.height <= boundary.y + boundary.height
           );
           
-          const room1NoOverlap = !roomBoundaries.some(existingRoom => overlaps(existingRoom, room1));
-          const room2NoOverlap = !roomBoundaries.some(existingRoom => overlaps(existingRoom, room2));
+          // Use spatial index for O(log n) collision detection for both rooms
+          const spacing = getMinSpacing(layout);
+          const room1SpatialItem = roomToSpatialItem(
+            `room1-candidate-${attempts}`,
+            room1.x,
+            room1.y,
+            room1.width,
+            room1.height,
+            spacing
+          );
+          const room2SpatialItem = roomToSpatialItem(
+            `room2-candidate-${attempts}`,
+            room2.x,
+            room2.y,
+            room2.width,
+            room2.height,
+            spacing
+          );
+          
+          const room1NoOverlap = !spatialIndex.intersects(room1SpatialItem);
+          const room2NoOverlap = !spatialIndex.intersects(room2SpatialItem);
           
           const room1Fits = room1FitsInBoundary && room1NoOverlap;
           const room2Fits = room2FitsInBoundary && room2NoOverlap;
@@ -451,6 +485,28 @@ export class MapGenerator {
           if (room1Fits && room2Fits) {
             roomBoundaries.push(room1);
             roomBoundaries.push(room2);
+            
+            // Add both rooms to spatial index for future collision checks
+            const room1IndexItem = roomToSpatialItem(
+              `room-${roomBoundaries.length - 1}`,
+              room1.x,
+              room1.y,
+              room1.width,
+              room1.height,
+              0,
+              room1
+            );
+            const room2IndexItem = roomToSpatialItem(
+              `room-${roomBoundaries.length}`,
+              room2.x,
+              room2.y,
+              room2.width,
+              room2.height,
+              0,
+              room2
+            );
+            spatialIndex.insert(room1IndexItem);
+            spatialIndex.insert(room2IndexItem);
           }
         }
         break;
@@ -1136,10 +1192,13 @@ export class MapGenerator {
    * Create a maze path between two points with collision detection
    */
   private createMazePathWithCollisionDetection(start: { x: number; y: number }, end: { x: number; y: number }, rooms: Room[], excludeRooms: string[]): { x: number; y: number }[] {
+    // Create spatial index for efficient collision detection
+    const roomSpatialIndex = this.createRoomSpatialIndex(rooms);
+    
     // First try the original maze path
     const originalPath = this.createMazePathBetweenPoints(start, end);
     const allowedEdgePoints = [start, end];
-    const collisions = this.countRoomCollisions(originalPath, rooms, allowedEdgePoints);
+    const collisions = this.countRoomCollisions(originalPath, rooms, allowedEdgePoints, roomSpatialIndex);
     
     if (collisions === 0) {
       return originalPath; // Use original if no collisions
@@ -1153,10 +1212,13 @@ export class MapGenerator {
    * Create a winding path between two points with collision detection
    */
   private createWindingPathWithCollisionDetection(start: { x: number; y: number }, end: { x: number; y: number }, rooms: Room[], excludeRooms: string[]): { x: number; y: number }[] {
+    // Create spatial index for efficient collision detection
+    const roomSpatialIndex = this.createRoomSpatialIndex(rooms);
+    
     // First try the original winding path
     const originalPath = this.createWindingPathBetweenPoints(start, end);
     const allowedEdgePoints = [start, end];
-    const collisions = this.countRoomCollisions(originalPath, rooms, allowedEdgePoints);
+    const collisions = this.countRoomCollisions(originalPath, rooms, allowedEdgePoints, roomSpatialIndex);
     
     if (collisions === 0) {
       return originalPath; // Use original if no collisions
@@ -1250,7 +1312,39 @@ export class MapGenerator {
   /**
    * Check if a point collides with any room interior (corridors should go around rooms, not through them)
    */
-  private isRoomCollision(x: number, y: number, rooms: Room[], allowedEdgePoints: { x: number; y: number }[] = []): boolean {
+  private isRoomCollision(x: number, y: number, rooms: Room[], allowedEdgePoints: { x: number; y: number }[] = [], roomSpatialIndex?: SpatialIndex): boolean {
+    // Use spatial indexing if available for O(log n) performance instead of O(n) linear search
+    if (roomSpatialIndex) {
+      const pointQuery = pointToSpatialItem(`point-${x}-${y}`, x, y, 0);
+      const candidateRooms = roomSpatialIndex.search(pointQuery);
+      
+      // Only check rooms that could potentially contain this point
+      for (const spatialItem of candidateRooms) {
+        const room = spatialItem.data as Room;
+        if (!room) continue;
+        
+        // Use room shape service for accurate collision detection
+        const insideRoom = roomShapeService.isPointInRoom(room, x, y);
+        
+        if (insideRoom) {
+          // Allow specific edge points (door connections)
+          const isAllowedEdgePoint = allowedEdgePoints.some(point => point.x === x && point.y === y);
+          if (isAllowedEdgePoint) {
+            return false; // This is an allowed door connection point
+          }
+          
+          // Check if this point is ON a room wall (not inside)
+          if (this.isPointOnRoomWall(room, x, y)) {
+            return false; // Allow corridor points on room walls (door connections)
+          }
+          
+          return true; // Collision detected - corridor should not go through room interior
+        }
+      }
+      return false; // No collision with room interiors
+    }
+    
+    // Fallback to linear search if no spatial index provided
     for (const room of rooms) {
       // Use room shape service for accurate collision detection
       const insideRoom = roomShapeService.isPointInRoom(room, x, y);
@@ -1282,6 +1376,9 @@ export class MapGenerator {
       return this.createSimpleLShapedPath(start, end);
     }
     
+    // Create spatial index for efficient collision detection
+    const roomSpatialIndex = this.createRoomSpatialIndex(rooms);
+    
     // Define allowed edge points (start and end door connections)
     const allowedEdgePoints = [start, end];
     
@@ -1290,8 +1387,8 @@ export class MapGenerator {
     const verticalFirstPath = this.createLShapedPathWithCollisionAvoidance(start, end, false, rooms, allowedEdgePoints);
     
     // Choose the path with fewer room collisions
-    const horizontalCollisions = this.countRoomCollisions(horizontalFirstPath, rooms, allowedEdgePoints);
-    const verticalCollisions = this.countRoomCollisions(verticalFirstPath, rooms, allowedEdgePoints);
+    const horizontalCollisions = this.countRoomCollisions(horizontalFirstPath, rooms, allowedEdgePoints, roomSpatialIndex);
+    const verticalCollisions = this.countRoomCollisions(verticalFirstPath, rooms, allowedEdgePoints, roomSpatialIndex);
     
     if (horizontalCollisions === 0 && verticalCollisions === 0) {
       // Both paths are clean, choose randomly for variety
@@ -1379,14 +1476,34 @@ export class MapGenerator {
   /**
    * Count room collisions in a path
    */
-  private countRoomCollisions(path: { x: number; y: number }[], rooms: Room[], allowedEdgePoints: { x: number; y: number }[]): number {
+  private countRoomCollisions(path: { x: number; y: number }[], rooms: Room[], allowedEdgePoints: { x: number; y: number }[], roomSpatialIndex?: SpatialIndex): number {
     let collisions = 0;
     for (const point of path) {
-      if (this.isRoomCollision(point.x, point.y, rooms, allowedEdgePoints)) {
+      if (this.isRoomCollision(point.x, point.y, rooms, allowedEdgePoints, roomSpatialIndex)) {
         collisions++;
       }
     }
     return collisions;
+  }
+
+  /**
+   * Create a spatial index for rooms to enable O(log n) collision detection
+   */
+  private createRoomSpatialIndex(rooms: Room[]): SpatialIndex {
+    const spatialIndex = new SpatialIndex();
+    const spatialItems = rooms.map(room => 
+      roomToSpatialItem(
+        room.id,
+        room.x,
+        room.y,
+        room.w,
+        room.h,
+        0, // No spacing for exact room boundaries
+        room
+      )
+    );
+    spatialIndex.load(spatialItems);
+    return spatialIndex;
   }
 
   /**
