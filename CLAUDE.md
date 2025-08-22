@@ -45,7 +45,7 @@ pnpm doa generate --rooms=8 --ascii
 **Key Flow:**
 1. `buildDungeon()` in assembler.ts generates base layout (rooms, corridors, doors)
 2. System modules enrich dungeons with encounters via the `SystemModule.enrich()` interface
-3. Output services render to ASCII, SVG, JSON, or FoundryVTT format
+3. Output plugins render to ASCII, SVG, JSON, or FoundryVTT format via plugin system
 
 **System Module Pattern:**
 System modules implement the `SystemModule` interface with `id`, `label`, and `enrich()` method. The DFRPG module adds monsters, traps, and treasure to rooms using GURPS Dungeon Fantasy data.
@@ -56,16 +56,21 @@ This is a pnpm workspace with the main package and GUI as separate workspaces. T
 **Key Services:**
 - `assembler.ts` - Main dungeon builder orchestrating room generation, corridor connection, door placement
 - `system-loader.ts` - Dynamic loading of system modules with fallback to generic
-- `render.ts` - ASCII and SVG map rendering
+- `render.ts` - ASCII map rendering (SVG moved to plugin)
 - `foundry.ts` - FoundryVTT export format
 - `key-items.ts` & `room-key.ts` - Key/lock system for door access control
 
 ## Plugin System Architecture
 
 **Plugin Types:**
-- **Export Plugins** - ASCII, SVG, FoundryVTT export formats (`src/plugins/ascii-export/`)
+- **Export Plugins** - ASCII, SVG, FoundryVTT export formats (`src/plugins/ascii-export/`, `src/plugins/svg-export/`)
 - **Room Shape Plugins** - Generate 8 room shapes (rectangular, circular, hexagonal, etc.)
 - **System Plugins** - Game system-specific enrichment (DFRPG, generic)
+
+**Core Export Plugins:**
+- `svg-export` - SVG rendering with theme support (light, dark, sepia), custom themes, hex style, shape-aware door rendering
+- `ascii-export` - ASCII text rendering for terminal output
+- Third-party plugins for PDF, Roll20, Foundry formats
 
 **Plugin Loading:**
 - **Node.js CLI**: Full plugin system with dynamic imports and sandbox security

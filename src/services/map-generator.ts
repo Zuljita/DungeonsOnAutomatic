@@ -7,6 +7,7 @@ import { connectRooms, type EnhancedPathfindingOptions } from './corridors';
 import { createSimpleUnionFind } from '../utils/union-find';
 import { SpatialIndex, roomToSpatialItem, spatialItemsOverlap, pointToSpatialItem } from '../utils/spatial-index';
 import { distance } from '../utils/geometry'; // keep only if used elsewhere
+import * as PF from 'pathfinding';
 
 // A* pathfinding node for corridor generation
 interface PathNode {
@@ -108,15 +109,16 @@ export class MapGenerator {
     // Add special features BEFORE corridor generation so they get connected
     const specialRooms = this.addSpecialFeatures(dungeonRooms, boundaries, stairsUp, stairsDown, entranceFromPeriphery);
     
-    // Combine all rooms for corridor generation
-    const allRooms = [...dungeonRooms, ...specialRooms];
-    
-    // Generate corridors based on type (including special rooms)
-    const corridors = this.generateCorridors(allRooms, corridorType, pathfindingAlgorithm, corridorWidth, allowDeadends, width, height);
-    
+    // Combine all rooms for corridor generation and clamp to map bounds
+    let allRooms = this.clampRooms([...dungeonRooms, ...specialRooms], width, height);
+
+    // Generate corridors based on type (including special rooms) and clamp paths
+    let corridors = this.generateCorridors(allRooms, corridorType, pathfindingAlgorithm, corridorWidth, allowDeadends, width, height);
+    corridors = this.clampCorridors(corridors, width, height);
+
     // Generate doors
     const doors = this.generateDoors(corridors);
-    
+
     return {
       seed,
       rooms: allRooms,
@@ -124,6 +126,49 @@ export class MapGenerator {
       doors,
       rng: this.R
     };
+  }
+
+  private clampRooms(rooms: Room[], mapWidth: number, mapHeight: number): Room[] {
+    return rooms.map(room => {
+      let x = Math.max(0, room.x);
+      let y = Math.max(0, room.y);
+      let w = room.w;
+      let h = room.h;
+      if (x + w > mapWidth) {
+        w = mapWidth - x;
+      }
+      if (y + h > mapHeight) {
+        h = mapHeight - y;
+      }
+      return { ...room, x, y, w, h };
+    });
+  }
+
+  private clampCorridors(corridors: Corridor[], mapWidth: number, mapHeight: number): Corridor[] {
+    const clampPoint = (p: { x: number; y: number }) => ({
+      x: Math.min(Math.max(p.x, 0), mapWidth - 1),
+      y: Math.min(Math.max(p.y, 0), mapHeight - 1),
+    });
+
+    return corridors.map(corridor => {
+      const doorStart = corridor.doorStart ? clampPoint(corridor.doorStart) : undefined;
+      const doorEnd = corridor.doorEnd ? clampPoint(corridor.doorEnd) : undefined;
+      const path = corridor.path.map(clampPoint);
+
+      if (doorStart && path.length) {
+        path[0] = doorStart;
+      }
+      if (doorEnd && path.length) {
+        path[path.length - 1] = doorEnd;
+      }
+
+      return {
+        ...corridor,
+        path,
+        doorStart,
+        doorEnd,
+      };
+    });
   }
 
   /**
@@ -1587,7 +1632,7 @@ export class MapGenerator {
     const costGrid = this.generateCostGrid(rooms, width, height, start, goal);
     
     // Convert cost grid to binary walkability grid for pathfinding library
-    const grid = new (PF as any).Grid(width, height);
+    const grid = new PF.Grid(width, height);
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
         const cost = costGrid[y][x];
@@ -1602,9 +1647,9 @@ export class MapGenerator {
     grid.setWalkableAt(goal.x, goal.y, true);
     
     // Create A* finder with Manhattan heuristic and optimized priority queue
-    const finder = new (PF as any).AStarFinder({
+    const finder = new PF.AStarFinder({
       allowDiagonal: false,
-      heuristic: (PF as any).Heuristic.manhattan
+      heuristic: PF.Heuristic.manhattan
     });
     
     // Find path using optimized A* implementation

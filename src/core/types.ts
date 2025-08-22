@@ -95,9 +95,11 @@ export interface Trap {
 }
 
 export interface Treasure {
-  kind: 'coins' | 'gems' | 'art' | 'gear' | 'magic' | 'other';
+  kind: 'coins' | 'gems' | 'art' | 'gear' | 'magic' | 'other' | 'dfrpg_hoard';
   valueHint?: string; // system-agnostic, e.g., 'minor', 'standard', 'major'
   tags?: string[]; // Thematic tags for tag-based selection
+  // Additional properties for enhanced treasure data (used by DFRPG system)
+  [key: string]: any;
 }
 
 export enum PlacementRule {

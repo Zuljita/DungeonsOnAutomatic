@@ -3,7 +3,7 @@ import { Command } from "commander";
 import { buildDungeon } from "../services/assembler";
 import { loadSystemModule } from "../services/system-loader";
 import type { SystemModule } from "../core/types";
-import { renderAscii, renderSvg, lightTheme, darkTheme, sepiaTheme } from "../services/render";
+import { renderAscii } from "../services/render";
 import { renderDebugAscii } from "../services/debug-ascii-render";
 import { exportFoundry } from "../services/foundry";
 import { dungeonTemplateService } from "../services/dungeon-templates";
@@ -172,12 +172,26 @@ program
         try {
           const plugin = await pluginLoader.load(info.metadata.id, { sandbox: false });
           if (isExportPlugin(plugin) && plugin.supportedFormats.includes(exportFormat)) {
-            const result = await plugin.export(enriched, exportFormat, {
-              pageSize: opts.exportPageSize,
-              layout: opts.exportLayout,
-              colorMode: opts.exportColorMode,
+            const exportOptions: any = {
               filename: `dungeon.${exportFormat}`,
-            });
+            };
+
+            // Add format-specific options
+            if (exportFormat === 'svg') {
+              exportOptions.theme = opts.palette || "light";
+              exportOptions.style = opts.mapStyle;
+              exportOptions.wobbleIntensity = opts.sketchIntensity || 1;
+              exportOptions.wallThickness = 1;
+              exportOptions.showGrid = false;
+              exportOptions.cellSize = 20;
+            } else {
+              // For other formats (PDF, etc.)
+              exportOptions.pageSize = opts.exportPageSize;
+              exportOptions.layout = opts.exportLayout;
+              exportOptions.colorMode = opts.exportColorMode;
+            }
+
+            const result = await plugin.export(enriched, exportFormat, exportOptions);
             if (typeof result.data === 'string') {
               process.stdout.write(result.data + "\n");
             } else {
@@ -194,16 +208,34 @@ program
         console.error(`No export plugin found for format: ${exportFormat}`);
       }
     } else if (opts.svg) {
-      let theme = lightTheme;
-      if (opts.palette === "dark") theme = darkTheme;
-      else if (opts.palette === "sepia") theme = sepiaTheme;
-      const svg = await renderSvg(enriched, theme, {
-        style: opts.mapStyle,
-        wobbleIntensity: opts.sketchIntensity || 1,
-        wallThickness: 1,
-        showGrid: false,
-      });
-      process.stdout.write(svg + "\n");
+      try {
+        const pluginLoader = createDefaultPluginLoader();
+        await pluginLoader.discover();
+        const plugin = await pluginLoader.load("svg-export", { sandbox: false });
+        if (isExportPlugin(plugin)) {
+          const result = await plugin.export(enriched, "svg", {
+            theme: opts.palette || "light", // light, dark, sepia
+            style: opts.mapStyle,
+            wobbleIntensity: opts.sketchIntensity || 1,
+            wallThickness: 1,
+            showGrid: false,
+            cellSize: 20,
+            filename: "dungeon.svg"
+          });
+          process.stdout.write(result.data + "\n");
+        } else {
+          throw new Error("svg-export plugin is not an export plugin");
+        }
+      } catch (err) {
+        console.warn(`SVG plugin failed, using fallback: ${err}`);
+        // Fallback to basic SVG rendering if plugin fails
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="100">
+          <text x="10" y="50" font-family="Arial" font-size="14" fill="red">
+            SVG plugin not available. Run 'pnpm doa --export-format svg' to use plugin system.
+          </text>
+        </svg>`;
+        process.stdout.write(svg + "\n");
+      }
     } else if (opts.debugAscii) {
       // Use high-resolution debug ASCII renderer with corridor analysis
       const scale = opts.debugScale || 10;  // Default to 10x resolution
