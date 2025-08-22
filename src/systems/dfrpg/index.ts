@@ -311,27 +311,38 @@ export const dfrpg: SystemModule = {
             const hoardSize = roomDanger >= 3 ? 'large' : roomDanger >= 2 ? 'medium' : 'small';
             const treasureHoard = treasureGenerator.generateTreasureHoard(dungeonLevel, hoardSize);
             
-            // Convert to simple treasure format for compatibility
-            if (treasureHoard.coins.totalValue > 0) {
-              treasure.push({ 
-                kind: 'coins', 
-                valueHint: `$${treasureHoard.coins.totalValue} (${treasureHoard.coins.totalWeight.toFixed(1)} lbs)` 
+            // Store the rich treasure data while maintaining backward compatibility
+            if (treasureHoard.totalValue > 0) {
+              // Add a special treasure entry that contains the full hoard data
+              treasure.push({
+                kind: 'dfrpg_hoard',
+                valueHint: `Enhanced treasure (Total: $${treasureHoard.totalValue}, ${treasureHoard.totalWeight.toFixed(1)} lbs)`,
+                // Store the full hoard as additional data
+                ...treasureHoard
+              } as any);
+              
+              // Also add basic compatibility entries for systems that don't support enhanced display
+              if (treasureHoard.coins.totalValue > 0) {
+                treasure.push({ 
+                  kind: 'coins', 
+                  valueHint: `$${treasureHoard.coins.totalValue} (${treasureHoard.coins.totalWeight.toFixed(1)} lbs)` 
+                });
+              }
+              
+              treasureHoard.magicItems.forEach(item => {
+                treasure.push({
+                  kind: 'magic',
+                  valueHint: `${item.name} ($${item.value}, ${item.weight} lbs) - ${item.quirks?.join(', ') || 'No quirks'}`
+                });
+              });
+              
+              treasureHoard.mundaneItems.forEach(item => {
+                treasure.push({
+                  kind: item.category === 'art' ? 'art' : item.category === 'gem' ? 'gems' : 'other',
+                  valueHint: `${item.name} ($${item.value}, ${item.weight} lbs)${item.description ? ' - ' + item.description : ''}`
+                });
               });
             }
-            
-            treasureHoard.magicItems.forEach(item => {
-              treasure.push({
-                kind: 'magic',
-                valueHint: `${item.name} ($${item.value}, ${item.weight} lbs) - ${item.quirks?.join(', ') || 'No quirks'}`
-              });
-            });
-            
-            treasureHoard.mundaneItems.forEach(item => {
-              treasure.push({
-                kind: item.category === 'art' ? 'art' : item.category === 'gem' ? 'gems' : 'other',
-                valueHint: `${item.name} ($${item.value}, ${item.weight} lbs)${item.description ? ' - ' + item.description : ''}`
-              });
-            });
           } else {
             // Legacy simple treasure
             if (SIMPLE_TREASURE && SIMPLE_TREASURE.length > 0) {

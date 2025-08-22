@@ -7,6 +7,7 @@ import { connectRooms, type EnhancedPathfindingOptions } from './corridors';
 import { createSimpleUnionFind } from '../utils/union-find';
 import { SpatialIndex, roomToSpatialItem, spatialItemsOverlap, pointToSpatialItem } from '../utils/spatial-index';
 import { distance } from '../utils/geometry'; // keep only if used elsewhere
+import * as PF from 'pathfinding';
 
 // A* pathfinding node for corridor generation
 interface PathNode {
@@ -1587,7 +1588,7 @@ export class MapGenerator {
     const costGrid = this.generateCostGrid(rooms, width, height, start, goal);
     
     // Convert cost grid to binary walkability grid for pathfinding library
-    const grid = new (PF as any).Grid(width, height);
+    const grid = new PF.Grid(width, height);
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
         const cost = costGrid[y][x];
@@ -1602,9 +1603,9 @@ export class MapGenerator {
     grid.setWalkableAt(goal.x, goal.y, true);
     
     // Create A* finder with Manhattan heuristic and optimized priority queue
-    const finder = new (PF as any).AStarFinder({
+    const finder = new PF.AStarFinder({
       allowDiagonal: false,
-      heuristic: (PF as any).Heuristic.manhattan
+      heuristic: PF.Heuristic.manhattan
     });
     
     // Find path using optimized A* implementation
