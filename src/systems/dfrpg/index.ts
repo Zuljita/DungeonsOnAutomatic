@@ -311,26 +311,18 @@ export const dfrpg: SystemModule = {
             const hoardSize = roomDanger >= 3 ? 'large' : roomDanger >= 2 ? 'medium' : 'small';
             const treasureHoard = treasureGenerator.generateTreasureHoard(dungeonLevel, hoardSize);
             
-            // Convert to simple treasure format for compatibility
-            if (treasureHoard.coins.totalValue > 0) {
-              treasure.push({ 
-                kind: 'coins', 
-                valueHint: `$${treasureHoard.coins.totalValue} (${treasureHoard.coins.totalWeight.toFixed(1)} lbs)` 
-              });
-            }
-            
-            treasureHoard.magicItems.forEach(item => {
-              treasure.push({
-                kind: 'magic',
-                valueHint: `${item.name} ($${item.value}, ${item.weight} lbs) - ${item.quirks?.join(', ') || 'No quirks'}`
-              });
+            // Create a single detailed treasure entry using the DFRPG treasure formatter
+            const treasureDescription = treasureGenerator.formatTreasureDescription(treasureHoard, {
+              format: 'detailed',
+              showReferences: false,
+              showWeights: true,
+              useIcons: true,
+              groupByType: true
             });
             
-            treasureHoard.mundaneItems.forEach(item => {
-              treasure.push({
-                kind: item.category === 'art' ? 'art' : item.category === 'gem' ? 'gems' : 'other',
-                valueHint: `${item.name} ($${item.value}, ${item.weight} lbs)${item.description ? ' - ' + item.description : ''}`
-              });
+            treasure.push({
+              kind: 'other',
+              valueHint: treasureDescription.replace(/\n/g, '\n  ') // Indent for better formatting
             });
           } else {
             // Legacy simple treasure
