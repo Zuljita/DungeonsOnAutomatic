@@ -45,6 +45,9 @@ importers:
       '@types/node':
         specifier: ^22.5.1
         version: 22.17.1
+      '@types/pathfinding':
+        specifier: ^0.1.0
+        version: 0.1.0
       '@types/pdfkit':
         specifier: ^0.17.2
         version: 0.17.2
@@ -576,6 +579,9 @@ packages:
 
   '@types/node@22.17.1':
     resolution: {integrity: sha512-y3tBaz+rjspDTylNjAX37jEC3TETEFGNJL6uQDxwF9/8GLLIjW1rvVHlynyuUKMnMr1Roq8jOv3vkopBjC4/VA==}
+
+  '@types/pathfinding@0.1.0':
+    resolution: {integrity: sha512-QkKZqdAPhfkHIoiCWa/4yVolcCDin10qScbdiyqtDsY9cxlcslVgoU1g9yVdFytsHqJQevkYNcNBgD/P7OZbQg==}
 
   '@types/pdfkit@0.17.2':
     resolution: {integrity: sha512-a7mqP/l8lsLMVNhQ3N2blU5pA1KX0YFE8FxWp0OTqZQKEZoPk7ndAlW+kdFBAWpFmLpy6fFbMRm4a6ZELWNgOQ==}
@@ -1603,6 +1609,8 @@ snapshots:
   '@types/node@22.17.1':
     dependencies:
       undici-types: 6.21.0
+
+  '@types/pathfinding@0.1.0': {}
 
   '@types/pdfkit@0.17.2':
     dependencies:

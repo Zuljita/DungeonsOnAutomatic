@@ -6,6 +6,7 @@ import { roomShapeService, ShapePreferences } from './room-shapes';
 import { connectRooms, type EnhancedPathfindingOptions } from './corridors';
 import { createSimpleUnionFind } from '../utils/union-find';
 import { SpatialIndex, roomToSpatialItem, spatialItemsOverlap, pointToSpatialItem } from '../utils/spatial-index';
+import { distance } from '../utils/geometry'; // keep only if used elsewhere
 
 // A* pathfinding node for corridor generation
 interface PathNode {
@@ -775,9 +776,10 @@ export class MapGenerator {
       if (i > j) [i, j] = [j, i];
       const key = `${i}-${j}`;
       if (!edgeMap.has(key)) {
-        const dx = centers[i][0] - centers[j][0];
-        const dy = centers[i][1] - centers[j][1];
-        const d = Math.sqrt(dx * dx + dy * dy);
+        const d = distance(
+          { x: centers[i][0], y: centers[i][1] }, 
+          { x: centers[j][0], y: centers[j][1] }
+        );
         edgeMap.set(key, { a: i, b: j, d });
       }
     };
@@ -803,9 +805,10 @@ export class MapGenerator {
         let bestD = Infinity;
         for (let j = 0; j < rooms.length; j++) {
           if (i === j) continue;
-          const dx = centers[i][0] - centers[j][0];
-          const dy = centers[i][1] - centers[j][1];
-          const d = Math.sqrt(dx * dx + dy * dy);
+          const d = distance(
+            { x: centers[i][0], y: centers[i][1] }, 
+            { x: centers[j][0], y: centers[j][1] }
+          );
           if (d < bestD) {
             bestD = d;
             best = j;
@@ -838,9 +841,10 @@ export class MapGenerator {
       const complete: { a: number; b: number; d: number }[] = [];
       for (let i = 0; i < rooms.length; i++) {
         for (let j = i + 1; j < rooms.length; j++) {
-          const dx = centers[i][0] - centers[j][0];
-          const dy = centers[i][1] - centers[j][1];
-          const d = Math.sqrt(dx * dx + dy * dy);
+          const d = distance(
+            { x: centers[i][0], y: centers[i][1] }, 
+            { x: centers[j][0], y: centers[j][1] }
+          );
           complete.push({ a: i, b: j, d });
         }
       }
@@ -1569,7 +1573,7 @@ export class MapGenerator {
   }
 
   /**
-   * A* pathfinding with cost grid support
+   * A* pathfinding using pathfinding library with cost grid support
    * Finds optimal path while avoiding high-cost areas (like room interiors)
    */
   private findPathAStar(
@@ -1581,86 +1585,34 @@ export class MapGenerator {
   ): { x: number; y: number }[] {
     // Generate cost grid
     const costGrid = this.generateCostGrid(rooms, width, height, start, goal);
-    const openSet = new PriorityQueue();
-    const closedSet = new Set<string>();
-    const gScores = new Map<string, number>();
     
-    // Heuristic function (Manhattan distance)
-    const heuristic = (a: { x: number; y: number }, b: { x: number; y: number }): number => {
-      return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
-    };
-    
-    // Create start node
-    const startNode: PathNode = {
-      x: start.x,
-      y: start.y,
-      g: 0,
-      h: heuristic(start, goal),
-      f: heuristic(start, goal)
-    };
-    
-    openSet.enqueue(startNode);
-    gScores.set(`${start.x},${start.y}`, 0);
-    
-    while (!openSet.isEmpty()) {
-      const currentNode = openSet.dequeue()!;
-      const nodeKey = `${currentNode.x},${currentNode.y}`;
-      
-      // Goal reached
-      if (currentNode.x === goal.x && currentNode.y === goal.y) {
-        const path: { x: number; y: number }[] = [];
-        let current: PathNode | undefined = currentNode;
-        while (current) {
-          path.unshift({ x: current.x, y: current.y });
-          current = current.parent;
-        }
-        return path;
+    // Convert cost grid to binary walkability grid for pathfinding library
+    const grid = new (PF as any).Grid(width, height);
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const cost = costGrid[y][x];
+        // Block very high cost areas (room interiors), allow room edges and corridors
+        const isBlocked = cost > 15;
+        grid.setWalkableAt(x, y, !isBlocked);
       }
-      
-      closedSet.add(nodeKey);
-      
-      // Check neighbors (4-directional movement)
-      const neighbors = [
-        { x: currentNode.x + 1, y: currentNode.y },
-        { x: currentNode.x - 1, y: currentNode.y },
-        { x: currentNode.x, y: currentNode.y + 1 },
-        { x: currentNode.x, y: currentNode.y - 1 }
-      ];
-      
-      for (const neighbor of neighbors) {
-        // Skip if out of bounds
-        if (neighbor.x < 0 || neighbor.x >= width || neighbor.y < 0 || neighbor.y >= height) {
-          continue;
-        }
-        
-        const neighborKey = `${neighbor.x},${neighbor.y}`;
-        
-        // Skip if already evaluated
-        if (closedSet.has(neighborKey)) {
-          continue;
-        }
-        
-        // Calculate cost using the cost grid
-        const moveCost = costGrid[neighbor.y][neighbor.x];
-        const tentativeG = currentNode.g + moveCost;
-        
-        // Check if this path to neighbor is better than any previous one
-        const previousG = gScores.get(neighborKey);
-        if (previousG === undefined || tentativeG < previousG) {
-          gScores.set(neighborKey, tentativeG);
-          
-          const neighborNode: PathNode = {
-            x: neighbor.x,
-            y: neighbor.y,
-            g: tentativeG,
-            h: heuristic(neighbor, goal),
-            f: tentativeG + heuristic(neighbor, goal),
-            parent: currentNode
-          };
-          
-          openSet.enqueue(neighborNode);
-        }
-      }
+    }
+    
+    // Ensure start and goal are walkable
+    grid.setWalkableAt(start.x, start.y, true);
+    grid.setWalkableAt(goal.x, goal.y, true);
+    
+    // Create A* finder with Manhattan heuristic and optimized priority queue
+    const finder = new (PF as any).AStarFinder({
+      allowDiagonal: false,
+      heuristic: (PF as any).Heuristic.manhattan
+    });
+    
+    // Find path using optimized A* implementation
+    const path = finder.findPath(start.x, start.y, goal.x, goal.y, grid);
+    
+    // Convert path format to our expected format
+    if (path.length > 0) {
+      return path.map((point: number[]) => ({ x: point[0], y: point[1] }));
     }
     
     // No path found, fallback to simple L-shaped path

@@ -1,5 +1,6 @@
 import { RoomShape, Room } from '../core/types';
 import { type ShapePreferences } from '../core/plugin-types';
+import { distance, getClosestPointOnLineSegment, isPointOnLineSegment } from '../utils/geometry';
 
 // Check if we're in a browser environment
 const isBrowser = typeof window !== 'undefined';
@@ -217,7 +218,7 @@ class RoomShapeServiceImpl implements RoomShapeService {
         const end = room.shapePoints[(i + 1) % room.shapePoints.length];
         
         // Check if point lies on this edge segment
-        if (this.isPointOnLineSegment(point, start, end)) {
+        if (isPointOnLineSegment(point, start, end)) {
           return true;
         }
       }
@@ -321,16 +322,16 @@ class RoomShapeServiceImpl implements RoomShapeService {
       }
       
       // Find the closest point on this edge segment to the target
-      const closestOnSegment = this.getClosestPointOnLineSegment(
+      const closestOnSegment = getClosestPointOnLineSegment(
         currentPoint, 
         nextPoint, 
         targetPoint
       );
       
-      const distance = this.getDistance(closestOnSegment, targetPoint);
+      const distanceToTarget = distance(closestOnSegment, targetPoint);
       
-      if (distance < bestDistance) {
-        bestDistance = distance;
+      if (distanceToTarget < bestDistance) {
+        bestDistance = distanceToTarget;
         bestPoint = closestOnSegment;
       }
     }
@@ -393,30 +394,8 @@ class RoomShapeServiceImpl implements RoomShapeService {
     }
   }
 
-  /**
-   * Calculate distance between two points
-   */
-  private getDistance(point1: { x: number; y: number }, point2: { x: number; y: number }): number {
-    const dx = point1.x - point2.x;
-    const dy = point1.y - point2.y;
-    return Math.sqrt(dx * dx + dy * dy);
-  }
-
-  /**
-   * Check if a point lies exactly on a line segment
-   */
-  private isPointOnLineSegment(
-    point: { x: number; y: number },
-    segmentStart: { x: number; y: number }, 
-    segmentEnd: { x: number; y: number }
-  ): boolean {
-    // Calculate the distance from point to the line segment
-    const closestPoint = this.getClosestPointOnLineSegment(segmentStart, segmentEnd, point);
-    
-    // Check if the closest point is very close to the original point (accounting for floating point precision)
-    const distance = this.getDistance(point, closestPoint);
-    return distance < 1; // Allow 1 unit tolerance for integer coordinates
-  }
+  // Geometry utility methods now imported from utils/geometry.ts
+  // These replace custom implementations with optimized flatten-js versions
 
   /**
    * Find the closest point on a line segment to a target point

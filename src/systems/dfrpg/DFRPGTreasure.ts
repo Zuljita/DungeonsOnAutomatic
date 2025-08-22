@@ -41,6 +41,14 @@ export interface TreasureHoard {
   totalWeight: number;
 }
 
+export interface TreasureDisplayOptions {
+  format: 'compact' | 'detailed' | 'handout';
+  showReferences: boolean;
+  showWeights: boolean;
+  useIcons: boolean;
+  groupByType: boolean;
+}
+
 const COIN_VALUES = {
   copper: { value: 1, weight: 0.02 },
   silver: { value: 20, weight: 0.02 },
@@ -415,14 +423,61 @@ export class DFRPGTreasureGenerator {
     return 'epic';
   }
 
-  formatTreasureDescription(hoard: TreasureHoard): string {
+  formatTreasureDescription(hoard: TreasureHoard, options?: TreasureDisplayOptions): string {
+    return this.formatForDisplay(hoard, options || { format: 'detailed', showReferences: true, showWeights: true, useIcons: false, groupByType: true });
+  }
+
+  formatForDisplay(hoard: TreasureHoard, options: TreasureDisplayOptions): string {
+    const { format, showReferences, showWeights, useIcons, groupByType } = options;
+    
+    if (format === 'compact') {
+      return this.formatCompact(hoard, useIcons);
+    } else if (format === 'handout') {
+      return this.formatForHandout(hoard, useIcons);
+    } else {
+      return this.formatDetailed(hoard, showReferences, showWeights, useIcons, groupByType);
+    }
+  }
+
+  private formatCompact(hoard: TreasureHoard, useIcons: boolean): string {
     const parts: string[] = [];
+    const icon = useIcons ? '💰 ' : '';
+    
+    if (hoard.coins.totalValue > 0) {
+      parts.push(`${icon}${hoard.coins.totalValue}$ coins`);
+    }
+    
+    if (hoard.magicItems.length > 0) {
+      const magicIcon = useIcons ? '✨ ' : '';
+      parts.push(`${magicIcon}${hoard.magicItems.length} magic item${hoard.magicItems.length > 1 ? 's' : ''}`);
+    }
+    
+    if (hoard.mundaneItems.length > 0) {
+      const valuableIcon = useIcons ? '💎 ' : '';
+      parts.push(`${valuableIcon}${hoard.mundaneItems.length} valuable${hoard.mundaneItems.length > 1 ? 's' : ''}`);
+    }
+    
+    const totalIcon = useIcons ? '💰 ' : '';
+    return parts.length > 0 ? 
+      `${parts.join(', ')} (${totalIcon}Total: $${hoard.totalValue}, ${hoard.totalWeight.toFixed(1)} lbs)` :
+      'No treasure';
+  }
+
+  private formatDetailed(hoard: TreasureHoard, showReferences: boolean, showWeights: boolean, useIcons: boolean, groupByType: boolean): string {
+    const parts: string[] = [];
+
+    // Header with total
+    const treasureIcon = useIcons ? '💰 ' : '';
+    parts.push(`${treasureIcon}Treasure (Total: $${hoard.totalValue}${showWeights ? `, ${hoard.totalWeight.toFixed(1)} lbs` : ''})`);
 
     // Coins
     if (hoard.coins.totalValue > 0) {
+      const coinIcon = useIcons ? '🪙 ' : '';
       const coinParts: string[] = [];
+      
+      // Order coins by value (highest first)
       if (hoard.coins.platinum && hoard.coins.platinum > 0) {
-        coinParts.push(`${hoard.coins.platinum} platinum (Exploits p.73)`);
+        coinParts.push(`${hoard.coins.platinum} platinum${showReferences ? ' (Exploits p.73)' : ''}`);
       }
       if (hoard.coins.gold > 0) coinParts.push(`${hoard.coins.gold} gold`);
       if (hoard.coins.goldHalf && hoard.coins.goldHalf > 0) {
@@ -435,38 +490,226 @@ export class DFRPGTreasureGenerator {
         coinParts.push(`${hoard.coins.goldFifth} gold fifths`);
       }
       if (hoard.coins.electrum && hoard.coins.electrum > 0) {
-        coinParts.push(`${hoard.coins.electrum} electrum (Exploits p.73)`);
+        coinParts.push(`${hoard.coins.electrum} electrum${showReferences ? ' (Exploits p.73)' : ''}`);
       }
       if (hoard.coins.tumbaga && hoard.coins.tumbaga > 0) {
-        coinParts.push(`${hoard.coins.tumbaga} tumbaga (Exploits p.73)`);
+        coinParts.push(`${hoard.coins.tumbaga} tumbaga${showReferences ? ' (Exploits p.73)' : ''}`);
       }
       if (hoard.coins.silver > 0) coinParts.push(`${hoard.coins.silver} silver`);
       if (hoard.coins.billon && hoard.coins.billon > 0) {
-        coinParts.push(`${hoard.coins.billon} billon (Exploits p.73)`);
+        coinParts.push(`${hoard.coins.billon} billon${showReferences ? ' (Exploits p.73)' : ''}`);
       }
       if (hoard.coins.copper > 0) coinParts.push(`${hoard.coins.copper} copper`);
-      parts.push(`Coins: ${coinParts.join(', ')} (${hoard.coins.totalWeight.toFixed(2)} lbs)`);
+      
+      const weightInfo = showWeights ? ` (${hoard.coins.totalWeight.toFixed(1)} lbs)` : '';
+      parts.push(`${coinIcon}Coins: ${coinParts.join(', ')}${weightInfo}`);
     }
 
     // Magic items
     if (hoard.magicItems.length > 0) {
-      const magicDesc = hoard.magicItems.map(item => 
-        `${item.name} (${item.powerLevel}, ${item.quirks?.join(', ') || 'no quirks'})`
-      ).join('; ');
-      parts.push(`Magic: ${magicDesc}`);
+      const magicIcon = useIcons ? '✨ ' : '';
+      
+      if (groupByType) {
+        // Group by power level
+        const groupedMagic = this.groupMagicItemsByPowerLevel(hoard.magicItems);
+        const magicParts: string[] = [];
+        
+        ['epic', 'major', 'minor'].forEach(level => {
+          const items = groupedMagic[level as keyof typeof groupedMagic];
+          if (items.length > 0) {
+            const itemDescs = items.map(item => this.formatMagicItem(item, showReferences, showWeights));
+            magicParts.push(`${level}: ${itemDescs.join('; ')}`);
+          }
+        });
+        
+        parts.push(`${magicIcon}Magic Items: ${magicParts.join(' | ')}`);
+      } else {
+        const magicDesc = hoard.magicItems.map(item => 
+          this.formatMagicItem(item, showReferences, showWeights)
+        ).join('; ');
+        parts.push(`${magicIcon}Magic Items: ${magicDesc}`);
+      }
     }
 
     // Mundane items
     if (hoard.mundaneItems.length > 0) {
-      const mundaneDesc = hoard.mundaneItems.map(item => 
-        `${item.name} ($${item.value}, ${item.weight} lbs)`
-      ).join('; ');
-      parts.push(`Valuables: ${mundaneDesc}`);
+      if (groupByType) {
+        const groupedMundane = this.groupMundaneItemsByCategory(hoard.mundaneItems);
+        const mundaneParts: string[] = [];
+        
+        Object.entries(groupedMundane).forEach(([category, items]) => {
+          const categoryIcon = this.getMundaneCategoryIcon(category, useIcons);
+          const itemDescs = items.map(item => this.formatMundaneItem(item, showWeights));
+          mundaneParts.push(`${categoryIcon}${this.formatCategoryName(category)}: ${itemDescs.join(', ')}`);
+        });
+        
+        parts.push(...mundaneParts);
+      } else {
+        const valuableIcon = useIcons ? '💎 ' : '';
+        const mundaneDesc = hoard.mundaneItems.map(item => 
+          this.formatMundaneItem(item, showWeights)
+        ).join('; ');
+        parts.push(`${valuableIcon}Valuables: ${mundaneDesc}`);
+      }
     }
 
-    parts.push(`Total: $${hoard.totalValue}, ${hoard.totalWeight.toFixed(2)} lbs`);
+    return parts.join('\n');
+  }
+
+  formatForHandout(hoard: TreasureHoard, useIcons: boolean = true): string {
+    const parts: string[] = [];
+    const treasureIcon = useIcons ? '💰 ' : '';
+    
+    parts.push(`${treasureIcon}Treasure Found`);
+    parts.push('═'.repeat(20));
+
+    // Coins section
+    if (hoard.coins.totalValue > 0) {
+      const coinIcon = useIcons ? '🪙 ' : '';
+      parts.push(`\n${coinIcon}Coins:`);
+      
+      const coinEntries = this.getVisibleCoinEntries(hoard.coins);
+      coinEntries.forEach(entry => {
+        parts.push(`  • ${entry}`);
+      });
+      
+      parts.push(`  Weight: ${hoard.coins.totalWeight.toFixed(1)} lbs`);
+    }
+
+    // Magic items section
+    if (hoard.magicItems.length > 0) {
+      const magicIcon = useIcons ? '✨ ' : '';
+      parts.push(`\n${magicIcon}Magic Items:`);
+      
+      hoard.magicItems.forEach(item => {
+        parts.push(`  • ${item.name} (${item.powerLevel})`);
+        if (item.quirks && item.quirks.length > 0) {
+          parts.push(`    Effects: ${item.quirks.join(', ')}`);
+        }
+        parts.push(`    Value: $${item.value}, Weight: ${item.weight} lbs`);
+      });
+    }
+
+    // Mundane valuables section
+    if (hoard.mundaneItems.length > 0) {
+      const valuableIcon = useIcons ? '💎 ' : '';
+      parts.push(`\n${valuableIcon}Valuables:`);
+      
+      hoard.mundaneItems.forEach(item => {
+        parts.push(`  • ${item.name}`);
+        if (item.description) {
+          parts.push(`    ${item.description}`);
+        }
+        parts.push(`    Value: $${item.value}, Weight: ${item.weight} lbs`);
+      });
+    }
+
+    // Summary
+    parts.push('\n═'.repeat(20));
+    parts.push(`Total Value: $${hoard.totalValue}`);
+    parts.push(`Total Weight: ${hoard.totalWeight.toFixed(1)} lbs`);
 
     return parts.join('\n');
+  }
+
+  private formatMagicItem(item: MagicItem, showReferences: boolean, showWeights: boolean): string {
+    const parts = [item.name];
+    
+    if (item.powerLevel) {
+      parts.push(`(${item.powerLevel})`);
+    }
+    
+    if (item.quirks && item.quirks.length > 0) {
+      parts.push(`[${item.quirks.join(', ')}]`);
+    }
+    
+    if (showReferences && item.reference) {
+      parts.push(`{${item.reference}}`);
+    }
+    
+    const valueWeight = [`$${item.value}`];
+    if (showWeights) {
+      valueWeight.push(`${item.weight} lbs`);
+    }
+    parts.push(`(${valueWeight.join(', ')})`);
+    
+    return parts.join(' ');
+  }
+
+  private formatMundaneItem(item: MundaneValuable, showWeights: boolean): string {
+    const parts = [item.name];
+    
+    const valueWeight = [`$${item.value}`];
+    if (showWeights) {
+      valueWeight.push(`${item.weight} lbs`);
+    }
+    parts.push(`(${valueWeight.join(', ')})`);
+    
+    return parts.join(' ');
+  }
+
+  private groupMagicItemsByPowerLevel(items: MagicItem[]) {
+    return {
+      minor: items.filter(item => item.powerLevel === 'minor'),
+      major: items.filter(item => item.powerLevel === 'major'),
+      epic: items.filter(item => item.powerLevel === 'epic')
+    };
+  }
+
+  private groupMundaneItemsByCategory(items: MundaneValuable[]) {
+    const grouped: Record<string, MundaneValuable[]> = {};
+    
+    items.forEach(item => {
+      if (!grouped[item.category]) {
+        grouped[item.category] = [];
+      }
+      grouped[item.category].push(item);
+    });
+    
+    return grouped;
+  }
+
+  private getMundaneCategoryIcon(category: string, useIcons: boolean): string {
+    if (!useIcons) return '';
+    
+    const icons: Record<string, string> = {
+      'trade_good': '📦 ',
+      'art': '🏺 ',
+      'gem': '💎 ',
+      'tool': '🔧 ',
+      'other': '📜 '
+    };
+    
+    return icons[category] || '📜 ';
+  }
+
+  private formatCategoryName(category: string): string {
+    const names: Record<string, string> = {
+      'trade_good': 'Trade Goods',
+      'art': 'Art Objects',
+      'gem': 'Gems',
+      'tool': 'Tools',
+      'other': 'Other Valuables'
+    };
+    
+    return names[category] || category;
+  }
+
+  private getVisibleCoinEntries(coins: CoinAmount): string[] {
+    const entries: string[] = [];
+    
+    if (coins.platinum && coins.platinum > 0) entries.push(`${coins.platinum} platinum`);
+    if (coins.gold > 0) entries.push(`${coins.gold} gold`);
+    if (coins.goldHalf && coins.goldHalf > 0) entries.push(`${coins.goldHalf} gold halves`);
+    if (coins.goldQuarter && coins.goldQuarter > 0) entries.push(`${coins.goldQuarter} gold quarters`);
+    if (coins.goldFifth && coins.goldFifth > 0) entries.push(`${coins.goldFifth} gold fifths`);
+    if (coins.electrum && coins.electrum > 0) entries.push(`${coins.electrum} electrum`);
+    if (coins.tumbaga && coins.tumbaga > 0) entries.push(`${coins.tumbaga} tumbaga`);
+    if (coins.silver > 0) entries.push(`${coins.silver} silver`);
+    if (coins.billon && coins.billon > 0) entries.push(`${coins.billon} billon`);
+    if (coins.copper > 0) entries.push(`${coins.copper} copper`);
+    
+    return entries;
   }
 }
 
