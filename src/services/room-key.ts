@@ -1,6 +1,7 @@
 import { Dungeon, Monster, Treasure, ID, WanderingMonster } from '../core/types';
 import { customDataLoader } from './custom-data-loader';
 import DFRPGEncounterGenerator from '../systems/dfrpg/DFRPGEncounterGenerator.js';
+import DFRPGTreasureGenerator, { type TreasureHoard, type TreasureDisplayOptions } from '../systems/dfrpg/DFRPGTreasure';
 import roomFeatureDefaults from '../data/room-features.json';
 
 interface Weighted<T> {
@@ -279,14 +280,71 @@ export function htmlRoomDetails(d: Dungeon, details: Record<ID, RoomDetail>): st
         parts.push(`<p>${monstersHeader} ${monsterDetails.join(', ')}</p>`);
       }
       if (safeTreasure.length) {
-        const treasureDetails = safeTreasure.map(t => {
-          const treasureInfo = [t.kind + (t.valueHint ? ` (${t.valueHint})` : '')];
-          if (t.tags && t.tags.length > 0) {
-            treasureInfo.push(`[${t.tags.join(', ')}]`);
+        // Check if we have enhanced DFRPG treasure data
+        const dfrpgHoard = safeTreasure.find(t => t.kind === 'dfrpg_hoard');
+        if (dfrpgHoard && 'totalValue' in dfrpgHoard) {
+          // Use enhanced DFRPG treasure formatting
+          const treasureHoard = dfrpgHoard as any; // TreasureHoard from DFRPG
+          
+          try {
+            const generator = new DFRPGTreasureGenerator();
+            
+            const displayOptions: TreasureDisplayOptions = {
+              format: 'detailed',
+              showReferences: false, // Keep it clean for room keys
+              showWeights: true,
+              useIcons: true,
+              groupByType: true
+            };
+            
+            const formattedTreasure = generator.formatForDisplay(treasureHoard, displayOptions);
+            
+            // Convert to HTML format with proper line breaks and styling
+            const htmlTreasure = formattedTreasure
+              .split('\n')
+              .map(line => {
+                // Add basic styling for different treasure types
+                if (line.includes('🪙 Coins:')) {
+                  return `<span class="treasure-coins">${line}</span>`;
+                } else if (line.includes('✨ Magic')) {
+                  return `<span class="treasure-magic">${line}</span>`;
+                } else if (line.includes('💎') || line.includes('📦') || line.includes('🏺') || line.includes('🔧')) {
+                  return `<span class="treasure-valuables">${line}</span>`;
+                } else if (line.includes('💰 Treasure')) {
+                  return `<strong class="treasure-header">${line}</strong>`;
+                }
+                return line;
+              })
+              .join('<br>');
+            
+            parts.push(`<p><strong>Treasure:</strong><br>${htmlTreasure}</p>`);
+          } catch (error) {
+            // Fallback to basic treasure display if DFRPG module not available
+            console.warn('Could not load DFRPG treasure formatting, using fallback');
+            // Filter out the dfrpg_hoard entry for fallback display
+            const fallbackTreasure = safeTreasure.filter(t => t.kind !== 'dfrpg_hoard');
+            const treasureDetails = fallbackTreasure.map(t => {
+              const treasureInfo = [t.kind + (t.valueHint ? ` (${t.valueHint})` : '')];
+              if (t.tags && t.tags.length > 0) {
+                treasureInfo.push(`[${t.tags.join(', ')}]`);
+              }
+              return treasureInfo.join(' ');
+            });
+            parts.push(`<p><strong>Treasure:</strong> ${treasureDetails.join(', ')}</p>`);
           }
-          return treasureInfo.join(' ');
-        });
-        parts.push(`<p><strong>Treasure:</strong> ${treasureDetails.join(', ')}</p>`);
+        } else {
+          // Standard treasure display for non-DFRPG systems
+          // Filter out any dfrpg_hoard entries that might exist
+          const standardTreasure = safeTreasure.filter(t => t.kind !== 'dfrpg_hoard');
+          const treasureDetails = standardTreasure.map(t => {
+            const treasureInfo = [t.kind + (t.valueHint ? ` (${t.valueHint})` : '')];
+            if (t.tags && t.tags.length > 0) {
+              treasureInfo.push(`[${t.tags.join(', ')}]`);
+            }
+            return treasureInfo.join(' ');
+          });
+          parts.push(`<p><strong>Treasure:</strong> ${treasureDetails.join(', ')}</p>`);
+        }
       }
 
       // Display keys found in this room
