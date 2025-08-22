@@ -1646,24 +1646,10 @@ function updateMinimapViewport(): void {
     viewportRect.style.display = 'none';
     return;
   }
-  
-  // Get transform from the SVG's style instead of getTransform
-  const svg = document.querySelector('#map-content svg') as SVGElement;
-  if (!svg) return;
-  
-  const transform = svg.style.transform || 'matrix(1, 0, 0, 1, 0, 0)';
-  const matrix = transform.match(/matrix\(([^)]+)\)/);
-  
-  let scale = mapViewState.scale || 1;
-  let translateX = 0;
-  let translateY = 0;
-  
-  if (matrix) {
-    const values = matrix[1].split(',').map(v => parseFloat(v.trim()));
-    scale = values[0] || 1;
-    translateX = values[4] || 0;
-    translateY = values[5] || 0;
-  }
+
+  const scale = mapViewState.scale || 1;
+  const translateX = mapViewState.translateX || 0;
+  const translateY = mapViewState.translateY || 0;
   
   const containerRect = mapContainer.getBoundingClientRect();
   
@@ -1758,6 +1744,8 @@ function setupMapPanZoom(mapEl: HTMLElement): void {
         // Use the event detail instead of getTransform
         const transform = event.detail || { scale: 1, x: 0, y: 0 };
         mapViewState.scale = transform.scale;
+        mapViewState.translateX = transform.x;
+        mapViewState.translateY = transform.y;
         updateMinimapViewport();
       }
     });
