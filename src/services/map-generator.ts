@@ -109,15 +109,16 @@ export class MapGenerator {
     // Add special features BEFORE corridor generation so they get connected
     const specialRooms = this.addSpecialFeatures(dungeonRooms, boundaries, stairsUp, stairsDown, entranceFromPeriphery);
     
-    // Combine all rooms for corridor generation
-    const allRooms = [...dungeonRooms, ...specialRooms];
-    
-    // Generate corridors based on type (including special rooms)
-    const corridors = this.generateCorridors(allRooms, corridorType, pathfindingAlgorithm, corridorWidth, allowDeadends, width, height);
-    
+    // Combine all rooms for corridor generation and clamp to map bounds
+    let allRooms = this.clampRooms([...dungeonRooms, ...specialRooms], width, height);
+
+    // Generate corridors based on type (including special rooms) and clamp paths
+    let corridors = this.generateCorridors(allRooms, corridorType, pathfindingAlgorithm, corridorWidth, allowDeadends, width, height);
+    corridors = this.clampCorridors(corridors, width, height);
+
     // Generate doors
     const doors = this.generateDoors(corridors);
-    
+
     return {
       seed,
       rooms: allRooms,
@@ -125,6 +126,49 @@ export class MapGenerator {
       doors,
       rng: this.R
     };
+  }
+
+  private clampRooms(rooms: Room[], mapWidth: number, mapHeight: number): Room[] {
+    return rooms.map(room => {
+      let x = Math.max(0, room.x);
+      let y = Math.max(0, room.y);
+      let w = room.w;
+      let h = room.h;
+      if (x + w > mapWidth) {
+        w = mapWidth - x;
+      }
+      if (y + h > mapHeight) {
+        h = mapHeight - y;
+      }
+      return { ...room, x, y, w, h };
+    });
+  }
+
+  private clampCorridors(corridors: Corridor[], mapWidth: number, mapHeight: number): Corridor[] {
+    const clampPoint = (p: { x: number; y: number }) => ({
+      x: Math.min(Math.max(p.x, 0), mapWidth - 1),
+      y: Math.min(Math.max(p.y, 0), mapHeight - 1),
+    });
+
+    return corridors.map(corridor => {
+      const doorStart = corridor.doorStart ? clampPoint(corridor.doorStart) : undefined;
+      const doorEnd = corridor.doorEnd ? clampPoint(corridor.doorEnd) : undefined;
+      const path = corridor.path.map(clampPoint);
+
+      if (doorStart && path.length) {
+        path[0] = doorStart;
+      }
+      if (doorEnd && path.length) {
+        path[path.length - 1] = doorEnd;
+      }
+
+      return {
+        ...corridor,
+        path,
+        doorStart,
+        doorEnd,
+      };
+    });
   }
 
   /**
