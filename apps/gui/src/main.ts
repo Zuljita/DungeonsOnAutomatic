@@ -1332,10 +1332,54 @@ function setupMapKeyInteractions(mapEl: HTMLElement, roomKeyEl: HTMLElement): vo
     });
   });
 
+  const panToElement = (element: SVGGraphicsElement) => {
+    if (!panzoomInstance) return;
+    
+    const mapContainer = document.getElementById('map');
+    if (!mapContainer) return;
+    
+    // Get the element's bounding box in SVG coordinates
+    const bbox = element.getBBox();
+    const centerX = bbox.x + bbox.width / 2;
+    const centerY = bbox.y + bbox.height / 2;
+    
+    // Get map container dimensions for centering
+    const containerRect = mapContainer.getBoundingClientRect();
+    const containerCenterX = containerRect.width / 2;
+    const containerCenterY = containerRect.height / 2;
+    
+    // Get current scale from transform
+    const svg = element.ownerSVGElement;
+    const transform = svg?.style.transform || 'matrix(1, 0, 0, 1, 0, 0)';
+    const matrix = transform.match(/matrix\(([^)]+)\)/);
+    const currentScale = matrix ? parseFloat(matrix[1].split(',')[0]) : 1;
+    
+    // Apply a slight zoom for better focus (but not too much)
+    const targetScale = Math.max(1.2, currentScale);
+    
+    // Calculate new pan position to center the element at the target scale
+    const newX = -(centerX * targetScale) + containerCenterX;
+    const newY = -(centerY * targetScale) + containerCenterY;
+    
+    // Apply zoom and pan with smooth animation
+    panzoomInstance.zoom(targetScale, { animate: true });
+    setTimeout(() => {
+      panzoomInstance.pan(newX, newY, { animate: true });
+    }, 100); // Small delay to let zoom complete first
+  };
+
   const highlight = (element: SVGGraphicsElement) => {
+    // Remove previous highlights
     svg.querySelectorAll('.map-highlight').forEach(e => e.classList.remove('map-highlight'));
     element.classList.add('map-highlight');
-    element.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+    
+    // Pan and zoom the map to center the element if panzoom is available
+    if (panzoomInstance) {
+      panToElement(element);
+    } else {
+      // Fallback to scrollIntoView if panzoom isn't ready
+      element.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+    }
   };
 
   roomKeyEl.querySelectorAll<HTMLElement>('section.room').forEach(section => {
@@ -1351,6 +1395,16 @@ function setupMapKeyInteractions(mapEl: HTMLElement, roomKeyEl: HTMLElement): vo
     keyEl.addEventListener('click', (e) => {
       e.stopPropagation();
       const el = svg.querySelector<SVGGraphicsElement>(`.key-icon[data-key="${id}"]`);
+      if (el) highlight(el);
+    });
+  });
+
+  // Add click handlers for door entries in the room key (if any exist)
+  roomKeyEl.querySelectorAll<HTMLElement>('[data-door]').forEach(doorEl => {
+    const id = doorEl.getAttribute('data-door');
+    doorEl.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const el = svg.querySelector<SVGGraphicsElement>(`.door-icon[data-door="${id}"]`);
       if (el) highlight(el);
     });
   });
@@ -1689,9 +1743,9 @@ function setupMapPanZoom(mapEl: HTMLElement): void {
   // Try the simplest possible panzoom setup
   try {
     panzoomInstance = Panzoom(svg, {
-      // Minimal options
       maxScale: 3,
-      minScale: 0.5
+      minScale: 0.5,
+      exclude: '.room-number, .door-icon, .key-icon, .map-control-btn'
     });
     
     
