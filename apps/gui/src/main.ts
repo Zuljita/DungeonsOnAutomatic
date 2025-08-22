@@ -633,40 +633,37 @@ function setupMapStyleControls() {
 function validateForm(): { isValid: boolean; errors: string[] } {
   const errors: string[] = [];
   
-  // Validate rooms
+  // Validate rooms (ensure positive count)
   const roomsInput = document.getElementById('rooms') as HTMLInputElement;
   const rooms = parseInt(roomsInput.value);
-  if (rooms < 3 || rooms > 20) {
-    errors.push('Rooms must be between 3 and 20');
+  if (rooms < 1) {
+    errors.push('Rooms must be at least 1');
     roomsInput.style.borderColor = 'var(--accent-danger)';
   } else {
     roomsInput.style.borderColor = '';
   }
-  
-  // Validate width
+
+  // Validate width (no upper limit)
   const widthInput = document.getElementById('width') as HTMLInputElement;
   const width = parseInt(widthInput.value);
-  if (width < 20 || width > 100) {
-    errors.push('Width must be between 20 and 100');
+  if (width < 1) {
+    errors.push('Width must be at least 1');
     widthInput.style.borderColor = 'var(--accent-danger)';
   } else {
     widthInput.style.borderColor = '';
   }
-  
-  // Validate height
+
+  // Validate height (no upper limit)
   const heightInput = document.getElementById('height') as HTMLInputElement;
   const height = parseInt(heightInput.value);
-  if (height < 20 || height > 100) {
-    errors.push('Height must be between 20 and 100');
+  if (height < 1) {
+    errors.push('Height must be at least 1');
     heightInput.style.borderColor = 'var(--accent-danger)';
   } else {
     heightInput.style.borderColor = '';
   }
-  
-  // Validate room count vs map size (rooms should fit reasonably)
-  if (rooms && width && height && rooms > (width * height) / 50) {
-    errors.push('Too many rooms for map size - consider increasing map dimensions or reducing room count');
-  }
+
+  // No room-to-map-size ratio validation
   
   return { isValid: errors.length === 0, errors };
 }
@@ -1646,24 +1643,10 @@ function updateMinimapViewport(): void {
     viewportRect.style.display = 'none';
     return;
   }
-  
-  // Get transform from the SVG's style instead of getTransform
-  const svg = document.querySelector('#map-content svg') as SVGElement;
-  if (!svg) return;
-  
-  const transform = svg.style.transform || 'matrix(1, 0, 0, 1, 0, 0)';
-  const matrix = transform.match(/matrix\(([^)]+)\)/);
-  
-  let scale = mapViewState.scale || 1;
-  let translateX = 0;
-  let translateY = 0;
-  
-  if (matrix) {
-    const values = matrix[1].split(',').map(v => parseFloat(v.trim()));
-    scale = values[0] || 1;
-    translateX = values[4] || 0;
-    translateY = values[5] || 0;
-  }
+
+  const scale = mapViewState.scale || 1;
+  const translateX = mapViewState.translateX || 0;
+  const translateY = mapViewState.translateY || 0;
   
   const containerRect = mapContainer.getBoundingClientRect();
   
@@ -1758,6 +1741,8 @@ function setupMapPanZoom(mapEl: HTMLElement): void {
         // Use the event detail instead of getTransform
         const transform = event.detail || { scale: 1, x: 0, y: 0 };
         mapViewState.scale = transform.scale;
+        mapViewState.translateX = transform.x;
+        mapViewState.translateY = transform.y;
         updateMinimapViewport();
       }
     });
