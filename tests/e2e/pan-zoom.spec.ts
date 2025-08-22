@@ -117,7 +117,7 @@ test.describe('Map Pan and Zoom Controls', () => {
     // Generate a dungeon with system content to get clickable elements
     await page.selectOption('#system', 'dfrpg');
     await page.locator('#generate').click();
-    await expect(page.locator('#map svg')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('#map-content svg')).toBeVisible({ timeout: 10000 });
     
     // Check that room numbers are still clickable
     const roomElements = page.locator('#map-content svg text[data-room]');
