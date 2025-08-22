@@ -31,6 +31,7 @@ program
   .option("--corridor-width <width>", "corridor width in tiles (1, 2, or 3)", (v) =>
     parseInt(v, 10),
   )
+  .option("--pathfinding-algorithm <algorithm>", "pathfinding algorithm (manhattan, astar, jumppoint, dijkstra)", "manhattan")
   .option("--room-layout <layout>", "room layout style (sparse, scattered, dense, symmetric)")
   .option(
     "--room-shape <shape>",
@@ -121,6 +122,7 @@ program
       roomLayout: opts.roomLayout,
       corridorType: opts.corridorType,
       corridorWidth: opts.corridorWidth,
+      pathfindingAlgorithm: opts.pathfindingAlgorithm,
       roomShape: opts.roomShape,
       stairsUp: opts.stairsUp,
       stairsDown: opts.stairsDown,

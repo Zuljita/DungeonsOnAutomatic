@@ -288,6 +288,8 @@ function loadGeneratorSettings() {
     const stairsUpInput = document.getElementById('stairs-up') as HTMLInputElement;
     const stairsDownInput = document.getElementById('stairs-down') as HTMLInputElement;
     const entrancePeripheryInput = document.getElementById('entrance-periphery') as HTMLInputElement;
+    const lockPercentageInput = document.getElementById('lock-percentage') as HTMLInputElement;
+    const magicalLocksInput = document.getElementById('magical-locks') as HTMLInputElement;
     
     // New form elements
     const sourcesInput = document.getElementById('sources') as HTMLSelectElement;
@@ -318,6 +320,8 @@ function loadGeneratorSettings() {
     stairsUpInput.checked = !!settings.stairsUp;
     stairsDownInput.checked = !!settings.stairsDown;
     entrancePeripheryInput.checked = !!settings.entranceFromPeriphery;
+    lockPercentageInput.value = settings.lockPercentage !== undefined ? String(settings.lockPercentage) : '';
+    magicalLocksInput.checked = !!settings.magicalLocks;
     
     // Load new settings
     if (settings.sources && Array.isArray(settings.sources)) {
@@ -366,6 +370,8 @@ async function generate(): Promise<void> {
   const stairsUpInput = document.getElementById('stairs-up') as HTMLInputElement;
   const stairsDownInput = document.getElementById('stairs-down') as HTMLInputElement;
   const entrancePeripheryInput = document.getElementById('entrance-periphery') as HTMLInputElement;
+  const lockPercentageInput = document.getElementById('lock-percentage') as HTMLInputElement;
+  const magicalLocksInput = document.getElementById('magical-locks') as HTMLInputElement;
   
   // Map rendering controls
   const mapStyleInput = document.getElementById('map-style') as HTMLSelectElement;
@@ -399,6 +405,8 @@ async function generate(): Promise<void> {
   const stairsUp = stairsUpInput.checked;
   const stairsDown = stairsDownInput.checked;
   const entranceFromPeriphery = entrancePeripheryInput.checked;
+  const lockPercentage = parseFloat(lockPercentageInput.value) || undefined;
+  const magicalLocks = magicalLocksInput.checked;
   
   // Parse tag inputs
   const monsterTags = monsterTagsInput.value.split(',').map(tag => tag.trim()).filter(tag => tag);
@@ -455,6 +463,8 @@ async function generate(): Promise<void> {
       trapTags,
       treasureTags,
       texture,
+      lockPercentage,
+      magicalLocks,
       mapStyle: mapStyleInput.value,
       colorTheme: colorThemeInput.value
     };
@@ -480,9 +490,20 @@ async function generate(): Promise<void> {
           }
         : undefined;
     
+    // Build lock options
+    const lockOptions = lockPercentage !== undefined || magicalLocks
+      ? {
+          lockOptions: {
+            ...(lockPercentage !== undefined ? { lockPercentage } : {}),
+            ...(magicalLocks ? { allowMagicalLocks: true } : {}),
+          },
+        }
+      : undefined;
+
     const enriched = await sys.enrich(dungeon, { 
       sources: selectedSources.length ? selectedSources : undefined, 
-      tags: tagOptions 
+      tags: tagOptions,
+      ...(lockOptions || {}),
     });
 
     // Display input parameters
@@ -570,8 +591,9 @@ function setupRealTimePreview() {
   const formElements = [
     'rooms', 'width', 'height', 'seed',
     'layout-type', 'room-layout', 'room-size', 'room-shape',
-    'corridor-type', 'corridor-width', 'system', 'theme',
+    'corridor-type', 'corridor-width', 'pathfinding-algorithm', 'system', 'theme',
     'allow-deadends', 'stairs-up', 'stairs-down', 'entrance-periphery',
+    'lock-percentage', 'magical-locks',
     'map-style', 'color-theme', 'show-grid', 'wobble-intensity', 'wall-thickness',
     'sources', 'monster-tags', 'trap-tags', 'treasure-tags', 'texture'
   ];
@@ -815,6 +837,8 @@ function getCurrentConfiguration(): PresetConfiguration {
   const stairsUpInput = document.getElementById('stairs-up') as HTMLInputElement;
   const stairsDownInput = document.getElementById('stairs-down') as HTMLInputElement;
   const entrancePeripheryInput = document.getElementById('entrance-periphery') as HTMLInputElement;
+  const lockPercentageInput = document.getElementById('lock-percentage') as HTMLInputElement;
+  const magicalLocksInput = document.getElementById('magical-locks') as HTMLInputElement;
   
   const sourcesInput = document.getElementById('sources') as HTMLSelectElement;
   const monsterTagsInput = document.getElementById('monster-tags') as HTMLInputElement;
@@ -848,6 +872,8 @@ function getCurrentConfiguration(): PresetConfiguration {
     stairsUp: stairsUpInput.checked,
     stairsDown: stairsDownInput.checked,
     entranceFromPeriphery: entrancePeripheryInput.checked,
+    lockPercentage: parseFloat(lockPercentageInput.value) || undefined,
+    magicalLocks: magicalLocksInput.checked,
     sources: selectedSources.length ? selectedSources : undefined,
     monsterTags: monsterTags.length ? monsterTags : undefined,
     trapTags: trapTags.length ? trapTags : undefined,
@@ -877,6 +903,8 @@ function applyConfiguration(config: PresetConfiguration): void {
   const stairsUpInput = document.getElementById('stairs-up') as HTMLInputElement;
   const stairsDownInput = document.getElementById('stairs-down') as HTMLInputElement;
   const entrancePeripheryInput = document.getElementById('entrance-periphery') as HTMLInputElement;
+  const lockPercentageInput = document.getElementById('lock-percentage') as HTMLInputElement;
+  const magicalLocksInput = document.getElementById('magical-locks') as HTMLInputElement;
   
   const sourcesInput = document.getElementById('sources') as HTMLSelectElement;
   const monsterTagsInput = document.getElementById('monster-tags') as HTMLInputElement;
@@ -914,6 +942,8 @@ function applyConfiguration(config: PresetConfiguration): void {
   if (config.stairsUp !== undefined) stairsUpInput.checked = config.stairsUp;
   if (config.stairsDown !== undefined) stairsDownInput.checked = config.stairsDown;
   if (config.entranceFromPeriphery !== undefined) entrancePeripheryInput.checked = config.entranceFromPeriphery;
+  if (config.lockPercentage !== undefined) lockPercentageInput.value = String(config.lockPercentage);
+  if (config.magicalLocks !== undefined) magicalLocksInput.checked = config.magicalLocks;
   
   // Apply content filtering
   if (config.sources && Array.isArray(config.sources)) {
