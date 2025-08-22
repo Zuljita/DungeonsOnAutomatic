@@ -50,6 +50,12 @@ describe('map generator', () => {
         const to = nonSpecialRooms.find((r) => r.id === corridor.to);
         expect(from).toBeDefined();
         expect(to).toBeDefined();
+        corridor.path.forEach((p) => {
+          expect(p.x).toBeGreaterThanOrEqual(0);
+          expect(p.y).toBeGreaterThanOrEqual(0);
+          expect(p.x).toBeLessThan(WIDTH);
+          expect(p.y).toBeLessThan(HEIGHT);
+        });
         const start = corridor.path[0];
         const end = corridor.path[corridor.path.length - 1];
         
@@ -70,6 +76,34 @@ describe('map generator', () => {
           (Math.abs(end.y - to!.y) <= 5 && end.x >= to!.x - 5 && end.x <= to!.x + to!.w + 5) ||           // Near top edge
           (Math.abs(end.y - (to!.y + to!.h)) <= 5 && end.x >= to!.x - 5 && end.x <= to!.x + to!.w + 5);     // Near bottom edge
         expect(endNearToRoom).toBe(true);
+      });
+    });
+  });
+
+  it('keeps wide corridors within map bounds', () => {
+    const generator = new MapGenerator('wide');
+    const dungeon = generator.generateDungeon({
+      layoutType: 'rectangle',
+      roomLayout: 'scattered',
+      roomSize: 'medium',
+      roomShape: 'rectangular',
+      corridorType: 'straight',
+      corridorWidth: 3,
+      allowDeadends: true,
+      stairsUp: false,
+      stairsDown: false,
+      entranceFromPeriphery: false,
+      rooms: BASE_ROOMS,
+      width: WIDTH,
+      height: HEIGHT,
+    });
+
+    dungeon.corridors.forEach((corridor) => {
+      corridor.path.forEach((p) => {
+        expect(p.x).toBeGreaterThanOrEqual(0);
+        expect(p.y).toBeGreaterThanOrEqual(0);
+        expect(p.x).toBeLessThan(WIDTH);
+        expect(p.y).toBeLessThan(HEIGHT);
       });
     });
   });
