@@ -3,6 +3,7 @@ import { roomShapeService } from "./room-shapes";
 import { axialToPixel } from "./hex-grid";
 import { calculateGridBounds, createGrid, createGridFromPoints, isInBounds, Point } from '../utils/grid-utils';
 import { isRectangularRoom, isPointOnRoomBorder } from '../utils/room-utils';
+import { distance, distanceFromPointToLineSegment } from '../utils/geometry';
 
 export interface RenderTheme {
   /** Color of the SVG background */
@@ -344,35 +345,7 @@ function isPointOnLineSegment(point: { x: number; y: number }, p1: { x: number; 
   return Math.abs(d1 + d2 - lineLength) < tolerance;
 }
 
-function distance(p1: { x: number; y: number }, p2: { x: number; y: number }): number {
-  const dx = p2.x - p1.x;
-  const dy = p2.y - p1.y;
-  return Math.sqrt(dx * dx + dy * dy);
-}
-
-function distanceFromPointToLineSegment(point: { x: number; y: number }, p1: { x: number; y: number }, p2: { x: number; y: number }): number {
-  const dx = p2.x - p1.x;
-  const dy = p2.y - p1.y;
-  const length = dx * dx + dy * dy;
-  
-  if (length === 0) {
-    // p1 and p2 are the same point
-    return distance(point, p1);
-  }
-  
-  // Calculate the parameter t for the closest point on the line
-  let t = ((point.x - p1.x) * dx + (point.y - p1.y) * dy) / length;
-  
-  // Clamp t to the line segment [0, 1]
-  t = Math.max(0, Math.min(1, t));
-  
-  // Calculate the closest point on the line segment
-  const closestX = p1.x + t * dx;
-  const closestY = p1.y + t * dy;
-  
-  // Return distance from point to closest point on segment
-  return distance(point, { x: closestX, y: closestY });
-}
+// Removed local implementations - now using geometry utilities
 
 
 export async function renderSvg(
