@@ -1,8 +1,7 @@
 import { Dungeon, Room } from "../core/types";
 import { roomShapeService } from "./room-shapes";
 import { axialToPixel } from "./hex-grid";
-import { calculateGridBounds, createGrid, createGridFromPoints, isInBounds, Point } from '../utils/grid-utils';
-import { isRectangularRoom, isPointOnRoomBorder } from '../utils/room-utils';
+import { distance, distanceFromPointToLineSegment } from '../utils/geometry';
 
 export interface RenderTheme {
   /** Color of the SVG background */
@@ -74,30 +73,32 @@ export function renderAscii(d: Dungeon): string {
   for (const c of d.corridors) {
     for (const p of c.path) points.push(p);
   }
-  const { grid, bounds, transform } = createGridFromPoints(points, " ");
+  const maxX = Math.max(0, ...points.map((p) => p.x)) + 1;
+  const maxY = Math.max(0, ...points.map((p) => p.y)) + 1;
+  const grid: string[][] = Array.from({ length: maxY }, () => Array(maxX).fill(" "));
 
   for (const r of d.rooms) {
-    if (isRectangularRoom(r)) {
+    if (r.shape === 'rectangular' || !r.shapePoints) {
       // Use original rectangular rendering for rectangular rooms
       for (let y = r.y; y < r.y + r.h; y++) {
         for (let x = r.x; x < r.x + r.w; x++) {
-          const gridCoord = transform(x, y);
-          if (isInBounds(gridCoord.x, gridCoord.y, bounds.width, bounds.height)) {
-            const border = x === r.x || x === r.x + r.w - 1 || y === r.y || y === r.y + r.h - 1;
-            grid[gridCoord.y][gridCoord.x] = border ? "#" : ".";
-          }
+          const border = x === r.x || x === r.x + r.w - 1 || y === r.y || y === r.y + r.h - 1;
+          grid[y][x] = border ? "#" : ".";
         }
       }
     } else {
       // Use shape-aware rendering for non-rectangular rooms
-      const roomBounds = roomShapeService.getRoomBounds(r);
-      for (let y = Math.floor(roomBounds.minY); y <= Math.ceil(roomBounds.maxY); y++) {
-        for (let x = Math.floor(roomBounds.minX); x <= Math.ceil(roomBounds.maxX); x++) {
-          const gridCoord = transform(x, y);
-          if (isInBounds(gridCoord.x, gridCoord.y, bounds.width, bounds.height)) {
+      const bounds = roomShapeService.getRoomBounds(r);
+      for (let y = Math.floor(bounds.minY); y <= Math.ceil(bounds.maxY); y++) {
+        for (let x = Math.floor(bounds.minX); x <= Math.ceil(bounds.maxX); x++) {
+          if (y >= 0 && y < maxY && x >= 0 && x < maxX) {
             if (roomShapeService.isPointInRoom(r, x, y)) {
-              const isBorder = isPointOnRoomBorder(r, x, y);
-              grid[gridCoord.y][gridCoord.x] = isBorder ? "#" : ".";
+              // Check if this is a border point by testing adjacent points
+              const isBorder = !roomShapeService.isPointInRoom(r, x-1, y) ||
+                              !roomShapeService.isPointInRoom(r, x+1, y) ||
+                              !roomShapeService.isPointInRoom(r, x, y-1) ||
+                              !roomShapeService.isPointInRoom(r, x, y+1);
+              grid[y][x] = isBorder ? "#" : ".";
             }
           }
         }
@@ -106,14 +107,11 @@ export function renderAscii(d: Dungeon): string {
   }
   for (const c of d.corridors) {
     for (const p of c.path) {
-      const gridCoord = transform(p.x, p.y);
-      if (grid[gridCoord.y]?.[gridCoord.x] === " ") {
-        grid[gridCoord.y][gridCoord.x] = "+";
-      }
+      if (grid[p.y]?.[p.x] === " ") grid[p.y][p.x] = "+";
     }
     if (c.path.length > 0) {
-      const start = transform(c.path[0].x, c.path[0].y);
-      const end = transform(c.path[c.path.length - 1].x, c.path[c.path.length - 1].y);
+      const start = c.path[0];
+      const end = c.path[c.path.length - 1];
       grid[start.y][start.x] = "D";
       grid[end.y][end.x] = "D";
     }
@@ -129,9 +127,8 @@ export function renderAscii(d: Dungeon): string {
         const keyY = Math.floor(room.y + room.h / 2 - 0.4);        // Slightly above center
         
         // Ensure key position is within grid bounds
-        const keyGridCoord = transform(keyX, keyY);
-        if (isInBounds(keyGridCoord.x, keyGridCoord.y, bounds.width, bounds.height)) {
-          grid[keyGridCoord.y][keyGridCoord.x] = "K";  // Use 'K' for key
+        if (keyY >= 0 && keyY < maxY && keyX >= 0 && keyX < maxX) {
+          grid[keyY][keyX] = "K";  // Use 'K' for key
         }
       }
     }
@@ -428,9 +425,10 @@ export async function renderSvg(
   for (const c of d.corridors) {
     for (const p of c.path) points.push(p);
   }
-  const svgBounds = calculateGridBounds(points);
-  const width = svgBounds.width * cell;
-  const height = svgBounds.height * cell;
+  const maxX = Math.max(0, ...points.map((p) => p.x)) + 1;
+  const maxY = Math.max(0, ...points.map((p) => p.y)) + 1;
+  const width = maxX * cell;
+  const height = maxY * cell;
   
   const parts: string[] = [
     `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">`,

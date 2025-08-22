@@ -282,6 +282,7 @@ function loadGeneratorSettings() {
     const roomSizeInput = document.getElementById('room-size') as HTMLSelectElement;
     const roomShapeInput = document.getElementById('room-shape') as HTMLSelectElement;
     const corridorTypeInput = document.getElementById('corridor-type') as HTMLSelectElement;
+    const pathfindingAlgorithmInput = document.getElementById('pathfinding-algorithm') as HTMLSelectElement;
     const corridorWidthInput = document.getElementById('corridor-width') as HTMLSelectElement;
     const allowDeadendsInput = document.getElementById('allow-deadends') as HTMLInputElement;
     const stairsUpInput = document.getElementById('stairs-up') as HTMLInputElement;
@@ -462,11 +463,8 @@ async function generate(): Promise<void> {
     // Update configuration summary
     updateConfigurationSummary(generatorSettings);
 
-    console.log('Dungeon generation options:', dungeonOptions);
-
     // Generate the dungeon using buildDungeon (includes all improvements)
     const dungeon = buildDungeon(dungeonOptions);
-    console.log('Generated dungeon:', dungeon);
 
     // Enrich with system-specific content
     const sys = await systemLoader.getSystem(system);
@@ -486,7 +484,6 @@ async function generate(): Promise<void> {
       sources: selectedSources.length ? selectedSources : undefined, 
       tags: tagOptions 
     });
-    console.log('Enriched dungeon:', enriched);
 
     // Display input parameters
     const inputParams = {
@@ -527,8 +524,9 @@ async function generate(): Promise<void> {
 
     // Render the map
     const svg = await renderSvg(enriched, selectedTheme, renderOptions);
+    
     mapContentEl.innerHTML = svg;
-
+    
     // Setup pan and zoom functionality
     setupMapPanZoom(mapEl);
     setupZoomControls(mapEl);
@@ -1696,7 +1694,6 @@ function setupMapPanZoom(mapEl: HTMLElement): void {
       minScale: 0.5
     });
     
-    console.log('Panzoom created on SVG element');
     
     // Add wheel zoom to parent
     mapEl.addEventListener('wheel', panzoomInstance.zoomWithWheel);
