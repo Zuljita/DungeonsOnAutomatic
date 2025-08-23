@@ -61,6 +61,9 @@ export function createGenerateCommand(): Command {
     .option("--palette <name>", "color palette (light, dark, sepia)", "light")
     .option("--lock-percentage <n>", "fraction of doors to lock (0-1)", (v) => parseFloat(v))
     .option("--magical-locks", "allow magical locks")
+    .option("--treasure-balance", "enable encounter-appropriate treasure balancing")
+    .option("--wealth-level <level>", "campaign wealth level (conservative, standard, generous)", "standard")
+    .option("--boss-room-minimum <n>", "minimum treasure value for boss rooms", (v) => parseInt(v), 1000)
     .option("--ascii", "render an ASCII map instead of JSON output")
     .option("--debug-ascii", "render a high-resolution debug ASCII map with coordinates and corridor analysis")
     .option("--debug-scale <n>", "scale factor for debug ASCII (default: 10)", (v) => parseInt(v))
@@ -161,10 +164,24 @@ async function handleGenerate(opts: any): Promise<void> {
         }
       : undefined;
       
+  const treasureBalanceOptions =
+    opts.treasureBalance
+      ? {
+          treasureBalance: {
+            useEncounterBalancing: true,
+            targetWealthLevel: opts.wealthLevel as 'conservative' | 'standard' | 'generous',
+            minimumBossRoomValue: opts.bossRoomMinimum,
+            guaranteedBossRoomMagicItems: true,
+            specialRoomMultiplier: 1.5
+          },
+        }
+      : undefined;
+      
   const enriched = await sys.enrich(d, {
     sources: opts.source,
     tags: tagOptions,
     ...(lockOptions || {}),
+    ...(treasureBalanceOptions || {}),
   });
 
   await handleOutput(enriched, opts);
