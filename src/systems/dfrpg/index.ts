@@ -8,6 +8,7 @@ import { DFRPGEnvironmentalSystem } from './DFRPGEnvironment.js';
 import { DFRPGMonsterGenerator, type GenerateOptions, type DFRPGMonster } from './DFRPGMonsterGenerator';
 import { DFRPGEncounterGenerator } from './DFRPGEncounterGenerator';
 import { EncounterBalanceService, type BalancedTreasureOptions } from './EncounterBalanceService';
+import { EnhancedTreasureGenerator, type EnhancedTreasureOptions, type TreasureTheme } from './EnhancedTreasureGenerator';
 import { LockService, type LockGenerationOptions } from '../../services/locks';
 import { createKeyItemService, type KeyPlacementOptions } from '../../services/key-items';
 import { validateDungeonSolvability } from '../../services/pathfinder';
@@ -226,6 +227,7 @@ export const dfrpg: SystemModule = {
       tags?: TaggedSelectionOptions;
       lockOptions?: LockGenerationOptions;
       treasureBalance?: BalancedTreasureOptions;
+      enhancedTreasure?: EnhancedTreasureOptions;
     },
   ): Promise<Dungeon> {
     const R = opts?.rng ?? Math.random;
@@ -237,10 +239,12 @@ export const dfrpg: SystemModule = {
     const environmentComplexity = opts?.environmentComplexity ?? 'moderate';
     const tagOptions = opts?.tags;
     const treasureBalanceOptions = opts?.treasureBalance;
+    const enhancedTreasureOptions = opts?.enhancedTreasure;
     
 
     // Initialize DFRPG systems
     const treasureGenerator = new DFRPGTreasureGenerator(R);
+    const enhancedTreasureGenerator = new EnhancedTreasureGenerator(R);
     const enhancedTrapSystem = new DFRPGEnhancedTrapSystem(R);
     const environmentalSystem = new DFRPGEnvironmentalSystem(R);
     const encounterGenerator = new DFRPGEncounterGenerator(R);
@@ -407,27 +411,35 @@ export const dfrpg: SystemModule = {
       } else {
         if (R() < 0.5) {
           if (useDFRPGTreasure) {
-            // Generate DFRPG treasure with encounter balancing if enabled
+            // Generate DFRPG treasure with various enhancement options
             let treasureHoard;
+            const roomDanger = monsters.length + traps.length;
+            const hoardSize = roomDanger >= 3 ? 'large' : roomDanger >= 2 ? 'medium' : 'small';
             
-            if (treasureBalanceOptions?.useEncounterBalancing) {
-              // Use new encounter balance system
+            // Check if we should use enhanced treasure generation
+            if (enhancedTreasureOptions?.useExpandedData) {
+              console.error(`DFRPG Enhanced: Using expanded treasure data with ${enhancedTreasureOptions.treasureTheme || 'default'} theme`);
+              treasureHoard = enhancedTreasureGenerator.generateEnhancedTreasureHoard(dungeonLevel, hoardSize, enhancedTreasureOptions);
+            } else if (treasureBalanceOptions?.useEncounterBalancing) {
+              // Use encounter balance system with original data
               const risk = balanceService.assessEncounterRisk(monsters, traps, r);
               const targetValue = balanceService.calculateTargetTreasureValue(risk, dungeonLevel, treasureBalanceOptions);
               
-              // Generate base hoard then adjust for encounter risk
-              const roomDanger = monsters.length + traps.length;
-              const hoardSize = roomDanger >= 3 ? 'large' : roomDanger >= 2 ? 'medium' : 'small';
               const baseHoard = treasureGenerator.generateTreasureHoard(dungeonLevel, hoardSize);
-              
               treasureHoard = balanceService.adjustTreasureForRisk(baseHoard, targetValue, risk, treasureBalanceOptions);
               
               console.error(`DFRPG Balance: Room ${r.id} (${risk.roomType}, ${risk.riskRating} risk) - Target: $${targetValue}, Generated: $${treasureHoard.totalValue}`);
             } else {
               // Original treasure generation logic
-              const roomDanger = monsters.length + traps.length;
-              const hoardSize = roomDanger >= 3 ? 'large' : roomDanger >= 2 ? 'medium' : 'small';
               treasureHoard = treasureGenerator.generateTreasureHoard(dungeonLevel, hoardSize);
+            }
+            
+            // Apply encounter balancing to enhanced treasure if both are enabled
+            if (enhancedTreasureOptions?.useExpandedData && treasureBalanceOptions?.useEncounterBalancing) {
+              const risk = balanceService.assessEncounterRisk(monsters, traps, r);
+              const targetValue = balanceService.calculateTargetTreasureValue(risk, dungeonLevel, treasureBalanceOptions);
+              treasureHoard = balanceService.adjustTreasureForRisk(treasureHoard, targetValue, risk, treasureBalanceOptions);
+              console.error(`DFRPG Enhanced+Balance: Room ${r.id} (${risk.roomType}, ${risk.riskRating} risk) - Target: $${targetValue}, Generated: $${treasureHoard.totalValue}`);
             }
             
             // Store the rich treasure data while maintaining backward compatibility
