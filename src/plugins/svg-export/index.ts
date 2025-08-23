@@ -46,7 +46,7 @@ export const sepiaTheme: RenderTheme = {
 
 export interface SVGRenderOptions {
   /** Style variant for SVG rendering */
-  style?: "classic" | "hand-drawn" | "hex";
+  style?: "classic" | "hand-drawn" | "hex" | "gridless";
   /** Theme selection */
   theme?: 'light' | 'dark' | 'sepia' | RenderTheme;
   /** Cell size in pixels */
@@ -114,6 +114,11 @@ class SVGExportPlugin implements ExportPlugin {
     // Built-in hex rendering
     if (style === "hex") {
       return this.renderHexSvg(d, theme, { hexSize, showGrid });
+    }
+
+    // Built-in gridless rendering
+    if (style === "gridless") {
+      return this.renderGridlessSvg(d, theme, cellSize);
     }
 
     // Calculate map bounds
@@ -545,6 +550,131 @@ class SVGExportPlugin implements ExportPlugin {
       pts.push(`${x},${y}`);
     }
     return pts.join(" ");
+  }
+
+  private renderGridlessSvg(d: Dungeon, theme: RenderTheme, cellSize: number): string {
+    // Calculate map bounds
+    const points: { x: number; y: number }[] = [];
+    for (const r of d.rooms) {
+      if (r.shape === 'rectangular' || !r.shapePoints) {
+        points.push({ x: r.x + r.w, y: r.y + r.h });
+      } else {
+        const bounds = roomShapeService.getRoomBounds(r);
+        points.push({ x: Math.ceil(bounds.maxX), y: Math.ceil(bounds.maxY) });
+      }
+    }
+    for (const c of d.corridors) {
+      for (const p of c.path) points.push(p);
+    }
+    const svgBounds = calculateGridBounds(points);
+    const width = svgBounds.width * cellSize;
+    const height = svgBounds.height * cellSize;
+    
+    const parts: string[] = [
+      `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">`,
+      `<rect x="0" y="0" width="${width}" height="${height}" fill="${theme.background}"/>`,
+    ];
+
+    // Render corridors as smooth paths
+    for (const c of d.corridors) {
+      if (c.path.length > 0) {
+        const pathData = this.createCorridorPath(c.path, cellSize);
+        if (pathData) {
+          parts.push(
+            `<path d="${pathData}" fill="none" stroke="${theme.corridorFill}" stroke-width="${cellSize * 0.8}" stroke-linecap="round" stroke-linejoin="round"/>`,
+          );
+        }
+      }
+    }
+
+    // Render rooms with thicker borders for better visibility
+    d.rooms.forEach((r, i) => {
+      if (r.shape === "rectangular" || !r.shapePoints) {
+        parts.push(
+          `<rect class="room-shape" data-room="${i + 1}" x="${r.x * cellSize}" y="${r.y * cellSize}" width="${r.w * cellSize}" height="${r.h * cellSize}" fill="${theme.roomFill}" stroke="${theme.roomStroke}" stroke-width="2"/>`,
+        );
+        const cx = (r.x + r.w / 2) * cellSize;
+        const cy = (r.y + r.h / 2) * cellSize;
+        parts.push(
+          `<text class="room-number" data-room="${i + 1}" x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" font-size="${cellSize * 0.6}" fill="${theme.textFill}">${i + 1}</text>`,
+        );
+      } else {
+        const pointsStr = r.shapePoints!.map((p) => `${p.x * cellSize},${p.y * cellSize}`).join(" ");
+        parts.push(
+          `<polygon class="room-shape" data-room="${i + 1}" points="${pointsStr}" fill="${theme.roomFill}" stroke="${theme.roomStroke}" stroke-width="2"/>`,
+        );
+        const cx = r.x * cellSize;
+        const cy = r.y * cellSize;
+        parts.push(
+          `<text class="room-number" data-room="${i + 1}" x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" font-size="${cellSize * 0.6}" fill="${theme.textFill}">${i + 1}</text>`,
+        );
+      }
+    });
+
+    // Render doors as openings in room walls
+    for (const c of d.corridors) {
+      if (c.path.length > 0) {
+        const start = c.path[0];
+        const end = c.path[c.path.length - 1];
+        const fromRoom = d.rooms.find((r) => r.id === c.from);
+        const toRoom = d.rooms.find((r) => r.id === c.to);
+        
+        if (fromRoom) {
+          const doorPosition = c.doorStart || start;
+          this.renderGridlessDoor(parts, fromRoom, doorPosition, cellSize, theme);
+        }
+        if (toRoom) {
+          const doorPosition = c.doorEnd || end;
+          this.renderGridlessDoor(parts, toRoom, doorPosition, cellSize, theme);
+        }
+      }
+    }
+
+    // Render key items
+    (d.keyItems || []).forEach(key => {
+      const room = d.rooms.find(r => r.id === key.locationId);
+      if (!room) return;
+      const cx = (room.x + room.w / 2) * cellSize;
+      const cy = (room.y + room.h / 2) * cellSize - cellSize * 0.4;
+      parts.push(
+        `<text class="key-icon" data-key="${key.id}" x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" font-size="${cellSize * 0.5}" fill="${theme.textFill}">&#x1F511;</text>`
+      );
+    });
+
+    parts.push("</svg>");
+    return parts.join("");
+  }
+
+  private createCorridorPath(path: { x: number; y: number }[], cellSize: number): string | null {
+    if (path.length === 0) return null;
+    
+    // Create a smooth path through corridor points
+    const pathParts: string[] = [];
+    
+    // Start at the center of the first cell
+    const startX = path[0].x * cellSize + cellSize / 2;
+    const startY = path[0].y * cellSize + cellSize / 2;
+    pathParts.push(`M ${startX} ${startY}`);
+    
+    // Draw lines to centers of subsequent cells
+    for (let i = 1; i < path.length; i++) {
+      const x = path[i].x * cellSize + cellSize / 2;
+      const y = path[i].y * cellSize + cellSize / 2;
+      pathParts.push(`L ${x} ${y}`);
+    }
+    
+    return pathParts.join(' ');
+  }
+
+  private renderGridlessDoor(parts: string[], room: Room, doorPosition: { x: number; y: number }, cellSize: number, theme: RenderTheme): void {
+    // Create door opening by drawing a line in background color to "cut" the wall
+    const edge = this.doorEdge(room, doorPosition);
+    if (edge) {
+      // Draw door opening with background color and thicker width
+      parts.push(
+        `<line class="door-opening" x1="${edge.x1 * cellSize}" y1="${edge.y1 * cellSize}" x2="${edge.x2 * cellSize}" y2="${edge.y2 * cellSize}" stroke="${theme.background}" stroke-width="4"/>`,
+      );
+    }
   }
 }
 
