@@ -2,7 +2,7 @@ import { Command } from "commander";
 import { buildDungeon } from "../../services/assembler";
 import { loadSystemModule } from "../../services/system-loader";
 import type { SystemModule } from "../../core/types";
-import { renderAscii, renderSvg, lightTheme, darkTheme, sepiaTheme } from "../../services/render";
+import { renderAscii } from "../../services/render";
 import { renderDebugAscii } from "../../services/debug-ascii-render";
 import { exportFoundry } from "../../services/foundry";
 import { createDefaultPluginLoader } from "../../services/plugin-loader";
@@ -55,7 +55,7 @@ export function createGenerateCommand(): Command {
       (v, p) => [...p, v],
       [] as string[],
     )
-    .option("--map-style <style>", "map rendering style (classic, hand-drawn, hex)", "classic")
+    .option("--map-style <style>", "map rendering style (classic, hand-drawn, hex, gridless)", "classic")
     .option("--sketch-intensity <n>", "hand-drawn sketch intensity", (v) => parseFloat(v), 1)
     .option("--texture <name>", "background texture (none, paper)", "none")
     .option("--palette <name>", "color palette (light, dark, sepia)", "light")
@@ -224,17 +224,26 @@ async function handleExportPlugin(enriched: any, exportFormat: string, opts: any
 }
 
 async function handleSvgOutput(enriched: any, opts: any): Promise<void> {
-  let theme = lightTheme;
-  if (opts.palette === "dark") theme = darkTheme;
-  else if (opts.palette === "sepia") theme = sepiaTheme;
-  
-  const svg = await renderSvg(enriched, theme, {
-    style: opts.mapStyle,
-    wobbleIntensity: opts.sketchIntensity || 1,
-    wallThickness: 1,
-    showGrid: false,
-  });
-  process.stdout.write(svg + "\n");
+  // Use SVG export plugin
+  try {
+    const pluginLoader = createDefaultPluginLoader();
+    const plugin = await pluginLoader.load("svg-export", { sandbox: false });
+    if (isExportPlugin(plugin)) {
+      const result = await plugin.export(enriched, "svg", {
+        style: opts.mapStyle,
+        theme: opts.palette || 'light',
+        wobbleIntensity: opts.sketchIntensity || 1,
+        wallThickness: 1,
+        showGrid: false,
+      });
+      process.stdout.write(result.data + "\n");
+    } else {
+      throw new Error("svg-export plugin is not an export plugin");
+    }
+  } catch (err) {
+    console.error("Error using SVG export plugin:", err);
+    process.exit(1);
+  }
 }
 
 function handleDebugAsciiOutput(enriched: any, opts: any): void {

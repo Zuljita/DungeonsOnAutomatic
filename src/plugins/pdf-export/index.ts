@@ -8,7 +8,7 @@ import type {
   ExportResult,
   PluginMetadata,
 } from "../../core/plugin-types";
-import { renderSvg, lightTheme } from "../../services/render";
+import svgExportPlugin from "../svg-export";
 
 export interface PdfExportOptions extends ExportOptions {
   pageSize?: "a4" | "letter" | "legal";
@@ -44,7 +44,8 @@ export const pdfExportPlugin: ExportPlugin = {
     const chunks: Buffer[] = [];
     doc.on("data", (chunk: Buffer) => chunks.push(chunk));
 
-    const svg = await renderSvg(dungeon, lightTheme, { showGrid: false });
+    const svgResult = await svgExportPlugin.export(dungeon, 'svg', { theme: 'light', showGrid: false });
+    const svg = svgResult.data as string;
     svgToPdf(doc, svg, 0, 0);
 
     if (options?.layout && options.layout !== "map-only") {

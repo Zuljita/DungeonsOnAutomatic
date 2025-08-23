@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { buildDungeon } from '../src/services/assembler.js';
-import { renderAscii, renderSvg } from '../src/services/render.js';
+import { renderAscii } from '../src/services/render.js';
+import svgExportPlugin from '../src/plugins/svg-export';
 
 describe('renderAscii', () => {
   it('draws rooms, corridors, and doors', () => {
@@ -16,7 +17,8 @@ describe('renderAscii', () => {
 describe('renderSvg', () => {
   it('includes door lines', async () => {
     const d = buildDungeon({ rooms: 2, seed: 'svgDoor' });
-    const svg = await renderSvg(d);
+    const result = await svgExportPlugin.export(d, 'svg', { theme: 'light' });
+    const svg = result.data as string;
     expect(svg).toMatch(/<line/);
   });
 });
