@@ -2,7 +2,7 @@ import { Command } from "commander";
 import { buildDungeon } from "../../services/assembler";
 import { loadSystemModule } from "../../services/system-loader";
 import type { SystemModule } from "../../core/types";
-import { renderAscii, renderSvg, lightTheme, darkTheme, sepiaTheme } from "../../services/render";
+import { renderAscii } from "../../services/render";
 import { renderDebugAscii } from "../../services/debug-ascii-render";
 import { exportFoundry } from "../../services/foundry";
 import { createDefaultPluginLoader } from "../../services/plugin-loader";
@@ -61,6 +61,9 @@ export function createGenerateCommand(): Command {
     .option("--palette <name>", "color palette (light, dark, sepia)", "light")
     .option("--lock-percentage <n>", "fraction of doors to lock (0-1)", (v) => parseFloat(v))
     .option("--magical-locks", "allow magical locks")
+    .option("--treasure-balance", "enable encounter-appropriate treasure balancing")
+    .option("--wealth-level <level>", "campaign wealth level (conservative, standard, generous)", "standard")
+    .option("--boss-room-minimum <n>", "minimum treasure value for boss rooms", (v) => parseInt(v), 1000)
     .option("--ascii", "render an ASCII map instead of JSON output")
     .option("--debug-ascii", "render a high-resolution debug ASCII map with coordinates and corridor analysis")
     .option("--debug-scale <n>", "scale factor for debug ASCII (default: 10)", (v) => parseInt(v))
@@ -161,10 +164,24 @@ async function handleGenerate(opts: any): Promise<void> {
         }
       : undefined;
       
+  const treasureBalanceOptions =
+    opts.treasureBalance
+      ? {
+          treasureBalance: {
+            useEncounterBalancing: true,
+            targetWealthLevel: opts.wealthLevel as 'conservative' | 'standard' | 'generous',
+            minimumBossRoomValue: opts.bossRoomMinimum,
+            guaranteedBossRoomMagicItems: true,
+            specialRoomMultiplier: 1.5
+          },
+        }
+      : undefined;
+      
   const enriched = await sys.enrich(d, {
     sources: opts.source,
     tags: tagOptions,
     ...(lockOptions || {}),
+    ...(treasureBalanceOptions || {}),
   });
 
   await handleOutput(enriched, opts);
@@ -224,17 +241,26 @@ async function handleExportPlugin(enriched: any, exportFormat: string, opts: any
 }
 
 async function handleSvgOutput(enriched: any, opts: any): Promise<void> {
-  let theme = lightTheme;
-  if (opts.palette === "dark") theme = darkTheme;
-  else if (opts.palette === "sepia") theme = sepiaTheme;
-  
-  const svg = await renderSvg(enriched, theme, {
-    style: opts.mapStyle,
-    wobbleIntensity: opts.sketchIntensity || 1,
-    wallThickness: 1,
-    showGrid: false,
-  });
-  process.stdout.write(svg + "\n");
+  // Use SVG export plugin
+  try {
+    const pluginLoader = createDefaultPluginLoader();
+    const plugin = await pluginLoader.load("svg-export", { sandbox: false });
+    if (isExportPlugin(plugin)) {
+      const result = await plugin.export(enriched, "svg", {
+        style: opts.mapStyle,
+        theme: opts.palette || 'light',
+        wobbleIntensity: opts.sketchIntensity || 1,
+        wallThickness: 1,
+        showGrid: false,
+      });
+      process.stdout.write(result.data + "\n");
+    } else {
+      throw new Error("svg-export plugin is not an export plugin");
+    }
+  } catch (err) {
+    console.error("Error using SVG export plugin:", err);
+    process.exit(1);
+  }
 }
 
 function handleDebugAsciiOutput(enriched: any, opts: any): void {
