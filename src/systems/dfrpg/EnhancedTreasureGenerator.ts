@@ -1,5 +1,6 @@
 import type { TreasureHoard } from './DFRPGTreasure';
 import expandedTreasureData from './data/expanded-treasure.json';
+import { DFRPGTreasureRuleGenerator, type GeneratedItem } from './DFRPGTreasureRules';
 
 export type TreasureRarity = 'common' | 'uncommon' | 'rare' | 'very_rare' | 'legendary';
 export type TreasureTheme = 'default' | 'warrior' | 'wizard' | 'thief' | 'holy' | 'nature' | 'undead';
@@ -29,6 +30,8 @@ export interface EnhancedTreasureOptions {
   magicItemFrequency?: number;
   /** Use expanded treasure data */
   useExpandedData?: boolean;
+  /** Use DFRPG rules-compliant generation with Cost Factors and enchantments */
+  useDFRPGRules?: boolean;
   /** Treasure theme for cohesive hoards */
   treasureTheme?: TreasureTheme;
   /** Target total value for balanced encounters */
@@ -65,10 +68,12 @@ export class EnhancedTreasureGenerator {
     magicItems: TreasureItem[];
     rarityThresholds: Record<TreasureRarity, { min: number; max: number }>;
   };
+  private dfrpgRulesGenerator: DFRPGTreasureRuleGenerator;
 
   constructor(rng: () => number = Math.random) {
     this.rng = rng;
     this.expandedData = expandedTreasureData as any;
+    this.dfrpgRulesGenerator = new DFRPGTreasureRuleGenerator(rng);
   }
 
   /**
@@ -83,11 +88,17 @@ export class EnhancedTreasureGenerator {
       wealthLevel = 'average',
       magicItemFrequency = 1.0,
       useExpandedData = true,
+      useDFRPGRules = false,
       treasureTheme = 'default',
       minimumRarity = 'common',
       maximumRarity = 'legendary',
       preferredCategories = []
     } = options;
+
+    // Use DFRPG rules-compliant generator if requested
+    if (useDFRPGRules) {
+      return this.dfrpgRulesGenerator.generateDFRPGTreasureHoard(level, hoardSize);
+    }
 
     // Generate base coin amount
     const coins = this.generateCoins(level, hoardSize, wealthLevel);
@@ -149,6 +160,13 @@ export class EnhancedTreasureGenerator {
       minimumRarity,
       useExpandedData: true
     });
+  }
+
+  /**
+   * Generate a single DFRPG rules-compliant item
+   */
+  generateDFRPGItem(): GeneratedItem {
+    return this.dfrpgRulesGenerator.generateDFRPGItem();
   }
 
   private generateCoins(level: number, hoardSize: string, wealthLevel: string): any {

@@ -65,6 +65,7 @@ export function createGenerateCommand(): Command {
     .option("--wealth-level <level>", "campaign wealth level (conservative, standard, generous)", "standard")
     .option("--boss-room-minimum <n>", "minimum treasure value for boss rooms", (v) => parseInt(v), 1000)
     .option("--enhanced-treasure", "enable expanded treasure database with 200+ items")
+    .option("--dfrpg-rules", "use DFRPG rules-compliant generation with Cost Factors and enchantments")
     .option("--treasure-theme <theme>", "treasure theme (default, warrior, wizard, thief, holy, nature, undead)", "default")
     .option("--treasure-wealth <level>", "treasure wealth level (poor, average, wealthy, rich)", "average")
     .option("--magic-frequency <n>", "magic item frequency multiplier", (v) => parseFloat(v), 1.0)
@@ -182,10 +183,11 @@ async function handleGenerate(opts: any): Promise<void> {
       : undefined;
       
   const enhancedTreasureOptions =
-    opts.enhancedTreasure
+    opts.enhancedTreasure || opts.dfrpgRules
       ? {
           enhancedTreasure: {
             useExpandedData: true,
+            useDFRPGRules: opts.dfrpgRules || false,
             treasureTheme: opts.treasureTheme as 'default' | 'warrior' | 'wizard' | 'thief' | 'holy' | 'nature' | 'undead',
             wealthLevel: opts.treasureWealth as 'poor' | 'average' | 'wealthy' | 'rich',
             magicItemFrequency: opts.magicFrequency,
