@@ -112,6 +112,103 @@ function getThreatRating(cer: number): 'fodder' | 'worthy' | 'boss' {
   return 'boss';
 }
 
+// Helper function to convert Monster[] to DFRPGMonster[] for custom monsters
+function convertToDFRPGMonsters(monsters: Monster[]): DFRPGMonster[] {
+  return monsters.map(monster => {
+    // Extract CER, defaulting to 0 if not provided
+    const cer = typeof monster.cer === 'number' ? monster.cer : 0;
+    
+    // Extract SM, handling both property variations
+    const sm = typeof monster.sm === 'number' ? monster.sm : null;
+    
+    // Generate tags using the existing logic, adapted for Monster format
+    const tags = generateTagsForCustomMonster(monster);
+    
+    // Parse biome from existing tags or default to dungeon
+    const biome = extractBiomeFromTags(monster.tags) || ['dungeon'];
+    
+    // Calculate frequency based on CER (using same logic as default monsters)
+    const frequency: 'very_rare' | 'rare' | 'uncommon' | 'common' | 'very_common' =
+      cer >= 150 ? 'very_rare' :
+      cer >= 100 ? 'rare' :
+      cer >= 50 ? 'uncommon' :
+      cer >= 25 ? 'common' : 'very_common';
+
+    return {
+      name: monster.name,
+      cer,
+      sm,
+      tags,
+      biome,
+      frequency,
+      class: monster.cls || monster.class || '',
+      subclass: monster.subclass || '',
+      source: monster.source || 'Custom Import'
+    };
+  });
+}
+
+// Helper to generate tags for custom monsters (adapted from getMonsterTags)
+function generateTagsForCustomMonster(monster: Monster): string[] {
+  const tags: string[] = [];
+  
+  // Use existing tags if provided
+  if (monster.tags && Array.isArray(monster.tags)) {
+    tags.push(...monster.tags);
+  }
+  
+  // Generate tags from class (handle both cls and class properties)
+  const monsterClass = monster.cls || monster.class || '';
+  if (monsterClass) {
+    const className = monsterClass.toLowerCase();
+    if (className.includes('undead')) tags.push('undead');
+    if (className.includes('dragon')) tags.push('dragon', 'scaled');
+    if (className.includes('elemental')) tags.push('elemental', 'magical');
+    if (className.includes('humanoid')) tags.push('humanoid');
+    if (className.includes('animal')) tags.push('animal', 'wildlife');
+    if (className.includes('goblin')) tags.push('goblin', 'chaotic');
+    if (className.includes('orc')) tags.push('orc', 'brutal');
+  }
+  
+  // Generate tags from subclass
+  if (monster.subclass) {
+    const subclassName = monster.subclass.toLowerCase();
+    if (subclassName.includes('fire')) tags.push('fire', 'elemental');
+    if (subclassName.includes('water')) tags.push('water', 'elemental');
+    if (subclassName.includes('earth')) tags.push('earth', 'elemental');
+    if (subclassName.includes('air')) tags.push('air', 'elemental');
+    if (subclassName.includes('skeleton')) tags.push('undead', 'skeleton');
+    if (subclassName.includes('zombie')) tags.push('undead', 'zombie');
+    if (subclassName.includes('ghost')) tags.push('undead', 'ghost');
+  }
+  
+  // Generate tags from source
+  if (monster.source) {
+    const sourceName = monster.source.toLowerCase();
+    if (sourceName.includes('cult')) tags.push('cult', 'evil');
+    if (sourceName.includes('wizard')) tags.push('wizard', 'arcane');
+    if (sourceName.includes('dragon')) tags.push('dragon', 'majestic');
+  }
+  
+  return [...new Set(tags)]; // Remove duplicates
+}
+
+// Helper to extract biome information from existing tags or provide defaults
+function extractBiomeFromTags(tags?: string[]): string[] | null {
+  if (!tags || !Array.isArray(tags)) return null;
+  
+  const biomeKeywords = [
+    'aquatic', 'desert', 'forest', 'mountain', 'swamp', 'cave', 'dungeon',
+    'urban', 'arctic', 'plains', 'underground', 'volcanic', 'ethereal'
+  ];
+  
+  const foundBiomes = tags.filter(tag => 
+    biomeKeywords.some(biome => tag.toLowerCase().includes(biome))
+  );
+  
+  return foundBiomes.length > 0 ? foundBiomes.map(b => b.toLowerCase()) : null;
+}
+
 export const dfrpg: SystemModule = {
   id: 'dfrpg',
   label: 'GURPS Dungeon Fantasy',
@@ -156,9 +253,9 @@ export const dfrpg: SystemModule = {
     let DFRPG_MONSTERS: DFRPGMonster[];
     if (customDataLoader.hasCustomData('dfrpg', 'monsters')) {
       MONSTERS = customDataLoader.getMonsters('dfrpg');
-      // For custom monsters, we'll need to convert them or work around this
-      DFRPG_MONSTERS = []; // TODO: Handle custom monsters properly
-      console.error(`Using ${MONSTERS.length} custom DFRPG monsters`);
+      // Convert custom monsters to DFRPG format for the encounter generator
+      DFRPG_MONSTERS = convertToDFRPGMonsters(MONSTERS);
+      console.error(`Using ${MONSTERS.length} custom DFRPG monsters, converted ${DFRPG_MONSTERS.length} for encounters`);
     } else {
       // Original logic for default monsters
       let pool = RAW_MONSTERS;
