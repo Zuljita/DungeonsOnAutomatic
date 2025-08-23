@@ -1,0 +1,379 @@
+# Page snapshot
+
+```yaml
+- link "Skip to main content":
+  - /url: "#main-content"
+- main:
+  - heading "Dungeons On Automatic" [level=1]
+  - tablist:
+    - tab "Generator" [selected]
+    - tab "Data Manager"
+    - tab "Settings"
+  - tabpanel "Generator":
+    - text: 💡 Click on any section header to expand/collapse options
+    - heading "Configuration Presets ▼" [level=3]
+    - text: "Load Preset:"
+    - combobox:
+      - option "Select a preset..." [selected]
+      - group:
+        - option "Classic Dungeon"
+      - group:
+        - option "DFRPG Delve"
+      - group:
+        - option "Large Complex"
+      - group:
+        - option "Small Dungeon"
+      - group:
+        - option "Fortress Keep"
+    - button "Load" [disabled]
+    - button "Manage"
+    - text: Choose from saved configurations or built-in examples
+    - button "💾 Save Current Configuration"
+    - button "📤 Export Presets"
+    - button "📥 Import Presets"
+    - button "Basic Settings ▼" [expanded]
+    - text: "Template:"
+    - combobox "Template:":
+      - option "No Template (Custom)" [selected]
+      - group:
+        - option "Small Classic Dungeon"
+        - option "Large Classic Dungeon"
+      - group:
+        - option "Natural Cave System"
+        - option "Underground River Complex"
+      - group:
+        - option "Ancient Keep"
+        - option "Wizard's Tower"
+      - group:
+        - option "The Labyrinth"
+        - option "Minotaur's Domain"
+      - group:
+        - option "Ruined Temple"
+        - option "Crystal Caverns"
+        - option "Abandoned Prison"
+    - text: "System:"
+    - combobox "System:":
+      - option "Select System"
+      - option "Generic Fantasy"
+      - option "Dungeon Fantasy RPG" [selected]
+    - text: "Choose game system for encounters and content Theme:"
+    - combobox:
+      - option "No Theme (Random)" [selected]
+      - option "Undead Crypt"
+      - option "Goblin Warren"
+      - option "Dragon Lair"
+      - option "Elemental Plane"
+      - option "Abandoned Ruins"
+      - option "Evil Cult"
+      - option "Natural Caverns"
+      - option "Wizard's Tower"
+    - text: "Apply thematic filter to encounters (requires system) Rooms:"
+    - spinbutton: "8"
+    - text: "Number of rooms in the dungeon Width:"
+    - spinbutton: "50"
+    - text: "Map width in grid squares Height:"
+    - spinbutton: "50"
+    - text: "Map height in grid squares Seed:"
+    - textbox "Random"
+    - text: Reproducible random seed (leave empty for random)
+    - heading "Layout Type ▼" [level=3]
+    - text: "Map Layout:"
+    - combobox:
+      - option "Rectangle" [selected]
+      - option "Square"
+      - option "Box (Courtyard)"
+      - option "Cross"
+      - option "Dagger"
+      - option "Saltire (X-Shape)"
+      - option "Keep (Castle)"
+      - option "Hexagon"
+      - option "Round"
+      - option "Cavernous"
+    - text: Overall shape and structure of the dungeon
+    - heading "Room Configuration ▼" [level=3]
+    - text: "Room Layout:"
+    - combobox:
+      - option "Scattered" [selected]
+      - option "Sparse"
+      - option "Dense"
+      - option "Symmetric"
+    - text: "How rooms are distributed in the dungeon Room Size:"
+    - combobox:
+      - option "Medium" [selected]
+      - option "Small"
+      - option "Large"
+      - option "Mixed"
+    - text: "Preferred size of generated rooms Room Shape:"
+    - combobox:
+      - option "Rectangular" [selected]
+      - option "Diverse (All shapes)"
+      - option "Hex Preference"
+      - option "Circular Preference"
+      - option "Small Preference"
+      - option "Mixed"
+    - text: Shape variety and style preferences for rooms
+    - heading "Corridor Configuration ▼" [level=3]
+    - text: "Corridor Type:"
+    - combobox:
+      - option "Straight" [selected]
+      - option "Winding"
+      - option "Maze"
+      - option "Mixed"
+    - text: "Style of corridors connecting rooms Pathfinding Algorithm:"
+    - combobox:
+      - option "Manhattan (Classic)" [selected]
+      - option "A* (Enhanced)"
+      - option "Jump Point Search (Fast)"
+      - option "Dijkstra (Optimal)"
+    - text: "🚀 Enhanced algorithms use PathFinding.js for better corridor quality Corridor Width (tiles):"
+    - combobox:
+      - option "1 (Narrow)" [selected]
+      - option "2 (Standard)"
+      - option "3 (Wide)"
+    - text: Width of corridors in map tiles
+    - checkbox "Allow Deadends" [checked]
+    - text: Allow Deadends Permit corridors that lead to dead ends
+    - heading "Special Features ▼" [level=3]
+    - checkbox "Stairs Up"
+    - text: Stairs Up
+    - checkbox "Stairs Down"
+    - text: Stairs Down
+    - checkbox "Entrance from Periphery"
+    - text: "Entrance from Periphery Lock Percentage:"
+    - spinbutton
+    - text: Fraction of doors to lock (0.0 = none, 1.0 = all)
+    - checkbox "Allow Magical Locks"
+    - text: Allow Magical Locks
+    - heading "Content Settings ▶" [level=3]
+    - heading "Map Rendering ▶" [level=3]
+    - checkbox "Real-time Preview" [checked]
+    - text: Real-time Preview
+    - button "Generate Dungeon"
+    - link "Download SVG":
+      - /url: blob:http://localhost:5173/d617bd0c-8b4b-47a4-87b6-ab3b156fe798
+    - heading "📋 Configuration Summary ▼" [level=3]
+    - application "Interactive dungeon map":
+      - toolbar "Map navigation controls":
+        - button "Toggle full screen map view": ⛶ Toggle full screen
+        - button "Zoom in on map": + Zoom in
+        - button "Zoom out on map": − Zoom out
+        - button "Reset map view to default": ⌂ Reset view
+      - img: 1 2 3 4 5 6 7 8 🔑 🔑 🔑 🔑 🔑
+      - text: Overview
+      - button "−"
+      - img: 1 2 3 4 5 6 7 8 🔑 🔑 🔑 🔑
+    - heading "Room Key" [level=2]
+    - heading "Environment" [level=3]
+    - paragraph:
+      - strong: "Lighting:"
+      - text: Well-lit - The area is well-lit by an unknown, magical source.
+    - paragraph:
+      - strong: "Ceiling:"
+      - text: Cavernous - Cavernous ceilings at least 60 feet high.
+    - paragraph:
+      - strong: "Mana Level:"
+      - text: No Mana - Magic does not function here.
+    - paragraph:
+      - strong: "Sanctity:"
+      - text: Neutral Ground - No modifier to sanctity.
+    - paragraph:
+      - strong: "Nature's Strength:"
+      - text: Neutral - No modifier to nature's strength.
+    - heading "Room 1" [level=3]
+    - paragraph:
+      - emphasis: chamber
+    - paragraph:
+      - strong: "Environment:"
+      - text: "Very tight spaces with multiple obstacles limiting movement. Tactical Effects: Cramped Quarters: No Retreat defense option, -2 to swinging weapons, -1 to Move"
+    - paragraph:
+      - strong: "Tags:"
+      - text: rectangular chamber cramped_quarters space severe challenge_level_3
+    - paragraph:
+      - strong: "Features:"
+      - text: Statue
+    - paragraph:
+      - strong: "Monsters (Total CER: 69):"
+      - text: Bear (CER 36 - Average) [DF16, DF5-6, B456] [animal, natural], Squirrel-pion (CER 16 - Easy) [online] [hybrid], Hive Lizard (CER 13 - Easy) [CSM39] [animal, natural], Swarm, Bird (CER 4 - Easy) [DF54] [animal, natural, animal_(swarm)]
+    - paragraph:
+      - strong: "Treasure:"
+      - text: coins ($158)
+    - paragraph:
+      - strong: "Keys Found:"
+      - strong: Ornate Silver Key
+      - text: (unlocks portcullis door door-1) - A carefully crafted key with smooth finish,
+      - strong: Ornate Silver Key
+      - text: (unlocks portcullis door door-2) - A key that seems to shimmer with magical energy,
+      - strong: Ornate Brass Skeleton Key
+      - text: (unlocks normal door door-10) - A well-worn key showing signs of regular use
+    - heading "Room 2" [level=3]
+    - paragraph:
+      - emphasis: chamber
+    - paragraph:
+      - strong: "Tags:"
+      - text: rectangular chamber
+    - paragraph:
+      - strong: "Features:"
+      - text: Furniture
+    - paragraph:
+      - strong: "Monsters (Total CER: 67):"
+      - text: Rock Troll (CER 67 - Challenging) [DFM3-19] [elemental, magical]
+    - heading "Room 3" [level=3]
+    - paragraph:
+      - emphasis: chamber
+    - paragraph:
+      - strong: "Tags:"
+      - text: rectangular chamber
+    - paragraph:
+      - strong: "Monsters (Total CER: 54):"
+      - text: Elf, Dark (CER 22 - Easy) [DFC2-45] [mundane, common], Giant Piranha (CER 29 - Average) [P3/113-24] [animal, natural, giant_animal], Swarm, Bat (CER 2 - Easy) [DF54] [animal, natural, animal_(swarm)], Fire Bees (CER 1 - Easy) [PDC100] [animal, natural, animal_(swarm)]
+    - paragraph:
+      - strong: "Treasure:"
+      - text: coins ($211)
+    - heading "Room 4" [level=3]
+    - paragraph:
+      - emphasis: chamber
+    - paragraph:
+      - strong: "Environment:"
+      - text: "Failing candle, ember glow, or filtered moonlight. Tactical Effects: Bad Lighting: -4 to vision rolls (GURPS lighting scale)"
+    - paragraph:
+      - strong: "Tags:"
+      - text: rectangular chamber bad_lighting visibility moderate challenge_level_2
+    - paragraph:
+      - strong: "Features:"
+      - text: Furniture
+    - paragraph:
+      - strong: "Monsters (Total CER: 41):"
+      - text: Angry Sands (CER 41 - Average) [DFA1-45] [elemental, magical]
+    - paragraph:
+      - strong: "Treasure:"
+      - strong: "💰 Treasure (Total: $26, 0.5 lbs)"
+      - text: "🪙 Coins: 26 copper (0.5 lbs)"
+    - paragraph:
+      - strong: "Keys Found:"
+      - strong: Rusty Iron Skeleton Key
+      - text: (unlocks hole door door-11) - A carefully crafted key with smooth finish
+    - heading "Room 5" [level=3]
+    - paragraph:
+      - emphasis: chamber
+    - paragraph:
+      - strong: "Environment:"
+      - text: "Smoke from fires, burning oil, or torches Additionally, oppressive heat from forges, lava, or magical sources. Tactical Effects: Natural Smoke: -2 to vision per yard, HT-2 vs coughing every minute, -1 to attacks; Sweltering Heat: HT-1 rolls every 10 minutes, failure = 1 FP loss, -1 to IQ after 2 FP lost"
+    - paragraph:
+      - strong: "Tags:"
+      - text: rectangular chamber smoke_natural visibility severe heat_sweltering atmospheric moderate challenge_level_5
+    - paragraph:
+      - strong: "Features:"
+      - text: Statue
+    - paragraph:
+      - strong: "Monsters (Total CER: 93):"
+      - text: Petrignis (CER 78 - Challenging) [DFRM2-32] [elemental, magical], Void/Sound/Ether Elemental (CER 15 - Easy) [DF9-30] [elemental, magical]
+    - paragraph:
+      - strong: "Treasure:"
+      - text: coins ($1338)
+    - heading "Room 6" [level=3]
+    - paragraph:
+      - emphasis: chamber
+    - paragraph:
+      - strong: "Environment:"
+      - text: "Multiple structural pillars provide cover but limit movement Additionally, area suffused with divine power and protection. Tactical Effects: Pillar Forest: +2 to +4 defense when using cover, -1 to Move, charge attacks difficult; Blessed Ground: Clerical spells at +3, Turn Undead at +5, evil creatures at -2 (DFRPG Spells p.5)"
+    - paragraph:
+      - strong: "Tags:"
+      - text: rectangular chamber pillars_cover space minor high_sanctity magical minor challenge_level_2
+    - paragraph:
+      - strong: "Features:"
+      - text: Statue, Furniture
+    - heading "Room 7" [level=3]
+    - paragraph:
+      - emphasis: chamber
+    - paragraph:
+      - strong: "Environment:"
+      - text: "Broken stone, collapsed masonry, and scattered debris cover the floor Additionally, ceiling height forces most characters to stoop or crouch. Tactical Effects: Rubble and Debris: -2 to defense, -1 to Move, DX-2 roll to avoid falling when running; Low Ceiling: -2 to swinging attacks, no jumping maneuvers, -1 to Move if over 6 feet tall"
+    - paragraph:
+      - strong: "Tags:"
+      - text: rectangular chamber bad_footing_rubble terrain moderate low_ceiling space moderate challenge_level_4
+    - paragraph:
+      - strong: "Features:"
+      - text: Statue
+    - paragraph:
+      - strong: "Monsters (Total CER: 63):"
+      - text: Angry Sands (CER 41 - Average) [DFA1-45] [elemental, magical], Void/Sound/Ether Elemental (CER 15 - Easy) [DF9-30] [elemental, magical], Wood Elemental (CER 7 - Easy) [DF9-31] [elemental, magical]
+    - paragraph:
+      - strong: "Treasure:"
+      - text: coins ($188)
+    - paragraph:
+      - strong: "Keys Found:"
+      - strong: Small Silver Skeleton Key
+      - text: (unlocks normal door door-5) - A well-worn key showing signs of regular use
+    - heading "Room 8" [level=3]
+    - paragraph:
+      - emphasis: chamber
+    - paragraph:
+      - strong: "Tags:"
+      - text: rectangular chamber
+    - paragraph:
+      - strong: "Features:"
+      - text: Furniture
+    - paragraph:
+      - strong: "Monsters (Total CER: 27):"
+      - text: Leopard (CER 27 - Moderate) [DFC2-47] [animal, wildlife]
+    - heading "Dungeon Details" [level=3]
+    - paragraph:
+      - strong: "Name:"
+      - text: The Frost Temple of the Sun
+    - paragraph:
+      - strong: "Mana Level:"
+      - text: none - No spells possible, magic items don't function
+    - paragraph:
+      - strong: "Sanctity:"
+      - text: neutral - Neutral ground - no sanctity effects
+    - paragraph:
+      - strong: "Nature's Strength:"
+      - text: normal - Normal natural presence
+    - heading "Wandering Monsters" [level=3]
+    - paragraph:
+      - emphasis: Check for wandering monsters once per 10 minutes of real time and on any great noise.
+    - table:
+      - rowgroup:
+        - row "2d6 Roll Monster Quantity":
+          - cell "2d6 Roll"
+          - cell "Monster"
+          - cell "Quantity"
+      - rowgroup:
+        - row "2-3 Rock Troll (CER 67 - Challenging) [DFM3-19] [elemental, magical] 1d3":
+          - cell "2-3":
+            - strong: 2-3
+          - cell "Rock Troll (CER 67 - Challenging) [DFM3-19] [elemental, magical]"
+          - cell "1d3":
+            - strong: 1d3
+        - row "4-5 Xuchlazek Spirit Demon (CER 18 - Easy) [CSM43] 1d3":
+          - cell "4-5":
+            - strong: 4-5
+          - cell "Xuchlazek Spirit Demon (CER 18 - Easy) [CSM43]"
+          - cell "1d3":
+            - strong: 1d3
+        - row "6-7 Faerie Folk, Nymph (CER 17 - Easy) [DF3-9] 1d3":
+          - cell "6-7":
+            - strong: 6-7
+          - cell "Faerie Folk, Nymph (CER 17 - Easy) [DF3-9]"
+          - cell "1d3":
+            - strong: 1d3
+        - row "8-9 Leaping Leech (CER 1 - Easy) [DF40, DFM1-22] [animal, wildlife] 1d3":
+          - cell "8-9":
+            - strong: 8-9
+          - cell "Leaping Leech (CER 1 - Easy) [DF40, DFM1-22] [animal, wildlife]"
+          - cell "1d3":
+            - strong: 1d3
+        - row "10-11 Angry Sands (CER 41 - Average) [DFA1-45] [elemental, magical] 1d3":
+          - cell "10-11":
+            - strong: 10-11
+          - cell "Angry Sands (CER 41 - Average) [DFA1-45] [elemental, magical]"
+          - cell "1d3":
+            - strong: 1d3
+        - row "12 Fungus, Dazzler/Corrosive (SM +5) (CER 177 - Epic) [DF28, DFM2-5] 1":
+          - cell "12":
+            - strong: "12"
+          - cell "Fungus, Dazzler/Corrosive (SM +5) (CER 177 - Epic) [DF28, DFM2-5]"
+          - cell "1":
+            - strong: "1"
+    - text: "{ \"rooms\": 8, \"width\": 50, \"height\": 50, \"layoutType\": \"rectangle\", \"roomLayout\": \"scattered\", \"roomSize\": \"medium\", \"roomShape\": \"rectangular\", \"corridorType\": \"straight\", \"pathfindingAlgorithm\": \"manhattan\", \"corridorWidth\": 1, \"allowDeadends\": true, \"stairsUp\": false, \"stairsDown\": false, \"entranceFromPeriphery\": false, \"system\": \"dfrpg\", \"theme\": \"none\" }"
+```
