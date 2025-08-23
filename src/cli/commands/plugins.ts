@@ -1,5 +1,6 @@
 import { Command } from "commander";
 import { createDefaultPluginLoader } from "../../services/plugin-loader";
+import { GitHubPluginInstaller } from "../../services/github-plugin-installer";
 import pc from "picocolors";
 import { promises as fs } from "node:fs";
 import path from "node:path";
@@ -78,20 +79,57 @@ export function createPluginsCommand(): Command {
 
   plugins
     .command("install <src>")
-    .description("Install plugin from npm or local path")
-    .action(async (src) => {
+    .description("Install plugin from GitHub, npm, or local path")
+    .option("--force", "Force installation even if plugin exists")
+    .option("--skip-deps", "Skip dependency installation")
+    .option("--no-validate", "Skip plugin validation")
+    .option("--timeout <ms>", "Installation timeout in milliseconds", "60000")
+    .action(async (src, opts) => {
       try {
+        // Check if it's a GitHub repository
+        if (src.includes('/') && (src.startsWith('github:') || src.includes('github.com') || !src.includes('.'))) {
+          const installer = new GitHubPluginInstaller();
+          const options = {
+            force: opts.force || false,
+            skipDeps: opts.skipDeps || false,
+            validate: !opts.noValidate,
+            timeout: parseInt(opts.timeout)
+          };
+          
+          console.log(pc.blue(`Installing plugin from GitHub: ${src}`));
+          const result = await installer.installFromGitHub(src, options);
+          
+          if (result.success) {
+            console.log(pc.green(`✓ ${result.message}`));
+            if (result.dependencies && result.dependencies.length > 0) {
+              console.log(pc.cyan(`Dependencies: ${result.dependencies.join(', ')}`));
+            }
+            console.log(pc.gray(`Location: ${result.path}`));
+          } else {
+            console.error(pc.red(`✗ ${result.message}`));
+            if (result.errors) {
+              result.errors.forEach(error => console.error(pc.red(`  ${error}`)));
+            }
+            process.exitCode = 1;
+          }
+          return;
+        }
+        
+        // Handle local paths and tarballs
         if (src.startsWith(".") || src.startsWith("/") || src.endsWith(".tgz")) {
           const abs = path.resolve(src);
           const destDir = path.resolve(process.cwd(), "plugins", path.basename(abs));
           await fs.mkdir(path.dirname(destDir), { recursive: true });
           await fs.cp(abs, destDir, { recursive: true });
-          console.log(`Installed plugin from ${abs}`);
+          console.log(pc.green(`Installed plugin from ${abs}`));
         } else {
+          // Handle npm packages
+          console.log(pc.blue(`Installing plugin from npm: ${src}`));
           execSync(`pnpm add ${src}`, { stdio: "inherit" });
+          console.log(pc.green(`✓ Installed ${src} from npm`));
         }
       } catch (err) {
-        console.error((err as Error).message);
+        console.error(pc.red((err as Error).message));
         process.exitCode = 1;
       }
     });
@@ -101,14 +139,25 @@ export function createPluginsCommand(): Command {
     .description("Remove installed plugin")
     .action(async (id) => {
       try {
-        const dir = path.resolve(process.cwd(), "plugins", id);
-        await fs.rm(dir, { recursive: true, force: true });
-        try {
-          execSync(`pnpm remove ${id}`, { stdio: "inherit" });
-        } catch {}
-        console.log(`Uninstalled ${id}`);
+        const installer = new GitHubPluginInstaller();
+        console.log(pc.blue(`Removing plugin: ${id}`));
+        
+        const result = await installer.removePlugin(id);
+        
+        if (result.success) {
+          console.log(pc.green(`✓ ${result.message}`));
+        } else {
+          // Fallback to manual removal and npm if GitHub removal failed
+          console.log(pc.yellow(`Plugin not found via GitHub installer, trying manual removal...`));
+          const dir = path.resolve(process.cwd(), "plugins", id);
+          await fs.rm(dir, { recursive: true, force: true });
+          try {
+            execSync(`pnpm remove ${id}`, { stdio: "inherit" });
+          } catch {}
+          console.log(pc.green(`✓ Removed ${id}`));
+        }
       } catch (err) {
-        console.error((err as Error).message);
+        console.error(pc.red((err as Error).message));
         process.exitCode = 1;
       }
     });
@@ -116,12 +165,40 @@ export function createPluginsCommand(): Command {
   plugins
     .command("update <plugin>")
     .description("Update plugin to latest version")
-    .action(async (id) => {
+    .option("--force", "Force update even if plugin exists")
+    .option("--skip-deps", "Skip dependency installation")
+    .option("--no-validate", "Skip plugin validation")
+    .action(async (id, opts) => {
       try {
-        execSync(`pnpm update ${id}`, { stdio: "inherit" });
-        console.log(`Updated ${id}`);
+        // Check if plugin is installed via GitHub
+        const installer = new GitHubPluginInstaller();
+        const options = {
+          force: opts.force || false,
+          skipDeps: opts.skipDeps || false,
+          validate: !opts.noValidate
+        };
+        
+        console.log(pc.blue(`Updating plugin: ${id}`));
+        const result = await installer.updatePlugin(id, options);
+        
+        if (result.success) {
+          console.log(pc.green(`✓ ${result.message}`));
+          if (result.dependencies && result.dependencies.length > 0) {
+            console.log(pc.cyan(`Dependencies: ${result.dependencies.join(', ')}`));
+          }
+        } else {
+          // Fallback to npm update if not a GitHub plugin
+          if (result.message.includes('no repository URL found')) {
+            console.log(pc.yellow(`Plugin not installed via GitHub, trying npm update...`));
+            execSync(`pnpm update ${id}`, { stdio: "inherit" });
+            console.log(pc.green(`✓ Updated ${id} via npm`));
+          } else {
+            console.error(pc.red(`✗ ${result.message}`));
+            process.exitCode = 1;
+          }
+        }
       } catch (err) {
-        console.error((err as Error).message);
+        console.error(pc.red((err as Error).message));
         process.exitCode = 1;
       }
     });
@@ -201,6 +278,81 @@ export function createPluginsCommand(): Command {
         rows.forEach((r) => console.log(`${r.id}\t${r.version}\tcompatible with ${r.compatibility}`));
       }
     });
+
+  // GitHub-specific commands for easier usage
+  plugins
+    .command("github")
+    .description("GitHub plugin management")
+    .addCommand(
+      new Command("install")
+        .description("Install plugin from GitHub repository")
+        .argument("<repo>", "GitHub repository (owner/repo, github:owner/repo, or full URL)")
+        .option("--force", "Force installation even if plugin exists")
+        .option("--skip-deps", "Skip dependency installation")
+        .option("--no-validate", "Skip plugin validation")
+        .option("--timeout <ms>", "Installation timeout in milliseconds", "60000")
+        .action(async (repo, opts) => {
+          const installer = new GitHubPluginInstaller();
+          const options = {
+            force: opts.force || false,
+            skipDeps: opts.skipDeps || false,
+            validate: !opts.noValidate,
+            timeout: parseInt(opts.timeout)
+          };
+          
+          console.log(pc.blue(`Installing plugin from GitHub: ${repo}`));
+          const result = await installer.installFromGitHub(repo, options);
+          
+          if (result.success) {
+            console.log(pc.green(`✓ ${result.message}`));
+            if (result.dependencies && result.dependencies.length > 0) {
+              console.log(pc.cyan(`Dependencies: ${result.dependencies.join(', ')}`));
+            }
+            console.log(pc.gray(`Location: ${result.path}`));
+          } else {
+            console.error(pc.red(`✗ ${result.message}`));
+            if (result.errors) {
+              result.errors.forEach(error => console.error(pc.red(`  ${error}`)));
+            }
+            process.exitCode = 1;
+          }
+        })
+    )
+    .addCommand(
+      new Command("list")
+        .description("List GitHub-installed plugins")
+        .option("--json", "Output as JSON")
+        .action(async (opts) => {
+          const installer = new GitHubPluginInstaller();
+          const plugins = await installer.listInstalledPlugins();
+          
+          if (opts.json) {
+            process.stdout.write(JSON.stringify(plugins, null, 2) + "\n");
+            return;
+          }
+          
+          if (plugins.length === 0) {
+            console.log(pc.yellow("No GitHub plugins installed"));
+            return;
+          }
+          
+          console.log(pc.bold("GitHub-installed plugins:"));
+          for (const { metadata, path: pluginPath } of plugins) {
+            const author = metadata.author || 
+              (typeof (metadata as any).npmAuthor === 'string' ? (metadata as any).npmAuthor : (metadata as any).npmAuthor?.name) || 
+              'Unknown';
+            console.log(`${pc.cyan(metadata.id)} ${pc.gray(metadata.version || '1.0.0')}`);
+            console.log(`  ${metadata.description || 'No description'}`);
+            console.log(`  ${pc.gray(`Author: ${author}`)}`);
+            if (metadata.repository) {
+              const repo = typeof metadata.repository === 'string' ? metadata.repository : (metadata.repository as any)?.url;
+              console.log(`  ${pc.gray(`Repository: ${repo}`)}`);
+            }
+            console.log(`  ${pc.gray(`Location: ${pluginPath}`)}`);
+            console.log();
+          }
+        })
+    );
 
   return plugins;
 }

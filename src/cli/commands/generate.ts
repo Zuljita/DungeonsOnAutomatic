@@ -64,6 +64,11 @@ export function createGenerateCommand(): Command {
     .option("--treasure-balance", "enable encounter-appropriate treasure balancing")
     .option("--wealth-level <level>", "campaign wealth level (conservative, standard, generous)", "standard")
     .option("--boss-room-minimum <n>", "minimum treasure value for boss rooms", (v) => parseInt(v), 1000)
+    .option("--enhanced-treasure", "enable expanded treasure database with 200+ items")
+    .option("--dfrpg-rules", "use DFRPG rules-compliant generation with Cost Factors and enchantments")
+    .option("--treasure-theme <theme>", "treasure theme (default, warrior, wizard, thief, holy, nature, undead)", "default")
+    .option("--treasure-wealth <level>", "treasure wealth level (poor, average, wealthy, rich)", "average")
+    .option("--magic-frequency <n>", "magic item frequency multiplier", (v) => parseFloat(v), 1.0)
     .option("--ascii", "render an ASCII map instead of JSON output")
     .option("--debug-ascii", "render a high-resolution debug ASCII map with coordinates and corridor analysis")
     .option("--debug-scale <n>", "scale factor for debug ASCII (default: 10)", (v) => parseInt(v))
@@ -177,11 +182,27 @@ async function handleGenerate(opts: any): Promise<void> {
         }
       : undefined;
       
+  const enhancedTreasureOptions =
+    opts.enhancedTreasure || opts.dfrpgRules
+      ? {
+          enhancedTreasure: {
+            useExpandedData: true,
+            useDFRPGRules: opts.dfrpgRules || false,
+            treasureTheme: opts.treasureTheme as 'default' | 'warrior' | 'wizard' | 'thief' | 'holy' | 'nature' | 'undead',
+            wealthLevel: opts.treasureWealth as 'poor' | 'average' | 'wealthy' | 'rich',
+            magicItemFrequency: opts.magicFrequency,
+            minimumRarity: 'common' as const,
+            maximumRarity: 'legendary' as const
+          },
+        }
+      : undefined;
+      
   const enriched = await sys.enrich(d, {
     sources: opts.source,
     tags: tagOptions,
     ...(lockOptions || {}),
     ...(treasureBalanceOptions || {}),
+    ...(enhancedTreasureOptions || {}),
   });
 
   await handleOutput(enriched, opts);
