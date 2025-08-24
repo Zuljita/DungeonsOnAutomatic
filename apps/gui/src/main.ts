@@ -314,7 +314,7 @@ function loadGeneratorSettings() {
     roomSizeInput.value = settings.roomSize ?? '';
     roomShapeInput.value = settings.roomShape ?? '';
     corridorTypeInput.value = settings.corridorType ?? '';
-    pathfindingAlgorithmInput.value = settings.pathfindingAlgorithm ?? 'manhattan';
+    pathfindingAlgorithmInput.value = settings.pathfindingAlgorithm ?? 'astar';
     corridorWidthInput.value = settings.corridorWidth !== undefined ? String(settings.corridorWidth) : '1';
     allowDeadendsInput.checked = !!settings.allowDeadends;
     stairsUpInput.checked = !!settings.stairsUp;
@@ -399,7 +399,7 @@ async function generate(): Promise<void> {
   const roomSize = roomSizeInput.value as any || 'medium';
   const roomShape = roomShapeInput.value as any || 'rectangular';
   const corridorType = corridorTypeInput.value as any || 'straight';
-  const pathfindingAlgorithm = pathfindingAlgorithmInput.value as any || 'manhattan';
+  const pathfindingAlgorithm = pathfindingAlgorithmInput.value as any || 'astar';
   const corridorWidth = parseInt(corridorWidthInput.value) || 1;
   const allowDeadends = allowDeadendsInput.checked;
   const stairsUp = stairsUpInput.checked;
@@ -475,6 +475,12 @@ async function generate(): Promise<void> {
 
     // Generate the dungeon using buildDungeon (includes all improvements)
     const dungeon = buildDungeon(dungeonOptions);
+    // Reflect actual seed used back into the UI and display
+    const actualSeed = dungeon.seed || seed;
+    const seedInputEl = document.getElementById('seed') as HTMLInputElement;
+    if (seedInputEl) seedInputEl.value = actualSeed || '';
+    const seedCurrentEl = document.getElementById('seed-current') as HTMLElement;
+    if (seedCurrentEl) seedCurrentEl.textContent = `Current seed: ${actualSeed || '(none)'}`;
 
     // Enrich with system-specific content
     const sys = await systemLoader.getSystem(system);
@@ -1839,6 +1845,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Initial generation
   generate().catch(console.error);
+  
+  // Seed copy button
+  const copySeedBtn = document.getElementById('copy-seed');
+  if (copySeedBtn) {
+    copySeedBtn.addEventListener('click', () => {
+      const seedEl = document.getElementById('seed') as HTMLInputElement;
+      const text = seedEl?.value || '';
+      if (navigator.clipboard && text) {
+        navigator.clipboard.writeText(text).catch(() => {
+          // Fallback: select and copy
+          seedEl.select();
+          document.execCommand?.('copy');
+        });
+      }
+    });
+  }
 });
 
 // Make functions available globally for onclick handlers

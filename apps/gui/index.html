@@ -1229,7 +1229,11 @@
             </div>
             <div class="mb-3">
               <label class="form-label">Seed:</label>
-              <input type="text" id="seed" placeholder="Random" class="form-control">
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <input type="text" id="seed" placeholder="Random" class="form-control" style="flex:1;">
+                <button id="copy-seed" title="Copy seed" style="padding: 4px 8px;">Copy</button>
+              </div>
+              <small id="seed-current" class="form-text text-muted">Current seed: (none)</small>
               <small class="form-text text-muted">Reproducible random seed (leave empty for random)</small>
             </div>
           </div>
@@ -1306,7 +1310,7 @@
         <div class="option-group" data-group="corridors">
           <h3 onclick="toggleOptionGroup('corridors')">Corridor Configuration <span class="toggle-icon">▼</span></h3>
           <div class="option-group-content">
-            <div class="form-group">
+            <div class="form-group" style="display: none;">
               <label>Corridor Type:</label>
               <select id="corridor-type">
                 <option value="straight">Straight</option>
@@ -1320,7 +1324,7 @@
               <label>Pathfinding Algorithm:</label>
               <select id="pathfinding-algorithm">
                 <option value="manhattan">Manhattan (Classic)</option>
-                <option value="astar">A* (Enhanced)</option>
+                <option value="astar" selected>A* (Enhanced)</option>
                 <option value="jumppoint">Jump Point Search (Fast)</option>
                 <option value="dijkstra">Dijkstra (Optimal)</option>
               </select>
