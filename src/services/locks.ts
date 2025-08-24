@@ -58,9 +58,9 @@ export class LockService {
   private selectDoorsForLocking(doors: Door[], lockPercentage: number, preferImportant: boolean): Door[] {
     const candidates: Door[] = [];
     
-    // Filter doors that can be locked (exclude those already locked)
+    // Filter doors that can be locked (exclude those already locked and door types that can't be locked)
     const lockableDoors = doors.filter(door => 
-      door.status !== 'locked' && door.type !== 'arch' // arches can't be locked
+      door.status !== 'locked' && door.type !== 'arch' && door.type !== 'hole' // arches and holes can't be locked
     );
 
     if (preferImportant) {
