@@ -182,6 +182,58 @@ This is a pnpm workspace with the main package and GUI as separate workspaces. T
 - Similar function names with slight variations (`connectRooms` vs `connectRoomsEnhanced`)
 - Repeated patterns in loops, conditionals, or data processing
 - Multiple implementations of the same algorithm or data structure
+
+## GitHub Issue and PR Workflow
+
+### Issue Linking Requirements
+When working on GitHub issues, ALWAYS ensure proper linking between issues and PRs:
+
+1. **PR Title**: Include issue number in title (e.g., "fix: prevent inappropriate door combinations (#184)")
+2. **PR Description**: Include "Fixes #[issue-number]" or "Closes #[issue-number]" at the top of the description
+   - This creates clickable links for easy navigation
+   - Auto-closes the issue when PR is merged
+   - Maintains clear traceability between problems and solutions
+
+3. **Issue Comments**: When creating a PR, add a comment to the original issue linking to the PR
+   - Format: "✅ **Fixed in PR #[pr-number]** - [brief description]"
+   - Provides immediate visibility that work is in progress
+   - Allows issue reporters to track progress and review fixes
+
+### PR Creation Timing
+Create PRs immediately when you believe an issue is resolved:
+- **Don't wait for approval**: Create the PR as soon as the fix is complete and tested
+- **Link immediately**: Add issue linking in the PR description from the start
+- **Comment on issue**: Notify issue reporters that a fix is available for review
+- **Request review**: Tag appropriate reviewers or maintainers if needed
+
+### Example Workflow
+```bash
+# 1. Work on issue in feature branch
+git checkout -b fix/issue-description
+
+# 2. Implement fix with tests
+# ... make changes ...
+
+# 3. Commit with descriptive message
+git commit -m "fix: resolve issue description (#123)"
+
+# 4. Push and create PR immediately
+git push origin fix/issue-description
+gh pr create --title "fix: resolve issue description (#123)" \
+  --body "Fixes #123
+
+[Detailed description of the fix]"
+
+# 5. Comment on original issue
+gh issue comment 123 --body "✅ **Fixed in PR #[pr-number]**"
+```
+
+This workflow ensures:
+- Clear traceability between issues and fixes
+- Immediate visibility for issue reporters  
+- Automatic issue closure when fixes are merged
+- Consistent documentation of problem-solution relationships
+
 # important-instruction-reminders
 Do what has been asked; nothing more, nothing less.
 NEVER create files unless they're absolutely necessary for achieving your goal.
