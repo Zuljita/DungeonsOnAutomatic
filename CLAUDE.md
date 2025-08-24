@@ -29,6 +29,11 @@ pnpm doa generate --rooms=10 --system=dfrpg
 pnpm doa generate --rooms=20 --svg > map.svg
 pnpm doa generate --rooms=15 --foundry > foundry.json
 pnpm doa generate --rooms=8 --ascii
+
+# Multi-version dungeon generation
+pnpm doa variations --seed mycastle --vary layout --ascii
+pnpm doa variations --seed adventure --rooms 5,8,12 --output-dir ./dungeons
+pnpm doa variations --seed compare --layouts rectangle,hexagon,cavernous
 ```
 
 ## Architecture Overview

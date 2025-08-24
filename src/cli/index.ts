@@ -3,6 +3,7 @@ import { Command } from "commander";
 import { createGenerateCommand } from "./commands/generate";
 import { createTemplatesCommand } from "./commands/templates";
 import { createPluginsCommand } from "./commands/plugins";
+import { createVariationsCommand } from "./commands/variations";
 
 const program = new Command();
 program
@@ -14,5 +15,6 @@ program
 program.addCommand(createGenerateCommand());
 program.addCommand(createTemplatesCommand());
 program.addCommand(createPluginsCommand());
+program.addCommand(createVariationsCommand());
 
 program.parseAsync(process.argv);
