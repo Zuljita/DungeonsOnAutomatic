@@ -87,7 +87,8 @@ export class MapGenerator {
     let corridors = connectRooms(allRooms, this.R, {
       algorithm: (pathfindingAlgorithm as any) || 'astar',
       usePathfindingLib: (pathfindingAlgorithm as any) !== 'manhattan',
-      preferLShape: true,
+      // Only prefer L-shape when explicitly using 'manhattan'
+      preferLShape: (pathfindingAlgorithm as any) === 'manhattan',
     });
     // Expand corridors to desired width while avoiding room interiors
     if (corridorWidth && corridorWidth > 1) {
