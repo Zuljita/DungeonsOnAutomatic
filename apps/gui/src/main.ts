@@ -512,11 +512,14 @@ async function generate(): Promise<void> {
       ...(lockOptions || {}),
     });
 
-    // Display input parameters
+    // Display input parameters (include actual seed used for reproducibility)
     const inputParams = {
       ...dungeonOptions,
       system,
-      theme: theme || 'none'
+      theme: theme || 'none',
+      // Make both explicit for clarity
+      seedInput: seed || null,
+      seedUsed: dungeon.seed || seed || null,
     };
     inputEl.textContent = JSON.stringify(inputParams, null, 2);
 
