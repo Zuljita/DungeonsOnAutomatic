@@ -154,6 +154,33 @@ function validateLPath(
   return true;
 }
 
+// Snap a door position to the nearest integer grid tile just outside the room
+function normalizeDoorPoint(room: Room, p: { x: number; y: number }): { x: number; y: number } {
+  let rx = Math.round(p.x);
+  let ry = Math.round(p.y);
+  // If rounded point is inside the room, nudge outward from the room center
+  if (roomShapeService.isPointInRoom(room, rx, ry)) {
+    const bounds = roomShapeService.getRoomBounds(room);
+    const cx = (bounds.minX + bounds.maxX) / 2;
+    const cy = (bounds.minY + bounds.maxY) / 2;
+    const dx = Math.sign(p.x - cx) || 1;
+    const dy = Math.sign(p.y - cy) || 1;
+    const candidates = [
+      { x: rx + dx, y: ry },
+      { x: rx, y: ry + dy },
+      { x: rx + dx, y: ry + dy },
+      { x: rx - dx, y: ry },
+      { x: rx, y: ry - dy },
+    ];
+    for (const c of candidates) {
+      if (!roomShapeService.isPointInRoom(room, c.x, c.y)) {
+        rx = c.x; ry = c.y; break;
+      }
+    }
+  }
+  return { x: rx, y: ry };
+}
+
 /**
  * A* pathfinding using the pathfinding library with cost grid support
  * Finds optimal path while avoiding high-cost areas (like room interiors)
@@ -355,19 +382,22 @@ function connectWithEnhancedPathfinding(
       // Calculate optimal door connection points
       const doorPoints = calculateDoorConnectionPoints(rooms[e.a], rooms[e.b]);
       
+      // Normalize door points to integer grid just outside room
+      const normStart = normalizeDoorPoint(rooms[e.a], doorPoints.start);
+      const normEnd = normalizeDoorPoint(rooms[e.b], doorPoints.end);
       // Offset door points for grid coordinates
-      const startPoint = { x: doorPoints.start.x - minX, y: doorPoints.start.y - minY };
-      const endPoint = { x: doorPoints.end.x - minX, y: doorPoints.end.y - minY };
+      const startPoint = { x: normStart.x - minX, y: normStart.y - minY };
+      const endPoint = { x: normEnd.x - minX, y: normEnd.y - minY };
       
       let path: { x: number; y: number }[] = [];
       
       // If requested, try classic L-shape first (never cuts rooms)
       if (options.preferLShape || options.algorithm === 'manhattan') {
-        const [hv, vh] = buildLPaths(doorPoints.start, doorPoints.end);
+        const [hv, vh] = buildLPaths(normStart, normEnd);
         const allowIds = [rooms[e.a].id, rooms[e.b].id];
-        if (validateLPath(hv, rooms, doorPoints.start, doorPoints.end, allowIds)) {
+        if (validateLPath(hv, rooms, normStart, normEnd, allowIds)) {
           path = hv;
-        } else if (validateLPath(vh, rooms, doorPoints.start, doorPoints.end, allowIds)) {
+        } else if (validateLPath(vh, rooms, normStart, normEnd, allowIds)) {
           path = vh;
         }
       }
@@ -385,12 +415,12 @@ function connectWithEnhancedPathfinding(
           );
           path = routed.map(p => ({ x: p.x + minX, y: p.y + minY }));
           if (path.length > 0) {
-            path[0] = doorPoints.start;
-            path[path.length - 1] = doorPoints.end;
+            path[0] = normStart;
+            path[path.length - 1] = normEnd;
           }
         } catch (error) {
           // As a last resort, emit the straight segment; callers may reject or post-process
-          path = [doorPoints.start, doorPoints.end];
+          path = [normStart, normEnd];
         }
       }
       
@@ -399,8 +429,8 @@ function connectWithEnhancedPathfinding(
         from, 
         to, 
         path,
-        doorStart: doorPoints.start,
-        doorEnd: doorPoints.end
+        doorStart: normStart,
+        doorEnd: normEnd
       });
     }
   }
