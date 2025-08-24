@@ -1,0 +1,64 @@
+{
+  "metadata": {
+    "name": "My Treasure Pack",
+    "author": "Your Name",
+    "version": "1.0.0",
+    "description": "Custom treasure pack for my campaign",
+    "tags": [
+      "custom",
+      "campaign"
+    ],
+    "compatibleWith": "^0.1.0",
+    "created": "2025-08-23T14:31:57.208Z",
+    "lastModified": "2025-08-23T14:31:57.208Z"
+  },
+  "data": {
+    "magicItems": [
+      {
+        "name": "Example Magic Sword",
+        "category": "weapon",
+        "powerLevel": "minor",
+        "value": 1000,
+        "weight": 3,
+        "quirks": [
+          "Glows when enemies approach",
+          "Never needs sharpening"
+        ],
+        "description": "A beautifully crafted sword with minor enchantments",
+        "reference": "Custom item"
+      }
+    ],
+    "mundaneItems": [
+      {
+        "name": "Ornate Vase",
+        "category": "art",
+        "value": 150,
+        "weight": 5,
+        "description": "A ceramic vase with intricate floral patterns",
+        "origin": "Eastern kingdoms"
+      }
+    ],
+    "quirks": {
+      "weapon_quirks": [
+        "Glows when orcs are near",
+        "Makes a musical tone when drawn",
+        "Never needs cleaning"
+      ],
+      "armor_quirks": [
+        "Self-repairing minor damage",
+        "Changes color with weather",
+        "Provides comfort in any climate"
+      ],
+      "accessory_quirks": [
+        "Tingles when magic is used nearby",
+        "Shows true emotions of the wearer",
+        "Grants vivid dreams"
+      ],
+      "general_quirks": [
+        "Once belonged to a famous hero",
+        "Has a mysterious inscription",
+        "Emits a faint magical aura"
+      ]
+    }
+  }
+}

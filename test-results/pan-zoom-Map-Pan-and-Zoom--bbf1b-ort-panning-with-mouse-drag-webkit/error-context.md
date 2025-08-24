@@ -1,0 +1,246 @@
+# Page snapshot
+
+```yaml
+- link "Skip to main content":
+  - /url: "#main-content"
+- main:
+  - heading "Dungeons On Automatic" [level=1]
+  - tablist:
+    - tab "Generator" [selected]
+    - tab "Data Manager"
+    - tab "Settings"
+  - tabpanel "Generator":
+    - text: 💡 Click on any section header to expand/collapse options
+    - heading "Configuration Presets ▼" [level=3]
+    - text: "Load Preset:"
+    - combobox:
+      - option "Select a preset..." [selected]
+      - group:
+        - option "Classic Dungeon"
+      - group:
+        - option "DFRPG Delve"
+      - group:
+        - option "Large Complex"
+      - group:
+        - option "Small Dungeon"
+      - group:
+        - option "Fortress Keep"
+    - button "Load" [disabled]
+    - button "Manage"
+    - text: Choose from saved configurations or built-in examples
+    - button "💾 Save Current Configuration"
+    - button "📤 Export Presets"
+    - button "📥 Import Presets"
+    - button "Basic Settings ▼" [expanded]
+    - text: "Template:"
+    - combobox "Template:":
+      - option "No Template (Custom)" [selected]
+      - group:
+        - option "Small Classic Dungeon"
+        - option "Large Classic Dungeon"
+      - group:
+        - option "Natural Cave System"
+        - option "Underground River Complex"
+      - group:
+        - option "Ancient Keep"
+        - option "Wizard's Tower"
+      - group:
+        - option "The Labyrinth"
+        - option "Minotaur's Domain"
+      - group:
+        - option "Ruined Temple"
+        - option "Crystal Caverns"
+        - option "Abandoned Prison"
+    - text: "System:"
+    - combobox "System:":
+      - option "Select System" [selected]
+      - option "Generic Fantasy"
+      - option "Dungeon Fantasy RPG"
+    - text: "Choose game system for encounters and content Theme:"
+    - combobox:
+      - option "No Theme (Random)" [selected]
+    - text: "Apply thematic filter to encounters (requires system) Rooms:"
+    - spinbutton: "8"
+    - text: "Number of rooms in the dungeon Width:"
+    - spinbutton: "50"
+    - text: "Map width in grid squares Height:"
+    - spinbutton: "50"
+    - text: "Map height in grid squares Seed:"
+    - textbox "Random"
+    - text: Reproducible random seed (leave empty for random)
+    - heading "Layout Type ▼" [level=3]
+    - text: "Map Layout:"
+    - combobox:
+      - option "Rectangle" [selected]
+      - option "Square"
+      - option "Box (Courtyard)"
+      - option "Cross"
+      - option "Dagger"
+      - option "Saltire (X-Shape)"
+      - option "Keep (Castle)"
+      - option "Hexagon"
+      - option "Round"
+      - option "Cavernous"
+    - text: Overall shape and structure of the dungeon
+    - heading "Room Configuration ▼" [level=3]
+    - text: "Room Layout:"
+    - combobox:
+      - option "Scattered" [selected]
+      - option "Sparse"
+      - option "Dense"
+      - option "Symmetric"
+    - text: "How rooms are distributed in the dungeon Room Size:"
+    - combobox:
+      - option "Medium" [selected]
+      - option "Small"
+      - option "Large"
+      - option "Mixed"
+    - text: "Preferred size of generated rooms Room Shape:"
+    - combobox:
+      - option "Rectangular" [selected]
+      - option "Diverse (All shapes)"
+      - option "Hex Preference"
+      - option "Circular Preference"
+      - option "Small Preference"
+      - option "Mixed"
+    - text: Shape variety and style preferences for rooms
+    - heading "Corridor Configuration ▼" [level=3]
+    - text: "Corridor Type:"
+    - combobox:
+      - option "Straight" [selected]
+      - option "Winding"
+      - option "Maze"
+      - option "Mixed"
+    - text: "Style of corridors connecting rooms Pathfinding Algorithm:"
+    - combobox:
+      - option "Manhattan (Classic)" [selected]
+      - option "A* (Enhanced)"
+      - option "Jump Point Search (Fast)"
+      - option "Dijkstra (Optimal)"
+    - text: "🚀 Enhanced algorithms use PathFinding.js for better corridor quality Corridor Width (tiles):"
+    - combobox:
+      - option "1 (Narrow)" [selected]
+      - option "2 (Standard)"
+      - option "3 (Wide)"
+    - text: Width of corridors in map tiles
+    - checkbox "Allow Deadends" [checked]
+    - text: Allow Deadends Permit corridors that lead to dead ends
+    - heading "Special Features ▼" [level=3]
+    - checkbox "Stairs Up"
+    - text: Stairs Up
+    - checkbox "Stairs Down"
+    - text: Stairs Down
+    - checkbox "Entrance from Periphery"
+    - text: "Entrance from Periphery Lock Percentage:"
+    - spinbutton
+    - text: Fraction of doors to lock (0.0 = none, 1.0 = all)
+    - checkbox "Allow Magical Locks"
+    - text: Allow Magical Locks
+    - heading "Content Settings ▶" [level=3]
+    - heading "Map Rendering ▶" [level=3]
+    - checkbox "Real-time Preview" [checked]
+    - text: Real-time Preview
+    - button "Generate Dungeon"
+    - link "Download SVG":
+      - /url: blob:http://localhost:5173/03d52243-54b2-45a0-a002-72fb215213a0
+    - heading "📋 Configuration Summary ▼" [level=3]
+    - application "Interactive dungeon map":
+      - toolbar "Map navigation controls":
+        - button "Toggle full screen map view": ⛶ Toggle full screen
+        - button "Zoom in on map": + Zoom in
+        - button "Zoom out on map": − Zoom out
+        - button "Reset map view to default": ⌂ Reset view
+      - img: 1 2 3 4 5 6 7 8
+      - text: Overview
+      - button "−"
+      - img: 1 2 3 4 5 6 7 8
+    - heading "Room Key" [level=2]
+    - heading "Room 1" [level=3]
+    - paragraph:
+      - emphasis: chamber
+    - paragraph:
+      - strong: "Tags:"
+      - text: hexagonal chamber
+    - paragraph:
+      - strong: "Features:"
+      - text: Furniture, Statue
+    - paragraph:
+      - strong: "Treasure:"
+      - text: coins (minor) [coins, mundane]
+    - heading "Room 2" [level=3]
+    - paragraph:
+      - emphasis: chamber
+    - paragraph:
+      - strong: "Tags:"
+      - text: rectangular chamber
+    - paragraph:
+      - strong: "Monsters:"
+      - text: Goblin [goblin, humanoid, chaotic]
+    - heading "Room 3" [level=3]
+    - paragraph:
+      - emphasis: chamber
+    - paragraph:
+      - strong: "Tags:"
+      - text: rectangular chamber
+    - heading "Room 4" [level=3]
+    - paragraph:
+      - emphasis: chamber
+    - paragraph:
+      - strong: "Tags:"
+      - text: rectangular chamber
+    - paragraph:
+      - strong: "Features:"
+      - text: Furniture, Furniture
+    - heading "Room 5" [level=3]
+    - paragraph:
+      - emphasis: chamber
+    - paragraph:
+      - strong: "Tags:"
+      - text: rectangular chamber
+    - paragraph:
+      - strong: "Features:"
+      - text: Furniture, Statue
+    - paragraph:
+      - strong: "Monsters:"
+      - text: Skeleton [undead, skeleton, cold]
+    - paragraph:
+      - strong: "Treasure:"
+      - text: coins (minor) [coins, mundane]
+    - heading "Room 6" [level=3]
+    - paragraph:
+      - emphasis: chamber
+    - paragraph:
+      - strong: "Tags:"
+      - text: rectangular chamber
+    - paragraph:
+      - strong: "Features:"
+      - text: Furniture
+    - paragraph:
+      - strong: "Monsters:"
+      - text: Skeleton [undead, skeleton, cold]
+    - paragraph:
+      - strong: "Treasure:"
+      - text: coins (minor) [coins, mundane]
+    - heading "Room 7" [level=3]
+    - paragraph:
+      - emphasis: chamber
+    - paragraph:
+      - strong: "Tags:"
+      - text: rectangular chamber
+    - paragraph:
+      - strong: "Features:"
+      - text: Furniture
+    - paragraph:
+      - strong: "Monsters:"
+      - text: Goblin [goblin, humanoid, chaotic]
+    - paragraph:
+      - strong: "Treasure:"
+      - text: gems (standard) [gems, precious]
+    - heading "Room 8" [level=3]
+    - paragraph:
+      - emphasis: chamber
+    - paragraph:
+      - strong: "Tags:"
+      - text: rectangular chamber
+    - text: "{ \"rooms\": 8, \"width\": 50, \"height\": 50, \"layoutType\": \"rectangle\", \"roomLayout\": \"scattered\", \"roomSize\": \"medium\", \"roomShape\": \"rectangular\", \"corridorType\": \"straight\", \"pathfindingAlgorithm\": \"manhattan\", \"corridorWidth\": 1, \"allowDeadends\": true, \"stairsUp\": false, \"stairsDown\": false, \"entranceFromPeriphery\": false, \"system\": \"generic\", \"theme\": \"none\" }"
+```

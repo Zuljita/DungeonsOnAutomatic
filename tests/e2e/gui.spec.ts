@@ -105,10 +105,7 @@ test.describe('Dungeons On Automatic GUI', () => {
   });
 
   test('should handle room shape service initialization', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
-    
-    // Monitor for room shape service messages
+    // Set up console monitoring BEFORE navigating to the page
     const roomShapeMessages: string[] = [];
     page.on('console', msg => {
       const text = msg.text();
@@ -116,6 +113,9 @@ test.describe('Dungeons On Automatic GUI', () => {
         roomShapeMessages.push(text);
       }
     });
+    
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
     
     // Generate a dungeon to trigger room shape service
     await page.locator('#generate').click();
@@ -160,8 +160,14 @@ test.describe('Dungeons On Automatic GUI', () => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
     
+    // Wait for templates to load
+    await page.waitForFunction(() => {
+      const select = document.querySelector('#template') as HTMLSelectElement;
+      return select && select.options.length > 1;
+    }, {}, { timeout: 10000 });
+    
     // Select a template
-    await page.selectOption('#template', 'small-dungeon');
+    await page.selectOption('#template', 'classic-small');
     
     // Generate dungeon with template
     await page.locator('#generate').click();
@@ -200,10 +206,11 @@ test.describe('Dungeons On Automatic GUI', () => {
     const tabs = ['generator', 'settings', 'data-manager'];
     
     for (const tab of tabs) {
-      await page.click(`[onclick*="${tab}"]`);
+      // Click the Bootstrap tab button
+      await page.click(`#${tab}-tab-btn`);
       
       // Wait for tab content to be visible
-      await expect(page.locator(`#${tab}-tab`)).toHaveClass(/active/);
+      await expect(page.locator(`#${tab}-tab`)).toHaveClass(/show/);
       
       // Verify no tab switching errors
       const tabErrors = await page.evaluate(() => {

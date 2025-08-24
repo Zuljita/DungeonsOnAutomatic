@@ -1,5 +1,5 @@
 import { systemLoader } from '@src/services/system-loader';
-import { renderSvg, lightTheme, darkTheme, sepiaTheme, type RenderOptions, type RenderTheme } from '@src/services/render';
+import svgExportPlugin from '@src/plugins/svg-export';
 import { htmlRoomDetails, populateRooms, getDungeonMetaHtml } from '@src/services/room-key';
 import { ImportWizardComponent } from './import-wizard';
 import { tagSystem } from '@src/services/tag-system';
@@ -521,30 +521,15 @@ async function generate(): Promise<void> {
     const wobbleIntensity = parseFloat(wobbleIntensityInput.value) || 1;
     const wallThickness = parseFloat(wallThicknessInput.value) || 1;
 
-    // Select the appropriate theme
-    let selectedTheme: RenderTheme;
-    switch (colorTheme) {
-      case 'dark':
-        selectedTheme = darkTheme;
-        break;
-      case 'sepia':
-        selectedTheme = sepiaTheme;
-        break;
-      default:
-        selectedTheme = lightTheme;
-        break;
-    }
-
-    // Create render options
-    const renderOptions: RenderOptions = {
+    // Render the map using SVG export plugin
+    const result = await svgExportPlugin.export(enriched, 'svg', {
+      theme: colorTheme || 'light',
       style: mapStyle,
       showGrid: showGrid,
       wobbleIntensity: wobbleIntensity,
       wallThickness: wallThickness
-    };
-
-    // Render the map
-    const svg = await renderSvg(enriched, selectedTheme, renderOptions);
+    });
+    const svg = result.data as string;
     
     mapContentEl.innerHTML = svg;
     
