@@ -368,13 +368,13 @@ export class GitHubPluginInstaller {
     }
 
     // Validate DOA plugin metadata
-    const doaPlugin = packageJson['doa-plugin'];
+    const doaPlugin = packageJson.doaPlugin;
     if (!doaPlugin) {
-      throw new Error('Missing "doa-plugin" field in package.json');
+      throw new Error('Missing "doaPlugin" field in package.json');
     }
 
     if (!doaPlugin.type) {
-      throw new Error('Missing plugin type in doa-plugin metadata');
+      throw new Error('Missing plugin type in doaPlugin metadata');
     }
 
     // Extract plugin metadata
@@ -453,7 +453,7 @@ export class GitHubPluginInstaller {
     const packageJsonContent = await fs.readFile(packageJsonPath, 'utf-8');
     const packageJson = JSON.parse(packageJsonContent);
     
-    const doaPlugin = packageJson['doa-plugin'] || {};
+    const doaPlugin = packageJson.doaPlugin || {};
     const author = typeof packageJson.author === 'string' 
       ? packageJson.author 
       : packageJson.author?.name || undefined;
