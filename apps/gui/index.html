@@ -9,6 +9,12 @@
   <link rel="icon" type="image/png" sizes="32x32" href="/assets/logo/logo-small.png">
   <link rel="icon" type="image/png" sizes="16x16" href="/assets/logo/logo-small.png">
   <link rel="icon" type="image/svg+xml" href="/assets/logo/logo.svg">
+  
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  
+  <!-- Viewport meta for responsive design -->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
     :root {
       /* Light theme */
@@ -96,73 +102,202 @@
       color: var(--text-primary);
       transition: background-color 0.3s ease, color 0.3s ease;
     }
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
+    
+    /* Responsive adjustments for mobile */
+    @media (max-width: 768px) {
+      body {
+        padding: 10px;
+      }
+      
+      .main-container {
+        border-radius: 0;
+        margin: -10px;
+      }
+      
+      .nav-pills .nav-link {
+        padding: 12px 15px;
+        font-size: 13px;
+      }
+      
+      .tab-pane {
+        padding: 15px;
+      }
+      
+      .map-container {
+        max-height: 60vh;
+      }
+    }
+    
+    /* Tablet adjustments */
+    @media (min-width: 768px) and (max-width: 1024px) {
+      .map-container {
+        max-height: 65vh;
+      }
+    }
+    
+    /* Large screen optimizations */
+    @media (min-width: 1400px) {
+      .map-container {
+        max-height: 75vh;
+      }
+    }
+    
+    /* Adaptive layout for narrow screens */
+    @media (max-width: 576px) {
+      .preview-controls {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+      }
+      
+      .option-group {
+        margin-bottom: 15px;
+      }
+      
+      .option-group h3 {
+        padding: 10px 12px;
+        font-size: 14px;
+      }
+      
+      .option-group-content {
+        padding: 12px;
+      }
+      
+      .nav-pills {
+        flex-wrap: wrap;
+      }
+      
+      .nav-pills .nav-link {
+        padding: 10px 12px;
+        margin-bottom: 2px;
+      }
+    }
+    
+    /* Side-by-side layout for ultra-wide screens */
+    @media (min-width: 1920px) {
+      .container-xl {
+        max-width: 1800px;
+      }
+      
+      .ultra-wide-layout {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+        align-items: start;
+      }
+    }
+    
+    /* Accessibility improvements */
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+    
+    /* High contrast mode support */
+    @media (prefers-contrast: high) {
+      :root {
+        --border-primary: #000;
+        --border-focus: #0000ff;
+        --text-primary: #000;
+        --bg-primary: #fff;
+      }
+      
+      .map-control-btn:focus {
+        outline: 3px solid #0000ff;
+      }
+    }
+    
+    /* Reduced motion support */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+    
+    /* Focus indicators for keyboard navigation */
+    .option-group h3:focus,
+    button:focus,
+    select:focus,
+    input:focus,
+    .nav-link:focus {
+      outline: 2px solid var(--border-focus);
+      outline-offset: 2px;
+    }
+    
+    /* Skip link for keyboard users */
+    .skip-link {
+      position: absolute;
+      top: -40px;
+      left: 6px;
+      background: var(--accent-primary);
+      color: var(--text-inverse);
+      padding: 8px;
+      text-decoration: none;
+      border-radius: 4px;
+      z-index: 9999;
+    }
+    
+    .skip-link:focus {
+      top: 6px;
+    }
+    .main-container {
       background: var(--bg-primary);
       border-radius: 8px;
       box-shadow: 0 2px 10px var(--shadow);
       overflow: hidden;
     }
-    .tabs {
-      display: flex;
-      background: var(--tab-bg);
-    }
-    .tab {
-      padding: 15px 25px;
+    .nav-pills .nav-link {
+      border-radius: 0;
       color: var(--text-inverse);
-      cursor: pointer;
+      background: var(--tab-bg);
       border: none;
-      background: none;
       font-size: 14px;
+      padding: 15px 25px;
       transition: background 0.3s;
     }
-    .tab:hover {
+    .nav-pills .nav-link:hover {
       background: var(--tab-hover);
+      color: var(--text-inverse);
     }
-    .tab.active {
+    .nav-pills .nav-link.active {
       background: var(--accent-primary);
+      color: var(--text-inverse);
     }
-    .tab-content {
-      display: none;
+    .tab-pane {
       padding: 20px;
     }
-    .tab-content.active {
-      display: block;
-    }
-    .form-group {
-      margin-bottom: 15px;
-    }
-    label {
-      display: block;
-      margin-bottom: 5px;
-      font-weight: 500;
+    .form-label {
       color: var(--text-primary);
     }
-    select, input, button {
-      width: 100%;
-      padding: 8px 12px;
-      border: 1px solid var(--border-primary);
-      border-radius: 4px;
-      font-size: 14px;
+    .form-control, .form-select {
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      border-color: var(--border-primary);
+    }
+    .form-control:focus, .form-select:focus {
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 0.25rem rgba(74, 158, 255, 0.25);
       background: var(--bg-primary);
       color: var(--text-primary);
     }
-    select:focus, input:focus {
-      outline: none;
-      border-color: var(--border-focus);
-      box-shadow: 0 0 0 2px rgba(74, 158, 255, 0.2);
-    }
-    button {
+    .btn-primary {
       background: var(--accent-primary);
+      border-color: var(--accent-primary);
       color: var(--text-inverse);
-      border: none;
-      cursor: pointer;
-      font-weight: 500;
-      transition: background 0.3s;
     }
-    button:hover {
+    .btn-primary:hover, .btn-primary:focus {
       background: var(--accent-hover);
+      border-color: var(--accent-hover);
+      color: var(--text-inverse);
     }
     .map-container {
       margin-top: 20px;
@@ -174,6 +309,36 @@
       user-select: none;
       -ms-overflow-style: none; /* IE and Edge */
       scrollbar-width: none; /* Firefox */
+      transition: all 0.3s ease;
+    }
+    
+    .map-container.fullscreen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 1050;
+      max-height: 100vh;
+      border: none;
+      border-radius: 0;
+      background: var(--bg-primary);
+    }
+    
+    .fullscreen-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.8);
+      z-index: 1049;
+      opacity: 0;
+      animation: fadeIn 0.3s ease forwards;
+    }
+    
+    @keyframes fadeIn {
+      to { opacity: 1; }
     }
     .map-container::-webkit-scrollbar {
       display: none; /* Chrome, Safari */
@@ -210,37 +375,74 @@
     }
     .map-controls {
       position: absolute;
-      top: 10px;
-      right: 10px;
+      top: 15px;
+      right: 15px;
       display: flex;
       flex-direction: column;
-      gap: 5px;
+      gap: 2px;
       z-index: 10;
+      background: var(--bg-primary);
+      border-radius: 8px;
+      padding: 8px;
+      box-shadow: 0 4px 12px var(--shadow);
+      border: 1px solid var(--border-secondary);
     }
+    
     .map-control-btn {
-      width: 40px !important;
-      height: 40px !important;
+      width: 36px !important;
+      height: 36px !important;
       padding: 0 !important;
-      border-radius: 6px;
-      font-size: 18px;
-      font-weight: bold;
+      border-radius: 4px;
+      font-size: 16px;
+      font-weight: 600;
       display: flex;
       align-items: center;
       justify-content: center;
-      background: var(--bg-primary);
-      border: 1px solid var(--border-primary);
+      background: transparent;
+      border: none;
       color: var(--text-primary);
       cursor: pointer;
-      transition: all 0.2s;
-      box-shadow: 0 2px 4px var(--shadow);
+      transition: all 0.15s ease;
+      position: relative;
     }
+    
     .map-control-btn:hover {
       background: var(--bg-accent);
-      transform: translateY(-1px);
-      box-shadow: 0 4px 8px var(--shadow-hover);
+      color: var(--accent-primary);
+      transform: scale(1.05);
     }
+    
     .map-control-btn:active {
-      transform: translateY(0);
+      transform: scale(0.95);
+      background: var(--accent-primary);
+      color: var(--text-inverse);
+    }
+    
+    .map-control-btn:focus {
+      outline: 2px solid var(--border-focus);
+      outline-offset: 2px;
+    }
+    
+    /* Separator between control groups */
+    .map-control-btn:first-child {
+      border-bottom: 1px solid var(--border-secondary);
+      margin-bottom: 8px;
+      padding-bottom: 8px !important;
+    }
+    
+    /* Responsive adjustments for map controls */
+    @media (max-width: 768px) {
+      .map-controls {
+        top: 10px;
+        right: 10px;
+        padding: 6px;
+      }
+      
+      .map-control-btn {
+        width: 44px !important;
+        height: 44px !important;
+        font-size: 18px;
+      }
     }
     .map-svg {
       transform-origin: 0 0;
@@ -248,21 +450,24 @@
     }
     .minimap {
       position: fixed;
-      bottom: 10px;
-      right: 10px;
-      width: 200px;
-      height: 150px;
-      border: 2px solid var(--border-primary);
-      border-radius: 6px;
+      bottom: 20px;
+      right: 20px;
+      width: 220px;
+      height: 160px;
+      border: 1px solid var(--border-secondary);
+      border-radius: 8px;
       background: var(--bg-primary);
-      box-shadow: 0 4px 12px var(--shadow);
+      box-shadow: 0 6px 20px var(--shadow);
       z-index: 20;
       overflow: hidden;
-      opacity: 0.9;
-      transition: opacity 0.3s ease;
+      opacity: 0.95;
+      transition: all 0.3s ease;
     }
+    
     .minimap:hover {
       opacity: 1;
+      transform: scale(1.02);
+      box-shadow: 0 8px 24px var(--shadow-hover);
     }
     .minimap.collapsed {
       width: 40px;
@@ -367,9 +572,6 @@
       color: var(--text-primary);
     }
     .map-options {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 20px;
       margin-bottom: 20px;
     }
     .option-group {
@@ -934,15 +1136,24 @@
     }\n    \n    /* Manual dark mode override */\n    [data-theme=\"dark\"] {\n      --bg-primary: #1e1e1e;\n      --bg-secondary: #252525;\n      --bg-tertiary: #2d2d2d;\n      --bg-accent: #1a2332;\n      --text-primary: #e0e0e0;\n      --text-secondary: #b0b0b0;\n      --text-muted: #888888;\n      --text-inverse: #ffffff;\n      --border-primary: #404040;\n      --border-secondary: #353535;\n      --border-accent: #454545;\n      --border-focus: #4a9eff;\n      --shadow: rgba(0,0,0,0.3);\n      --shadow-hover: rgba(0,0,0,0.4);\n      --accent-primary: #4a9eff;\n      --accent-hover: #3d8bdb;\n      --accent-danger: #ff4757;\n      --accent-danger-hover: #ff3838;\n      --accent-success: #2ed573;\n      --accent-success-hover: #26c965;\n      --accent-warning: #ff6b6b;\n      --tab-bg: #1a1a1a;\n      --tab-hover: #2a2a2a;\n      --status-success-bg: #1a2e1a;\n      --status-success-text: #90ee90;\n      --status-success-border: #2d4a2d;\n      --status-error-bg: #2e1a1a;\n      --status-error-text: #ffb3b3;\n      --status-error-border: #4a2d2d;\n      --status-info-bg: #1a2233;\n      --status-info-text: #87ceeb;\n      --status-info-border: #2d3d4a;\n      --loading-bg: #1a2332;\n      --loading-spinner: #4a9eff;\n    }\n    \n    [data-theme=\"light\"] {\n      --bg-primary: #ffffff;\n      --bg-secondary: #f5f5f5;\n      --bg-tertiary: #f8f9fa;\n      --bg-accent: #e8f4fd;\n      --text-primary: #2c3e50;\n      --text-secondary: #495057;\n      --text-muted: #6c757d;\n      --text-inverse: #ffffff;\n      --border-primary: #ddd;\n      --border-secondary: #e9ecef;\n      --border-accent: #dee2e6;\n      --border-focus: #3498db;\n      --shadow: rgba(0,0,0,0.1);\n      --shadow-hover: rgba(0,0,0,0.15);\n      --accent-primary: #3498db;\n      --accent-hover: #2980b9;\n      --accent-danger: #dc3545;\n      --accent-danger-hover: #c82333;\n      --accent-success: #27ae60;\n      --accent-success-hover: #229954;\n      --accent-warning: #e74c3c;\n      --tab-bg: #2c3e50;\n      --tab-hover: #34495e;\n      --status-success-bg: #d4edda;\n      --status-success-text: #155724;\n      --status-success-border: #c3e6cb;\n      --status-error-bg: #f8d7da;\n      --status-error-text: #721c24;\n      --status-error-border: #f5c6cb;\n      --status-info-bg: #cce7ff;\n      --status-info-text: #004085;\n      --status-info-border: #b3d7ff;\n      --loading-bg: #e3f2fd;\n      --loading-spinner: #0066cc;\n    }\n  </style>
 </head>
 <body>
-  <div class="container">
-    <h1 style="text-align: center; padding: 20px 0 10px 0; margin: 0; color: var(--text-primary);">Dungeons On Automatic</h1>
-    <div class="tabs">
-      <button class="tab active" onclick="showTab('generator')">Generator</button>
-      <button class="tab" onclick="showTab('data-manager')">Data Manager</button>
-      <button class="tab" onclick="showTab('settings')">Settings</button>
-    </div>
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+  <div class="container-fluid container-xl main-container" role="main">
+    <h1 class="text-center py-4 mb-0" style="color: var(--text-primary);">Dungeons On Automatic</h1>
+    <ul class="nav nav-pills" id="mainTabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="generator-tab-btn" data-bs-toggle="pill" data-bs-target="#generator-tab" type="button" role="tab" aria-controls="generator-tab" aria-selected="true">Generator</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="data-manager-tab-btn" data-bs-toggle="pill" data-bs-target="#data-manager-tab" type="button" role="tab" aria-controls="data-manager-tab" aria-selected="false">Data Manager</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="settings-tab-btn" data-bs-toggle="pill" data-bs-target="#settings-tab" type="button" role="tab" aria-controls="settings-tab" aria-selected="false">Settings</button>
+      </li>
+    </ul>
 
-    <div id="generator-tab" class="tab-content active">
+    <div class="tab-content" id="mainTabsContent">
+    <div id="generator-tab" class="tab-pane fade show active" role="tabpanel" aria-labelledby="generator-tab-btn">
+    <div id="main-content">
       <div style="text-align: center; margin-bottom: 15px; color: var(--text-muted); font-size: 14px;">
         💡 Click on any section header to expand/collapse options
       </div>
@@ -976,52 +1187,56 @@
         </div>
       </div>
       <div class="map-options">
+        <div class="row g-3">
+        <div class="col-lg-4 col-md-6">
         <div class="option-group" data-group="basic">
-          <h3 onclick="toggleOptionGroup('basic')">Basic Settings <span class="toggle-icon">▼</span></h3>
-          <div class="option-group-content">
-            <div class="form-group">
-              <label>Template:</label>
-              <select id="template">
+          <h3 onclick="toggleOptionGroup('basic')" tabindex="0" role="button" aria-expanded="true" aria-controls="basic-content">Basic Settings <span class="toggle-icon">▼</span></h3>
+          <div id="basic-content" class="option-group-content">
+            <div class="mb-3">
+              <label class="form-label" for="template">Template:</label>
+              <select id="template" class="form-select" aria-describedby="template-help">
                 <option value="">No Template (Custom)</option>
               </select>
             </div>
-            <div class="form-group">
-              <label>System:</label>
-              <select id="system">
+            <div class="mb-3">
+              <label class="form-label" for="system">System:</label>
+              <select id="system" class="form-select" aria-describedby="system-help">
                 <option value="">Select System</option>
               </select>
-              <small class="help-text">Choose game system for encounters and content</small>
+              <small id="system-help" class="form-text text-muted">Choose game system for encounters and content</small>
             </div>
-            <div class="form-group">
-              <label>Theme:</label>
-              <select id="theme">
+            <div class="mb-3">
+              <label class="form-label">Theme:</label>
+              <select id="theme" class="form-select">
                 <option value="">No Theme (Random)</option>
               </select>
-              <small class="help-text">Apply thematic filter to encounters (requires system)</small>
+              <small class="form-text text-muted">Apply thematic filter to encounters (requires system)</small>
             </div>
-            <div class="form-group">
-              <label>Rooms:</label>
-              <input type="number" id="rooms" value="8" min="1">
-              <small class="help-text">Number of rooms in the dungeon</small>
+            <div class="mb-3">
+              <label class="form-label">Rooms:</label>
+              <input type="number" id="rooms" value="8" min="1" class="form-control">
+              <small class="form-text text-muted">Number of rooms in the dungeon</small>
             </div>
-            <div class="form-group">
-              <label>Width:</label>
-              <input type="number" id="width" value="50" min="1">
-              <small class="help-text">Map width in grid squares</small>
+            <div class="mb-3">
+              <label class="form-label">Width:</label>
+              <input type="number" id="width" value="50" min="1" class="form-control">
+              <small class="form-text text-muted">Map width in grid squares</small>
             </div>
-            <div class="form-group">
-              <label>Height:</label>
-              <input type="number" id="height" value="50" min="1">
-              <small class="help-text">Map height in grid squares</small>
+            <div class="mb-3">
+              <label class="form-label">Height:</label>
+              <input type="number" id="height" value="50" min="1" class="form-control">
+              <small class="form-text text-muted">Map height in grid squares</small>
             </div>
-            <div class="form-group">
-              <label>Seed:</label>
-              <input type="text" id="seed" placeholder="Random">
-              <small class="help-text">Reproducible random seed (leave empty for random)</small>
+            <div class="mb-3">
+              <label class="form-label">Seed:</label>
+              <input type="text" id="seed" placeholder="Random" class="form-control">
+              <small class="form-text text-muted">Reproducible random seed (leave empty for random)</small>
             </div>
           </div>
         </div>
+        </div>
 
+        <div class="col-lg-4 col-md-6">
         <div class="option-group" data-group="layout">
           <h3 onclick="toggleOptionGroup('layout')">Layout Type <span class="toggle-icon">▼</span></h3>
           <div class="option-group-content">
@@ -1043,7 +1258,9 @@
             </div>
           </div>
         </div>
+        </div>
 
+        <div class="col-lg-4 col-md-6">
         <div class="option-group" data-group="rooms">
           <h3 onclick="toggleOptionGroup('rooms')">Room Configuration <span class="toggle-icon">▼</span></h3>
           <div class="option-group-content">
@@ -1081,7 +1298,11 @@
             </div>
           </div>
         </div>
+        </div>
+        </div>
 
+        <div class="row g-3">
+        <div class="col-lg-6 col-md-6">
         <div class="option-group" data-group="corridors">
           <h3 onclick="toggleOptionGroup('corridors')">Corridor Configuration <span class="toggle-icon">▼</span></h3>
           <div class="option-group-content">
@@ -1121,7 +1342,9 @@
             </div>
           </div>
         </div>
+        </div>
 
+        <div class="col-lg-6 col-md-6">
         <div class="option-group" data-group="features">
           <h3 onclick="toggleOptionGroup('features')">Special Features <span class="toggle-icon">▼</span></h3>
           <div class="option-group-content">
@@ -1148,7 +1371,11 @@
             </div>
           </div>
         </div>
+        </div>
+        </div>
 
+        <div class="row g-3">
+        <div class="col-lg-6 col-md-6">
         <div class="option-group collapsed" data-group="content">
           <h3 onclick="toggleOptionGroup('content')">Content Settings <span class="toggle-icon">▶</span></h3>
           <div class="option-group-content">
@@ -1176,7 +1403,9 @@
             </div>
           </div>
         </div>
+        </div>
 
+        <div class="col-lg-6 col-md-6">
         <div class="option-group collapsed" data-group="rendering">
           <h3 onclick="toggleOptionGroup('rendering')">Map Rendering <span class="toggle-icon">▶</span></h3>
           <div class="option-group-content">
@@ -1227,6 +1456,8 @@
             </div>
           </div>
         </div>
+        </div>
+        </div>
       </div>
 
       <div class="preview-controls">
@@ -1253,11 +1484,24 @@
         </div>
       </div>
 
-      <div id="map" class="map-container">
-        <div class="map-controls">
-          <button id="zoom-in" class="map-control-btn" title="Zoom In">+</button>
-          <button id="zoom-out" class="map-control-btn" title="Zoom Out">−</button>
-          <button id="reset-view" class="map-control-btn" title="Reset View">⌂</button>
+      <div id="map" class="map-container" role="application" aria-label="Interactive dungeon map">
+        <div class="map-controls" role="toolbar" aria-label="Map navigation controls">
+          <button id="fullscreen-toggle" class="map-control-btn" title="Toggle Full Screen" aria-label="Toggle full screen map view">
+            ⛶
+            <span class="sr-only">Toggle full screen</span>
+          </button>
+          <button id="zoom-in" class="map-control-btn" title="Zoom In" aria-label="Zoom in on map">
+            +
+            <span class="sr-only">Zoom in</span>
+          </button>
+          <button id="zoom-out" class="map-control-btn" title="Zoom Out" aria-label="Zoom out on map">
+            −
+            <span class="sr-only">Zoom out</span>
+          </button>
+          <button id="reset-view" class="map-control-btn" title="Reset View" aria-label="Reset map view to default">
+            ⌂
+            <span class="sr-only">Reset view</span>
+          </button>
         </div>
         <div id="map-content"></div>
         <div id="minimap" class="minimap" style="display: none;">
@@ -1274,8 +1518,9 @@
       <div id="room-key" class="room-key"></div>
       <div id="inputs" class="inputs"></div>
     </div>
+    </div>
 
-    <div id="data-manager-tab" class="tab-content">
+    <div id="data-manager-tab" class="tab-pane fade" role="tabpanel" aria-labelledby="data-manager-tab-btn">
       <h2>Custom Data Manager</h2>
       <p>Use the data manager to import custom monsters, traps, treasure, and environmental details for your selected system.</p>
       
@@ -1331,7 +1576,7 @@
       </div>
     </div>
 
-    <div id="settings-tab" class="tab-content">
+    <div id="settings-tab" class="tab-pane fade" role="tabpanel" aria-labelledby="settings-tab-btn">
       <h2>Settings</h2>
       <p>Configure application-wide settings and preferences.</p>
       
@@ -1396,6 +1641,7 @@
         <button id="save-settings">Save Settings</button>
         <button id="reset-settings" class="btn-danger">Reset to Defaults</button>
       </div>
+    </div>
     </div>
   </div>
 
@@ -1496,22 +1742,40 @@
       applyTheme(selectedTheme);
     }
     
-    function showTab(tabName) {
-      // Hide all tab contents
-      document.querySelectorAll('.tab-content').forEach(content => {
-        content.classList.remove('active');
-      });
+    // Tab functionality is now handled by Bootstrap
+    
+    // Full-screen map functionality
+    function toggleFullScreen() {
+      const mapContainer = document.getElementById('map');
+      const isFullscreen = mapContainer.classList.contains('fullscreen');
       
-      // Remove active class from all tabs
-      document.querySelectorAll('.tab').forEach(tab => {
-        tab.classList.remove('active');
-      });
-      
-      // Show selected tab content
-      document.getElementById(tabName + '-tab').classList.add('active');
-      
-      // Add active class to clicked tab
-      event.target.classList.add('active');
+      if (isFullscreen) {
+        // Exit full screen
+        mapContainer.classList.remove('fullscreen');
+        
+        // Remove overlay
+        const overlay = document.querySelector('.fullscreen-overlay');
+        if (overlay) {
+          overlay.remove();
+        }
+        
+        // Update button icon
+        document.getElementById('fullscreen-toggle').innerHTML = '⛶';
+        document.getElementById('fullscreen-toggle').title = 'Toggle Full Screen';
+      } else {
+        // Enter full screen
+        mapContainer.classList.add('fullscreen');
+        
+        // Add overlay
+        const overlay = document.createElement('div');
+        overlay.className = 'fullscreen-overlay';
+        overlay.addEventListener('click', toggleFullScreen);
+        document.body.appendChild(overlay);
+        
+        // Update button icon
+        document.getElementById('fullscreen-toggle').innerHTML = '✕';
+        document.getElementById('fullscreen-toggle').title = 'Exit Full Screen';
+      }
     }
     
     function saveSettings() {
@@ -1583,6 +1847,26 @@
       // Add event listeners for settings buttons
       document.getElementById('save-settings').addEventListener('click', saveSettings);
       document.getElementById('reset-settings').addEventListener('click', resetSettings);
+      
+      // Add event listener for full-screen toggle
+      document.getElementById('fullscreen-toggle').addEventListener('click', toggleFullScreen);
+      
+      // Add keyboard support for full-screen mode
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && document.getElementById('map').classList.contains('fullscreen')) {
+          toggleFullScreen();
+        }
+      });
+      
+      // Add keyboard support for option group toggles
+      document.querySelectorAll('.option-group h3[role="button"]').forEach(header => {
+        header.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            header.click();
+          }
+        });
+      });
     });
     
     // Listen for system theme changes
@@ -1592,6 +1876,11 @@
         applyTheme('auto', e.matches);
       }
     });
-  </script>\n  <script type="module" src="/src/main.ts"></script>
+  </script>
+  
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+  
+  <script type="module" src="/src/main.ts"></script>
 </body>
 </html>
