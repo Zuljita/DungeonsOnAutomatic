@@ -13,6 +13,7 @@ export interface EnhancedPathfindingOptions {
 
 // Load PathFinding.js library
 import * as PF from 'pathfinding';
+import { distanceFromPointToLineSegment } from '../utils/geometry';
 
 type Edge = { a: number; b: number; d: number };
 
@@ -156,29 +157,95 @@ function validateLPath(
 
 // Snap a door position to the nearest integer grid tile just outside the room
 function normalizeDoorPoint(room: Room, p: { x: number; y: number }): { x: number; y: number } {
-  let rx = Math.round(p.x);
-  let ry = Math.round(p.y);
-  // If rounded point is inside the room, nudge outward from the room center
-  if (roomShapeService.isPointInRoom(room, rx, ry)) {
-    const bounds = roomShapeService.getRoomBounds(room);
-    const cx = (bounds.minX + bounds.maxX) / 2;
-    const cy = (bounds.minY + bounds.maxY) / 2;
-    const dx = Math.sign(p.x - cx) || 1;
-    const dy = Math.sign(p.y - cy) || 1;
-    const candidates = [
-      { x: rx + dx, y: ry },
-      { x: rx, y: ry + dy },
-      { x: rx + dx, y: ry + dy },
-      { x: rx - dx, y: ry },
-      { x: rx, y: ry - dy },
-    ];
-    for (const c of candidates) {
-      if (!roomShapeService.isPointInRoom(room, c.x, c.y)) {
-        rx = c.x; ry = c.y; break;
-      }
+  // For rectangular rooms, the door point should already be just outside.
+  if (room.shape === 'rectangular' || !room.shapePoints) {
+    return { x: Math.round(p.x), y: Math.round(p.y) };
+  }
+
+  // For shaped rooms, project outward along the wall normal to the nearest grid cell
+  const shape = room.shapePoints!;
+  let closest = { i: 0, d: Infinity, p: { x: p.x, y: p.y } };
+  for (let i = 0; i < shape.length; i++) {
+    const a = shape[i];
+    const b = shape[(i + 1) % shape.length];
+    const d = distanceFromPointToLineSegment(p, a, b);
+    if (d < closest.d) {
+      // Find closest point on edge
+      const dx = b.x - a.x, dy = b.y - a.y;
+      const len2 = dx*dx + dy*dy;
+      let t = len2 > 0 ? ((p.x - a.x)*dx + (p.y - a.y)*dy) / len2 : 0;
+      t = Math.max(0, Math.min(1, t));
+      closest = { i, d, p: { x: a.x + t*dx, y: a.y + t*dy } };
     }
   }
+  const a = shape[closest.i];
+  const b = shape[(closest.i + 1) % shape.length];
+  // Edge direction
+  const ex = b.x - a.x, ey = b.y - a.y;
+  // Normal candidates
+  let nx = -ey, ny = ex; // rotate 90°
+  const nlen = Math.hypot(nx, ny) || 1;
+  nx /= nlen; ny /= nlen;
+  // Ensure normal points OUTWARD (away from room center)
+  const bounds = roomShapeService.getRoomBounds(room);
+  const cx = (bounds.minX + bounds.maxX) / 2;
+  const cy = (bounds.minY + bounds.maxY) / 2;
+  const vx = closest.p.x - cx, vy = closest.p.y - cy;
+  if (nx*vx + ny*vy < 0) { nx = -nx; ny = -ny; }
+  // Step outward to nearest integer grid cell
+  let rx = Math.round(closest.p.x + nx);
+  let ry = Math.round(closest.p.y + ny);
+  // If rounding still lands inside, step further
+  let steps = 0;
+  while (roomShapeService.isPointInRoom(room, rx, ry) && steps < 3) {
+    rx = Math.round(rx + nx);
+    ry = Math.round(ry + ny);
+    steps++;
+  }
   return { x: rx, y: ry };
+}
+
+// Determine outward normal direction for a door point (axis-aligned unit for rectangular, approximate for shaped)
+function outwardNormal(room: Room, p: { x: number; y: number }): { x: 0|1|-1; y: 0|1|-1 } {
+  if (room.shape === 'rectangular' || !room.shapePoints) {
+    if (p.x === room.x - 1) return { x: -1, y: 0 };
+    if (p.x === room.x + room.w) return { x: 1, y: 0 };
+    if (p.y === room.y - 1) return { x: 0, y: -1 };
+    if (p.y === room.y + room.h) return { x: 0, y: 1 };
+    // Fallback: choose the closest side
+    const dl = Math.abs(p.x - (room.x - 1));
+    const dr = Math.abs(p.x - (room.x + room.w));
+    const dt = Math.abs(p.y - (room.y - 1));
+    const db = Math.abs(p.y - (room.y + room.h));
+    const m = Math.min(dl, dr, dt, db);
+    if (m === dl) return { x: -1, y: 0 };
+    if (m === dr) return { x: 1, y: 0 };
+    if (m === dt) return { x: 0, y: -1 };
+    return { x: 0, y: 1 };
+  }
+  // For shaped rooms, approximate with vector from center to door point, snapped to axis
+  const b = roomShapeService.getRoomBounds(room);
+  const cx = (b.minX + b.maxX) / 2;
+  const cy = (b.minY + b.maxY) / 2;
+  const vx = p.x - cx, vy = p.y - cy;
+  if (Math.abs(vx) > Math.abs(vy)) return { x: (vx >= 0 ? 1 : -1), y: 0 };
+  return { x: 0, y: (vy >= 0 ? 1 : -1) };
+}
+
+// Choose L-variant whose last step approaches perpendicular to the room wall (i.e., opposite of outward normal)
+function chooseLVariantForDoor(paths: Array<{x:number;y:number}[]>, end: {x:number;y:number}, normal: {x:0|1|-1;y:0|1|-1}): {x:number;y:number}[] {
+  const desired = { x: -normal.x, y: -normal.y };
+  let best: {x:number;y:number}[] | null = null;
+  for (const path of paths) {
+    if (path.length < 2) continue;
+    const a = path[path.length - 2];
+    const b = path[path.length - 1];
+    const step = { x: Math.sign(b.x - a.x) as 0|1|-1, y: Math.sign(b.y - a.y) as 0|1|-1 };
+    if ((desired.x !== 0 && step.x === desired.x && step.y === 0) || (desired.y !== 0 && step.y === desired.y && step.x === 0)) {
+      best = path; break;
+    }
+  }
+  return best || paths[0];
 }
 
 /**
@@ -395,10 +462,12 @@ function connectWithEnhancedPathfinding(
       if (options.preferLShape || options.algorithm === 'manhattan') {
         const [hv, vh] = buildLPaths(normStart, normEnd);
         const allowIds = [rooms[e.a].id, rooms[e.b].id];
-        if (validateLPath(hv, rooms, normStart, normEnd, allowIds)) {
-          path = hv;
-        } else if (validateLPath(vh, rooms, normStart, normEnd, allowIds)) {
-          path = vh;
+        const candidates = [] as {x:number;y:number}[][];
+        if (validateLPath(hv, rooms, normStart, normEnd, allowIds)) candidates.push(hv);
+        if (validateLPath(vh, rooms, normStart, normEnd, allowIds)) candidates.push(vh);
+        if (candidates.length) {
+          const n = outwardNormal(rooms[e.b], normEnd);
+          path = chooseLVariantForDoor(candidates, normEnd, n);
         }
       }
 

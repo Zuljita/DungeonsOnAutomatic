@@ -331,7 +331,7 @@ class SVGExportPlugin implements ExportPlugin {
     const roomTop = room.y;
     const roomBottom = room.y + room.h;
     
-    const doorWidth = 0.8; // Width of door opening
+    const doorWidth = 1.0; // Width of door opening in grid units
     const halfDoorWidth = doorWidth / 2;
     
     // Calculate distances to each edge
@@ -470,7 +470,7 @@ class SVGExportPlugin implements ExportPlugin {
         const edgeDirY = edgeVectorY / edgeLength;
         
         // Create a door line ALONG the wall edge, ensuring it stays within the edge segment
-        const doorWidth = 0.8;
+        const doorWidth = 1.0; // Match grid unit for consistency
         const halfWidth = doorWidth / 2;
         
         // Calculate initial door endpoints
