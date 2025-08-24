@@ -1,0 +1,17 @@
+{
+  "name": "@doa/room-shapes",
+  "version": "1.0.0",
+  "description": "Room shape generation algorithms for Dungeons on Automatic",
+  "main": "index.js",
+  "type": "module",
+  "doaPlugin": {
+    "id": "room-shapes",
+    "type": "room-shape",
+    "description": "Generate various room shapes with customizable algorithms",
+    "author": "DOA Core",
+    "tags": ["room-shapes", "generation", "algorithms", "core"]
+  },
+  "peerDependencies": {
+    "@doa/core": "^1.0.0"
+  }
+}

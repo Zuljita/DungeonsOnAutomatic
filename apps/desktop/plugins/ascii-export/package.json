@@ -1,0 +1,17 @@
+{
+  "name": "@doa/ascii-export",
+  "version": "1.0.0",
+  "description": "ASCII text export plugin for Dungeons on Automatic",
+  "main": "index.ts",
+  "type": "module",
+  "doaPlugin": {
+    "id": "ascii-export",
+    "type": "export",
+    "description": "Export dungeons as ASCII text maps",
+    "author": "DOA Core",
+    "tags": ["export", "ascii", "text", "core"]
+  },
+  "peerDependencies": {
+    "@doa/core": "^1.0.0"
+  }
+}

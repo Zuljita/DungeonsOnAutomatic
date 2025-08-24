@@ -1,0 +1,1893 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>DungeonsOnAutomatic</title>
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/x-icon" href="/assets/logo/favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/logo/logo-small.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/assets/logo/logo-small.png">
+  <link rel="icon" type="image/svg+xml" href="/assets/logo/logo.svg">
+  
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  
+  <!-- Viewport meta for responsive design -->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    :root {
+      /* Light theme */
+      --bg-primary: #ffffff;
+      --bg-secondary: #f5f5f5;
+      --bg-tertiary: #f8f9fa;
+      --bg-accent: #e8f4fd;
+      --text-primary: #2c3e50;
+      --text-secondary: #495057;
+      --text-muted: #6c757d;
+      --text-inverse: #ffffff;
+      --border-primary: #ddd;
+      --border-secondary: #e9ecef;
+      --border-accent: #dee2e6;
+      --border-focus: #3498db;
+      --shadow: rgba(0,0,0,0.1);
+      --shadow-hover: rgba(0,0,0,0.15);
+      --accent-primary: #3498db;
+      --accent-hover: #2980b9;
+      --accent-danger: #dc3545;
+      --accent-danger-hover: #c82333;
+      --accent-success: #27ae60;
+      --accent-success-hover: #229954;
+      --accent-warning: #e74c3c;
+      --tab-bg: #2c3e50;
+      --tab-hover: #34495e;
+      --status-success-bg: #d4edda;
+      --status-success-text: #155724;
+      --status-success-border: #c3e6cb;
+      --status-error-bg: #f8d7da;
+      --status-error-text: #721c24;
+      --status-error-border: #f5c6cb;
+      --status-info-bg: #cce7ff;
+      --status-info-text: #004085;
+      --status-info-border: #b3d7ff;
+      --loading-bg: #e3f2fd;
+      --loading-spinner: #0066cc;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        /* Dark theme - only when not manually set to light */
+        --bg-primary: #1e1e1e;
+        --bg-secondary: #252525;
+        --bg-tertiary: #2d2d2d;
+        --bg-accent: #1a2332;
+        --text-primary: #e0e0e0;
+        --text-secondary: #b0b0b0;
+        --text-muted: #888888;
+        --text-inverse: #ffffff;
+        --border-primary: #404040;
+        --border-secondary: #353535;
+        --border-accent: #454545;
+        --border-focus: #4a9eff;
+        --shadow: rgba(0,0,0,0.3);
+        --shadow-hover: rgba(0,0,0,0.4);
+        --accent-primary: #4a9eff;
+        --accent-hover: #3d8bdb;
+        --accent-danger: #ff4757;
+        --accent-danger-hover: #ff3838;
+        --accent-success: #2ed573;
+        --accent-success-hover: #26c965;
+        --accent-warning: #ff6b6b;
+        --tab-bg: #1a1a1a;
+        --tab-hover: #2a2a2a;
+        --status-success-bg: #1a2e1a;
+        --status-success-text: #90ee90;
+        --status-success-border: #2d4a2d;
+        --status-error-bg: #2e1a1a;
+        --status-error-text: #ffb3b3;
+        --status-error-border: #4a2d2d;
+        --status-info-bg: #1a2233;
+        --status-info-text: #87ceeb;
+        --status-info-border: #2d3d4a;
+        --loading-bg: #1a2332;
+        --loading-spinner: #4a9eff;
+      }
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+    
+    /* Responsive adjustments for mobile */
+    @media (max-width: 768px) {
+      body {
+        padding: 10px;
+      }
+      
+      .main-container {
+        border-radius: 0;
+        margin: -10px;
+      }
+      
+      .nav-pills .nav-link {
+        padding: 12px 15px;
+        font-size: 13px;
+      }
+      
+      .tab-pane {
+        padding: 15px;
+      }
+      
+      .map-container {
+        max-height: 60vh;
+      }
+    }
+    
+    /* Tablet adjustments */
+    @media (min-width: 768px) and (max-width: 1024px) {
+      .map-container {
+        max-height: 65vh;
+      }
+    }
+    
+    /* Large screen optimizations */
+    @media (min-width: 1400px) {
+      .map-container {
+        max-height: 75vh;
+      }
+    }
+    
+    /* Adaptive layout for narrow screens */
+    @media (max-width: 576px) {
+      .preview-controls {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+      }
+      
+      .option-group {
+        margin-bottom: 15px;
+      }
+      
+      .option-group h3 {
+        padding: 10px 12px;
+        font-size: 14px;
+      }
+      
+      .option-group-content {
+        padding: 12px;
+      }
+      
+      .nav-pills {
+        flex-wrap: wrap;
+      }
+      
+      .nav-pills .nav-link {
+        padding: 10px 12px;
+        margin-bottom: 2px;
+      }
+    }
+    
+    /* Side-by-side layout for ultra-wide screens */
+    @media (min-width: 1920px) {
+      .container-xl {
+        max-width: 1800px;
+      }
+      
+      .ultra-wide-layout {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+        align-items: start;
+      }
+    }
+    
+    /* Accessibility improvements */
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+    
+    /* High contrast mode support */
+    @media (prefers-contrast: high) {
+      :root {
+        --border-primary: #000;
+        --border-focus: #0000ff;
+        --text-primary: #000;
+        --bg-primary: #fff;
+      }
+      
+      .map-control-btn:focus {
+        outline: 3px solid #0000ff;
+      }
+    }
+    
+    /* Reduced motion support */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+    
+    /* Focus indicators for keyboard navigation */
+    .option-group h3:focus,
+    button:focus,
+    select:focus,
+    input:focus,
+    .nav-link:focus {
+      outline: 2px solid var(--border-focus);
+      outline-offset: 2px;
+    }
+    
+    /* Skip link for keyboard users */
+    .skip-link {
+      position: absolute;
+      top: -40px;
+      left: 6px;
+      background: var(--accent-primary);
+      color: var(--text-inverse);
+      padding: 8px;
+      text-decoration: none;
+      border-radius: 4px;
+      z-index: 9999;
+    }
+    
+    .skip-link:focus {
+      top: 6px;
+    }
+    .main-container {
+      background: var(--bg-primary);
+      border-radius: 8px;
+      box-shadow: 0 2px 10px var(--shadow);
+      overflow: hidden;
+    }
+    .nav-pills .nav-link {
+      border-radius: 0;
+      color: var(--text-inverse);
+      background: var(--tab-bg);
+      border: none;
+      font-size: 14px;
+      padding: 15px 25px;
+      transition: background 0.3s;
+    }
+    .nav-pills .nav-link:hover {
+      background: var(--tab-hover);
+      color: var(--text-inverse);
+    }
+    .nav-pills .nav-link.active {
+      background: var(--accent-primary);
+      color: var(--text-inverse);
+    }
+    .tab-pane {
+      padding: 20px;
+    }
+    .form-label {
+      color: var(--text-primary);
+    }
+    .form-control, .form-select {
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      border-color: var(--border-primary);
+    }
+    .form-control:focus, .form-select:focus {
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 0.25rem rgba(74, 158, 255, 0.25);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+    }
+    .btn-primary {
+      background: var(--accent-primary);
+      border-color: var(--accent-primary);
+      color: var(--text-inverse);
+    }
+    .btn-primary:hover, .btn-primary:focus {
+      background: var(--accent-hover);
+      border-color: var(--accent-hover);
+      color: var(--text-inverse);
+    }
+    .map-container {
+      margin-top: 20px;
+      border: 1px solid var(--border-primary);
+      border-radius: 4px;
+      overflow: hidden;
+      position: relative;
+      max-height: 70vh;
+      user-select: none;
+      -ms-overflow-style: none; /* IE and Edge */
+      scrollbar-width: none; /* Firefox */
+      transition: all 0.3s ease;
+    }
+    
+    .map-container.fullscreen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 1050;
+      max-height: 100vh;
+      border: none;
+      border-radius: 0;
+      background: var(--bg-primary);
+    }
+    
+    .fullscreen-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.8);
+      z-index: 1049;
+      opacity: 0;
+      animation: fadeIn 0.3s ease forwards;
+    }
+    
+    @keyframes fadeIn {
+      to { opacity: 1; }
+    }
+    .map-container::-webkit-scrollbar {
+      display: none; /* Chrome, Safari */
+    }
+    .map-container:active {
+      cursor: grabbing;
+    }
+    .map-container.dragging {
+      cursor: grabbing;
+    }
+    .room-number,
+    .door-icon,
+    .key-icon {
+      cursor: pointer;
+    }
+    .room-number,
+    .door-icon, 
+    .key-icon,
+    .map-control-btn,
+    .minimap {
+      /* Exclude these from panzoom */
+    }
+    .map-highlight {
+      stroke: var(--accent-warning);
+      stroke-width: 3;
+      animation: highlight-pulse 2s ease-in-out;
+      filter: drop-shadow(0 0 4px var(--accent-warning));
+    }
+    
+    @keyframes highlight-pulse {
+      0% { stroke-width: 3; stroke-opacity: 1; }
+      50% { stroke-width: 5; stroke-opacity: 0.7; }
+      100% { stroke-width: 3; stroke-opacity: 1; }
+    }
+    .map-controls {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      z-index: 10;
+      background: var(--bg-primary);
+      border-radius: 8px;
+      padding: 8px;
+      box-shadow: 0 4px 12px var(--shadow);
+      border: 1px solid var(--border-secondary);
+    }
+    
+    .map-control-btn {
+      width: 36px !important;
+      height: 36px !important;
+      padding: 0 !important;
+      border-radius: 4px;
+      font-size: 16px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: none;
+      color: var(--text-primary);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      position: relative;
+    }
+    
+    .map-control-btn:hover {
+      background: var(--bg-accent);
+      color: var(--accent-primary);
+      transform: scale(1.05);
+    }
+    
+    .map-control-btn:active {
+      transform: scale(0.95);
+      background: var(--accent-primary);
+      color: var(--text-inverse);
+    }
+    
+    .map-control-btn:focus {
+      outline: 2px solid var(--border-focus);
+      outline-offset: 2px;
+    }
+    
+    /* Separator between control groups */
+    .map-control-btn:first-child {
+      border-bottom: 1px solid var(--border-secondary);
+      margin-bottom: 8px;
+      padding-bottom: 8px !important;
+    }
+    
+    /* Responsive adjustments for map controls */
+    @media (max-width: 768px) {
+      .map-controls {
+        top: 10px;
+        right: 10px;
+        padding: 6px;
+      }
+      
+      .map-control-btn {
+        width: 44px !important;
+        height: 44px !important;
+        font-size: 18px;
+      }
+    }
+    .map-svg {
+      transform-origin: 0 0;
+      transition: transform 0.2s ease;
+    }
+    .minimap {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 220px;
+      height: 160px;
+      border: 1px solid var(--border-secondary);
+      border-radius: 8px;
+      background: var(--bg-primary);
+      box-shadow: 0 6px 20px var(--shadow);
+      z-index: 20;
+      overflow: hidden;
+      opacity: 0.95;
+      transition: all 0.3s ease;
+    }
+    
+    .minimap:hover {
+      opacity: 1;
+      transform: scale(1.02);
+      box-shadow: 0 8px 24px var(--shadow-hover);
+    }
+    .minimap.collapsed {
+      width: 40px;
+      height: 40px;
+      cursor: pointer;
+    }
+    .minimap-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 8px;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-primary);
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+    .minimap-toggle {
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      cursor: pointer;
+      padding: 2px;
+      font-size: 14px;
+      line-height: 1;
+    }
+    .minimap-toggle:hover {
+      color: var(--text-primary);
+    }
+    .minimap-content {
+      position: relative;
+      width: 100%;
+      height: calc(100% - 24px);
+      overflow: hidden;
+    }
+    .minimap.collapsed .minimap-content,
+    .minimap.collapsed .minimap-header {
+      display: none;
+    }
+    .minimap.collapsed::before {
+      content: '🗺️';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 18px;
+    }
+    .minimap-svg {
+      width: 100%;
+      height: 100%;
+      cursor: crosshair;
+    }
+    .minimap-viewport {
+      position: absolute;
+      border: 2px solid var(--accent-primary);
+      background: rgba(var(--accent-rgb), 0.1);
+      pointer-events: all;
+      cursor: grab;
+      z-index: 1;
+    }
+    .minimap-viewport.dragging {
+      pointer-events: all;
+      cursor: grabbing;
+    }
+    .room-key {
+      margin-top: 20px;
+      padding: 15px;
+      background: var(--bg-tertiary);
+      border-radius: 4px;
+      border-left: 4px solid var(--accent-primary);
+    }
+    .room-key h2 {
+      margin-top: 0;
+      color: var(--text-primary);
+    }
+    .room {
+      margin-bottom: 15px;
+      padding: 10px;
+      background: var(--bg-primary);
+      border-radius: 4px;
+      border: 1px solid var(--border-secondary);
+    }
+    .room h3 {
+      margin-top: 0;
+      color: var(--text-secondary);
+      border-bottom: 1px solid var(--border-accent);
+      padding-bottom: 5px;
+    }
+    .room p {
+      margin: 5px 0;
+      color: var(--text-muted);
+    }
+    .inputs {
+      margin-top: 20px;
+      padding: 15px;
+      background: var(--bg-tertiary);
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 12px;
+      white-space: pre-wrap;
+      max-height: 200px;
+      overflow-y: auto;
+      color: var(--text-primary);
+    }
+    .map-options {
+      margin-bottom: 20px;
+    }
+    .option-group {
+      background: var(--bg-tertiary);
+      border-radius: 4px;
+      border: 1px solid var(--border-secondary);
+      margin-bottom: 10px;
+    }
+    .option-group h3 {
+      margin: 0;
+      color: var(--text-secondary);
+      font-size: 16px;
+      padding: 12px 15px;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-secondary);
+      cursor: pointer;
+      user-select: none;
+      transition: background-color 0.3s ease;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .option-group h3:hover {
+      background: var(--bg-accent);
+    }
+    .option-group .toggle-icon {
+      font-size: 14px;
+      transition: transform 0.3s ease;
+    }
+    .option-group.collapsed .toggle-icon {
+      transform: rotate(-90deg);
+    }
+    .option-group-content {
+      padding: 15px;
+      transition: max-height 0.3s ease, opacity 0.3s ease;
+      overflow: hidden;
+    }
+    .option-group.collapsed .option-group-content {
+      display: none;
+    }
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .checkbox-group input[type="checkbox"] {
+      width: auto;
+    }
+    .checkbox-group label {
+      margin-bottom: 0;
+      font-weight: normal;
+    }
+    .help-text {
+      display: block;
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 3px;
+      margin-bottom: 0;
+      font-style: italic;
+    }
+    .download-link {
+      display: inline-block;
+      padding: 8px 16px;
+      background: var(--accent-success);
+      color: var(--text-inverse);
+      text-decoration: none;
+      border-radius: 4px;
+      margin-left: 10px;
+      transition: background 0.3s;
+    }
+    .download-link:hover {
+      background: var(--accent-success-hover);
+    }
+    /* Tag styling */
+    .tag {
+      display: inline-block;
+      background: #007acc;
+      color: white;
+      padding: 0.2rem 0.5rem;
+      margin: 0.1rem;
+      border-radius: 0.25rem;
+      font-size: 0.8em;
+      font-weight: normal;
+    }
+    .tag.environment { background: #4CAF50; }
+    .tag.creature { background: #FF9800; }
+    .tag.magic { background: #9C27B0; }
+    .tag.culture { background: #2196F3; }
+    .tag.danger { background: #F44336; }
+    .tag.loot { background: #FFD700; color: #333; }
+    .tag.trap { background: #795548; }
+    .tag.mood { background: #607D8B; }
+    
+    /* Wandering Monsters Table */
+    .wandering-monsters {
+      margin-top: 20px;
+      padding: 15px;
+      background: var(--bg-tertiary);
+      border-radius: 4px;
+      border-left: 4px solid var(--accent-warning);
+    }
+    .wandering-monsters h3 {
+      margin-top: 0;
+      color: var(--text-primary);
+      border-bottom: 1px solid var(--border-accent);
+      padding-bottom: 8px;
+    }
+    .wandering-monster-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+      background: var(--bg-primary);
+      border-radius: 4px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px var(--shadow);
+    }
+    .wandering-monster-table th,
+    .wandering-monster-table td {
+      padding: 10px;
+      text-align: left;
+      border-bottom: 1px solid var(--border-secondary);
+      color: var(--text-primary);
+    }
+    .wandering-monster-table th {
+      background: var(--accent-warning);
+      color: var(--text-inverse);
+      font-weight: 600;
+    }
+    .wandering-monster-table tr:hover {
+      background: var(--bg-tertiary);
+    }
+    .wandering-monster-table td:first-child {
+      font-weight: 600;
+      color: var(--accent-warning);
+    }
+    .wandering-monster-table td:last-child {
+      font-weight: 600;
+      color: var(--accent-success);
+    }
+    
+    /* Import Wizard Styles */
+    .wizard-section, .data-manager-section {
+      margin-bottom: 30px;
+      padding: 20px;
+      border: 1px solid var(--border-secondary);
+      border-radius: 4px;
+      background: var(--bg-tertiary);
+    }
+    .wizard-section h3, .data-manager-section h3 {
+      margin-top: 0;
+      color: var(--text-secondary);
+      border-bottom: 1px solid var(--border-accent);
+      padding-bottom: 8px;
+    }
+    .upload-area {
+      border: 2px dashed var(--border-primary);
+      border-radius: 4px;
+      padding: 40px;
+      text-align: center;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      cursor: pointer;
+      transition: border-color 0.3s;
+      margin: 15px 0;
+    }
+    .upload-area:hover {
+      border-color: var(--accent-primary);
+    }
+    .upload-area.dragover {
+      border-color: var(--accent-primary);
+      background: var(--bg-accent);
+    }
+    .status-message {
+      padding: 10px;
+      border-radius: 4px;
+      margin: 10px 0;
+    }
+    .status-success {
+      background: var(--status-success-bg);
+      color: var(--status-success-text);
+      border: 1px solid var(--status-success-border);
+    }
+    .status-error {
+      background: var(--status-error-bg);
+      color: var(--status-error-text);
+      border: 1px solid var(--status-error-border);
+    }
+    .status-info {
+      background: var(--status-info-bg);
+      color: var(--status-info-text);
+      border: 1px solid var(--status-info-border);
+    }
+    .data-manager-actions {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .data-manager-actions button {
+      width: auto;
+      padding: 8px 16px;
+    }
+    .btn-danger {
+      background: var(--accent-danger) !important;
+    }
+    .btn-danger:hover {
+      background: var(--accent-danger-hover) !important;
+    }
+    .data-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px;
+      background: var(--bg-primary);
+      border: 1px solid var(--border-secondary);
+      border-radius: 4px;
+      margin-bottom: 10px;
+    }
+    .data-item-info {
+      flex: 1;
+    }
+    .data-item-actions button {
+      width: auto;
+      padding: 6px 12px;
+      font-size: 12px;
+    }
+    
+    /* Real-time preview styles */
+    .preview-controls {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin-bottom: 20px;
+      padding: 15px;
+      background: var(--bg-accent);
+      border-radius: 4px;
+      border: 1px solid var(--border-focus);
+    }
+    .preview-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .preview-toggle input[type="checkbox"] {
+      width: auto;
+    }
+    .preview-toggle label {
+      margin-bottom: 0;
+      font-weight: normal;
+    }
+    .loading-indicator {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      color: var(--loading-spinner);
+      font-size: 14px;
+    }
+    .loading-spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid var(--loading-bg);
+      border-top: 2px solid var(--loading-spinner);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .map-container.loading {
+      opacity: 0.6;
+      pointer-events: none;
+    }
+    .configuration-summary {
+      margin-bottom: 20px;
+      border: 1px solid var(--border-secondary);
+      border-radius: 4px;
+      background: var(--bg-tertiary);
+    }
+    .summary-header {
+      cursor: pointer;
+      padding: 10px 15px;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-secondary);
+      user-select: none;
+      transition: background-color 0.3s ease;
+    }
+    .summary-header:hover {
+      background: var(--bg-accent);
+    }
+    .summary-header h3 {
+      margin: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--text-secondary);
+    }
+    .summary-content {
+      padding: 15px;
+      max-height: 200px;
+      overflow-y: auto;
+      display: none;
+    }
+    .summary-content.expanded {
+      display: block;
+    }
+    #config-summary-text {
+      font-family: monospace;
+      font-size: 12px;
+      color: var(--text-muted);
+      white-space: pre-wrap;
+    }
+    
+    /* Preset Management Styles */
+    .preset-selector-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .preset-selector-row select {
+      flex: 1;
+    }
+    .preset-action-btn {
+      width: auto !important;
+      padding: 8px 12px !important;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    .preset-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .preset-btn {
+      width: auto !important;
+      padding: 10px 15px !important;
+      font-size: 13px;
+      background: var(--accent-primary);
+      border: none;
+      border-radius: 4px;
+      color: var(--text-inverse);
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    .preset-btn:hover {
+      background: var(--accent-hover);
+    }
+    .preset-btn:disabled {
+      background: var(--text-muted);
+      cursor: not-allowed;
+    }
+    .preset-status-message {
+      margin-top: 10px;
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+    .preset-status-success {
+      background: var(--status-success-bg);
+      color: var(--status-success-text);
+      border: 1px solid var(--status-success-border);
+    }
+    .preset-status-error {
+      background: var(--status-error-bg);
+      color: var(--status-error-text);
+      border: 1px solid var(--status-error-border);
+    }
+    .preset-status-info {
+      background: var(--status-info-bg);
+      color: var(--status-info-text);
+      border: 1px solid var(--status-info-border);
+    }
+    
+    /* Modal Styles */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+    }
+    .modal.show {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-content {
+      background: var(--bg-primary);
+      border-radius: 8px;
+      padding: 20px;
+      max-width: 500px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+      box-shadow: 0 4px 20px var(--shadow);
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border-secondary);
+    }
+    .modal-header h3 {
+      margin: 0;
+      color: var(--text-primary);
+    }
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: var(--text-muted);
+      padding: 0;
+      width: auto !important;
+    }
+    .modal-close:hover {
+      color: var(--text-primary);
+    }
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      margin-top: 20px;
+      padding-top: 15px;
+      border-top: 1px solid var(--border-secondary);
+    }
+    .modal-btn {
+      width: auto !important;
+      padding: 8px 16px !important;
+      font-size: 14px;
+    }
+    .modal-btn.primary {
+      background: var(--accent-primary);
+      color: var(--text-inverse);
+    }
+    .modal-btn.secondary {
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      border: 1px solid var(--border-primary);
+    }
+    
+    /* Preset List Styles */
+    .preset-list {
+      max-height: 400px;
+      overflow-y: auto;
+      border: 1px solid var(--border-secondary);
+      border-radius: 4px;
+    }
+    .preset-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 15px;
+      border-bottom: 1px solid var(--border-secondary);
+      background: var(--bg-primary);
+      transition: background 0.3s;
+    }
+    .preset-item:last-child {
+      border-bottom: none;
+    }
+    .preset-item:hover {
+      background: var(--bg-tertiary);
+    }
+    .preset-item.built-in {
+      background: var(--bg-accent);
+    }
+    .preset-info {
+      flex: 1;
+    }
+    .preset-name {
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 2px;
+    }
+    .preset-description {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+    .preset-meta {
+      font-size: 11px;
+      color: var(--text-muted);
+      display: flex;
+      gap: 10px;
+    }
+    .preset-actions-inline {
+      display: flex;
+      gap: 5px;
+    }
+    .preset-action-small {
+      width: auto !important;
+      padding: 4px 8px !important;
+      font-size: 11px;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+    .preset-load-btn {
+      background: var(--accent-primary);
+      color: var(--text-inverse);
+    }
+    .preset-delete-btn {
+      background: var(--accent-danger);
+      color: var(--text-inverse);
+    }
+    .preset-export-btn {
+      background: var(--accent-success);
+      color: var(--text-inverse);
+    }
+    .preset-badge {
+      background: var(--accent-warning);
+      color: var(--text-inverse);
+      padding: 2px 6px;
+      border-radius: 10px;
+      font-size: 10px;
+      font-weight: 500;
+    }
+    \n    /* Theme selector styles */
+    .theme-selector {
+      display: flex;
+      gap: 15px;
+      margin-top: 10px;
+    }
+    
+    .theme-option {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 15px;
+      background: var(--bg-primary);
+      border: 2px solid var(--border-secondary);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-weight: normal !important;
+      margin-bottom: 0 !important;
+    }
+    
+    .theme-option:hover {
+      border-color: var(--accent-primary);
+      background: var(--bg-accent);
+    }
+    
+    .theme-option input[type="radio"] {
+      width: auto;
+      margin: 0;
+    }
+    
+    .theme-option input[type="radio"]:checked + span {
+      font-weight: 600;
+    }
+    
+    .theme-option:has(input[type="radio"]:checked) {
+      border-color: var(--accent-primary);
+      background: var(--bg-accent);
+      box-shadow: 0 0 0 2px rgba(74, 158, 255, 0.2);
+    }\n    \n    /* Manual dark mode override */\n    [data-theme=\"dark\"] {\n      --bg-primary: #1e1e1e;\n      --bg-secondary: #252525;\n      --bg-tertiary: #2d2d2d;\n      --bg-accent: #1a2332;\n      --text-primary: #e0e0e0;\n      --text-secondary: #b0b0b0;\n      --text-muted: #888888;\n      --text-inverse: #ffffff;\n      --border-primary: #404040;\n      --border-secondary: #353535;\n      --border-accent: #454545;\n      --border-focus: #4a9eff;\n      --shadow: rgba(0,0,0,0.3);\n      --shadow-hover: rgba(0,0,0,0.4);\n      --accent-primary: #4a9eff;\n      --accent-hover: #3d8bdb;\n      --accent-danger: #ff4757;\n      --accent-danger-hover: #ff3838;\n      --accent-success: #2ed573;\n      --accent-success-hover: #26c965;\n      --accent-warning: #ff6b6b;\n      --tab-bg: #1a1a1a;\n      --tab-hover: #2a2a2a;\n      --status-success-bg: #1a2e1a;\n      --status-success-text: #90ee90;\n      --status-success-border: #2d4a2d;\n      --status-error-bg: #2e1a1a;\n      --status-error-text: #ffb3b3;\n      --status-error-border: #4a2d2d;\n      --status-info-bg: #1a2233;\n      --status-info-text: #87ceeb;\n      --status-info-border: #2d3d4a;\n      --loading-bg: #1a2332;\n      --loading-spinner: #4a9eff;\n    }\n    \n    [data-theme=\"light\"] {\n      --bg-primary: #ffffff;\n      --bg-secondary: #f5f5f5;\n      --bg-tertiary: #f8f9fa;\n      --bg-accent: #e8f4fd;\n      --text-primary: #2c3e50;\n      --text-secondary: #495057;\n      --text-muted: #6c757d;\n      --text-inverse: #ffffff;\n      --border-primary: #ddd;\n      --border-secondary: #e9ecef;\n      --border-accent: #dee2e6;\n      --border-focus: #3498db;\n      --shadow: rgba(0,0,0,0.1);\n      --shadow-hover: rgba(0,0,0,0.15);\n      --accent-primary: #3498db;\n      --accent-hover: #2980b9;\n      --accent-danger: #dc3545;\n      --accent-danger-hover: #c82333;\n      --accent-success: #27ae60;\n      --accent-success-hover: #229954;\n      --accent-warning: #e74c3c;\n      --tab-bg: #2c3e50;\n      --tab-hover: #34495e;\n      --status-success-bg: #d4edda;\n      --status-success-text: #155724;\n      --status-success-border: #c3e6cb;\n      --status-error-bg: #f8d7da;\n      --status-error-text: #721c24;\n      --status-error-border: #f5c6cb;\n      --status-info-bg: #cce7ff;\n      --status-info-text: #004085;\n      --status-info-border: #b3d7ff;\n      --loading-bg: #e3f2fd;\n      --loading-spinner: #0066cc;\n    }\n  </style>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+  <div class="container-fluid container-xl main-container" role="main">
+    <h1 class="text-center py-4 mb-0" style="color: var(--text-primary);">Dungeons On Automatic</h1>
+    <ul class="nav nav-pills" id="mainTabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="generator-tab-btn" data-bs-toggle="pill" data-bs-target="#generator-tab" type="button" role="tab" aria-controls="generator-tab" aria-selected="true">Generator</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="data-manager-tab-btn" data-bs-toggle="pill" data-bs-target="#data-manager-tab" type="button" role="tab" aria-controls="data-manager-tab" aria-selected="false">Data Manager</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="plugin-manager-tab-btn" data-bs-toggle="pill" data-bs-target="#plugin-manager-tab" type="button" role="tab" aria-controls="plugin-manager-tab" aria-selected="false">Plugin Manager</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="settings-tab-btn" data-bs-toggle="pill" data-bs-target="#settings-tab" type="button" role="tab" aria-controls="settings-tab" aria-selected="false">Settings</button>
+      </li>
+    </ul>
+
+    <div class="tab-content" id="mainTabsContent">
+    <div id="generator-tab" class="tab-pane fade show active" role="tabpanel" aria-labelledby="generator-tab-btn">
+    <div id="main-content">
+      <div style="text-align: center; margin-bottom: 15px; color: var(--text-muted); font-size: 14px;">
+        💡 Click on any section header to expand/collapse options
+      </div>
+
+      <!-- Preset Management Section -->
+      <div class="option-group" data-group="presets">
+        <h3 onclick="toggleOptionGroup('presets')">Configuration Presets <span class="toggle-icon">▼</span></h3>
+        <div class="option-group-content">
+          <div class="preset-controls">
+            <div class="form-group">
+              <label>Load Preset:</label>
+              <div class="preset-selector-row">
+                <select id="preset-selector">
+                  <option value="">Select a preset...</option>
+                </select>
+                <button id="load-preset-btn" class="preset-action-btn" disabled>Load</button>
+                <button id="manage-presets-btn" class="preset-action-btn">Manage</button>
+              </div>
+              <small class="help-text">Choose from saved configurations or built-in examples</small>
+            </div>
+            <div class="form-group">
+              <div class="preset-actions">
+                <button id="save-preset-btn" class="preset-btn">💾 Save Current Configuration</button>
+                <button id="export-presets-btn" class="preset-btn">📤 Export Presets</button>
+                <button id="import-presets-btn" class="preset-btn">📥 Import Presets</button>
+                <input type="file" id="import-file" accept=".json" style="display: none;">
+              </div>
+            </div>
+            <div id="preset-status" class="preset-status-message" style="display: none;"></div>
+          </div>
+        </div>
+      </div>
+      <div class="map-options">
+        <div class="row g-3">
+        <div class="col-lg-4 col-md-6">
+        <div class="option-group" data-group="basic">
+          <h3 onclick="toggleOptionGroup('basic')" tabindex="0" role="button" aria-expanded="true" aria-controls="basic-content">Basic Settings <span class="toggle-icon">▼</span></h3>
+          <div id="basic-content" class="option-group-content">
+            <div class="mb-3">
+              <label class="form-label" for="template">Template:</label>
+              <select id="template" class="form-select" aria-describedby="template-help">
+                <option value="">No Template (Custom)</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="system">System:</label>
+              <select id="system" class="form-select" aria-describedby="system-help">
+                <option value="">Select System</option>
+              </select>
+              <small id="system-help" class="form-text text-muted">Choose game system for encounters and content</small>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Theme:</label>
+              <select id="theme" class="form-select">
+                <option value="">No Theme (Random)</option>
+              </select>
+              <small class="form-text text-muted">Apply thematic filter to encounters (requires system)</small>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Rooms:</label>
+              <input type="number" id="rooms" value="8" min="1" class="form-control">
+              <small class="form-text text-muted">Number of rooms in the dungeon</small>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Width:</label>
+              <input type="number" id="width" value="50" min="1" class="form-control">
+              <small class="form-text text-muted">Map width in grid squares</small>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Height:</label>
+              <input type="number" id="height" value="50" min="1" class="form-control">
+              <small class="form-text text-muted">Map height in grid squares</small>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Seed:</label>
+              <input type="text" id="seed" placeholder="Random" class="form-control">
+              <small class="form-text text-muted">Reproducible random seed (leave empty for random)</small>
+            </div>
+          </div>
+        </div>
+        </div>
+
+        <div class="col-lg-4 col-md-6">
+        <div class="option-group" data-group="layout">
+          <h3 onclick="toggleOptionGroup('layout')">Layout Type <span class="toggle-icon">▼</span></h3>
+          <div class="option-group-content">
+            <div class="form-group">
+              <label>Map Layout:</label>
+              <select id="layout-type">
+                <option value="rectangle">Rectangle</option>
+                <option value="square">Square</option>
+                <option value="box">Box (Courtyard)</option>
+                <option value="cross">Cross</option>
+                <option value="dagger">Dagger</option>
+                <option value="saltire">Saltire (X-Shape)</option>
+                <option value="keep">Keep (Castle)</option>
+                <option value="hexagon">Hexagon</option>
+                <option value="round">Round</option>
+                <option value="cavernous">Cavernous</option>
+              </select>
+              <small class="help-text">Overall shape and structure of the dungeon</small>
+            </div>
+          </div>
+        </div>
+        </div>
+
+        <div class="col-lg-4 col-md-6">
+        <div class="option-group" data-group="rooms">
+          <h3 onclick="toggleOptionGroup('rooms')">Room Configuration <span class="toggle-icon">▼</span></h3>
+          <div class="option-group-content">
+            <div class="form-group">
+              <label>Room Layout:</label>
+              <select id="room-layout">
+                <option value="scattered">Scattered</option>
+                <option value="sparse">Sparse</option>
+                <option value="dense">Dense</option>
+                <option value="symmetric">Symmetric</option>
+              </select>
+              <small class="help-text">How rooms are distributed in the dungeon</small>
+            </div>
+            <div class="form-group">
+              <label>Room Size:</label>
+              <select id="room-size">
+                <option value="medium">Medium</option>
+                <option value="small">Small</option>
+                <option value="large">Large</option>
+                <option value="mixed">Mixed</option>
+              </select>
+              <small class="help-text">Preferred size of generated rooms</small>
+            </div>
+            <div class="form-group">
+              <label>Room Shape:</label>
+              <select id="room-shape">
+                <option value="rectangular">Rectangular</option>
+                <option value="diverse">Diverse (All shapes)</option>
+                <option value="hex-preference">Hex Preference</option>
+                <option value="circular-preference">Circular Preference</option>
+                <option value="small-preference">Small Preference</option>
+                <option value="mixed">Mixed</option>
+              </select>
+              <small class="help-text">Shape variety and style preferences for rooms</small>
+            </div>
+          </div>
+        </div>
+        </div>
+        </div>
+
+        <div class="row g-3">
+        <div class="col-lg-6 col-md-6">
+        <div class="option-group" data-group="corridors">
+          <h3 onclick="toggleOptionGroup('corridors')">Corridor Configuration <span class="toggle-icon">▼</span></h3>
+          <div class="option-group-content">
+            <div class="form-group">
+              <label>Corridor Type:</label>
+              <select id="corridor-type">
+                <option value="straight">Straight</option>
+                <option value="winding">Winding</option>
+                <option value="maze">Maze</option>
+                <option value="mixed">Mixed</option>
+              </select>
+              <small class="help-text">Style of corridors connecting rooms</small>
+            </div>
+            <div class="form-group">
+              <label>Pathfinding Algorithm:</label>
+              <select id="pathfinding-algorithm">
+                <option value="manhattan">Manhattan (Classic)</option>
+                <option value="astar">A* (Enhanced)</option>
+                <option value="jumppoint">Jump Point Search (Fast)</option>
+                <option value="dijkstra">Dijkstra (Optimal)</option>
+              </select>
+              <small class="help-text">🚀 Enhanced algorithms use PathFinding.js for better corridor quality</small>
+            </div>
+            <div class="form-group">
+              <label>Corridor Width (tiles):</label>
+              <select id="corridor-width">
+                <option value="1">1 (Narrow)</option>
+                <option value="2">2 (Standard)</option>
+                <option value="3">3 (Wide)</option>
+              </select>
+              <small class="help-text">Width of corridors in map tiles</small>
+            </div>
+            <div class="checkbox-group">
+              <input type="checkbox" id="allow-deadends" checked>
+              <label for="allow-deadends">Allow Deadends</label>
+              <small class="help-text">Permit corridors that lead to dead ends</small>
+            </div>
+          </div>
+        </div>
+        </div>
+
+        <div class="col-lg-6 col-md-6">
+        <div class="option-group" data-group="features">
+          <h3 onclick="toggleOptionGroup('features')">Special Features <span class="toggle-icon">▼</span></h3>
+          <div class="option-group-content">
+            <div class="checkbox-group">
+              <input type="checkbox" id="stairs-up">
+              <label for="stairs-up">Stairs Up</label>
+            </div>
+            <div class="checkbox-group">
+              <input type="checkbox" id="stairs-down">
+              <label for="stairs-down">Stairs Down</label>
+            </div>
+            <div class="checkbox-group">
+              <input type="checkbox" id="entrance-periphery">
+              <label for="entrance-periphery">Entrance from Periphery</label>
+            </div>
+            <div class="form-group">
+              <label>Lock Percentage:</label>
+              <input type="number" id="lock-percentage" min="0" max="1" step="0.1" placeholder="0.0-1.0">
+              <small class="help-text">Fraction of doors to lock (0.0 = none, 1.0 = all)</small>
+            </div>
+            <div class="checkbox-group">
+              <input type="checkbox" id="magical-locks">
+              <label for="magical-locks">Allow Magical Locks</label>
+            </div>
+          </div>
+        </div>
+        </div>
+        </div>
+
+        <div class="row g-3">
+        <div class="col-lg-6 col-md-6">
+        <div class="option-group collapsed" data-group="content">
+          <h3 onclick="toggleOptionGroup('content')">Content Settings <span class="toggle-icon">▶</span></h3>
+          <div class="option-group-content">
+            <div class="form-group">
+              <label>Sources (System-specific):</label>
+              <select id="sources" multiple>
+                <option value="">All Sources</option>
+              </select>
+              <small class="help-text">Hold Ctrl/Cmd to select multiple sources</small>
+            </div>
+            <div class="form-group">
+              <label>Monster Tags:</label>
+              <input type="text" id="monster-tags" placeholder="Enter tags separated by commas">
+              <small class="help-text">Filter monsters by tags (e.g., undead, fire, boss)</small>
+            </div>
+            <div class="form-group">
+              <label>Trap Tags:</label>
+              <input type="text" id="trap-tags" placeholder="Enter tags separated by commas">
+              <small class="help-text">Filter traps by tags (e.g., magical, mechanical, deadly)</small>
+            </div>
+            <div class="form-group">
+              <label>Treasure Tags:</label>
+              <input type="text" id="treasure-tags" placeholder="Enter tags separated by commas">
+              <small class="help-text">Filter treasure by tags (e.g., magic, valuable, cursed)</small>
+            </div>
+          </div>
+        </div>
+        </div>
+
+        <div class="col-lg-6 col-md-6">
+        <div class="option-group collapsed" data-group="rendering">
+          <h3 onclick="toggleOptionGroup('rendering')">Map Rendering <span class="toggle-icon">▶</span></h3>
+          <div class="option-group-content">
+            <div class="form-group">
+              <label>Map Style:</label>
+              <select id="map-style">
+                <option value="classic">Classic</option>
+                <option value="hand-drawn">Technical Pen (Hand-drawn)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Color Theme:</label>
+              <select id="color-theme">
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+                <option value="sepia">Sepia</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Background Texture:</label>
+              <select id="texture">
+                <option value="none">None</option>
+                <option value="paper">Paper</option>
+              </select>
+              <small class="help-text">Add texture to the map background</small>
+            </div>
+            <div class="checkbox-group" id="grid-toggle-group" style="display: none;">
+              <input type="checkbox" id="show-grid">
+              <label for="show-grid">Show Graph Paper Grid</label>
+            </div>
+            <div class="form-group" id="wobble-intensity-group" style="display: none;">
+              <label>Line Wobble:</label>
+              <select id="wobble-intensity">
+                <option value="0.5">Minimal</option>
+                <option value="1" selected>Normal</option>
+                <option value="1.5">Heavy</option>
+                <option value="2">Maximum</option>
+              </select>
+            </div>
+            <div class="form-group" id="wall-thickness-group" style="display: none;">
+              <label>Wall Thickness:</label>
+              <select id="wall-thickness">
+                <option value="0.5">Thin</option>
+                <option value="1" selected>Normal</option>
+                <option value="1.5">Thick</option>
+                <option value="2">Very Thick</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        </div>
+        </div>
+      </div>
+
+      <div class="preview-controls">
+        <div class="preview-toggle">
+          <input type="checkbox" id="real-time-preview" checked>
+          <label for="real-time-preview">Real-time Preview</label>
+        </div>
+        <div class="loading-indicator" id="loading-indicator">
+          <div class="loading-spinner"></div>
+          <span>Generating...</span>
+        </div>
+        <button id="generate">Generate Dungeon</button>
+        <a id="download-svg" download="dungeon.svg" class="download-link">Download SVG</a>
+      </div>
+
+      <div class="configuration-summary">
+        <div class="summary-header" onclick="toggleSummary()">
+          <h3>📋 Configuration Summary <span id="summary-toggle">▼</span></h3>
+        </div>
+        <div class="summary-content" id="summary-content">
+          <div id="config-summary-text">
+            Configuration will appear here after first generation...
+          </div>
+        </div>
+      </div>
+
+      <div id="map" class="map-container" role="application" aria-label="Interactive dungeon map">
+        <div class="map-controls" role="toolbar" aria-label="Map navigation controls">
+          <button id="fullscreen-toggle" class="map-control-btn" title="Toggle Full Screen" aria-label="Toggle full screen map view">
+            ⛶
+            <span class="sr-only">Toggle full screen</span>
+          </button>
+          <button id="zoom-in" class="map-control-btn" title="Zoom In" aria-label="Zoom in on map">
+            +
+            <span class="sr-only">Zoom in</span>
+          </button>
+          <button id="zoom-out" class="map-control-btn" title="Zoom Out" aria-label="Zoom out on map">
+            −
+            <span class="sr-only">Zoom out</span>
+          </button>
+          <button id="reset-view" class="map-control-btn" title="Reset View" aria-label="Reset map view to default">
+            ⌂
+            <span class="sr-only">Reset view</span>
+          </button>
+        </div>
+        <div id="map-content"></div>
+        <div id="minimap" class="minimap" style="display: none;">
+          <div class="minimap-header">
+            <span>Overview</span>
+            <button id="minimap-toggle" class="minimap-toggle" title="Collapse">−</button>
+          </div>
+          <div class="minimap-content">
+            <div id="minimap-svg-container"></div>
+            <div id="minimap-viewport" class="minimap-viewport"></div>
+          </div>
+        </div>
+      </div>
+      <div id="room-key" class="room-key"></div>
+      <div id="inputs" class="inputs"></div>
+    </div>
+    </div>
+
+    <div id="data-manager-tab" class="tab-pane fade" role="tabpanel" aria-labelledby="data-manager-tab-btn">
+      <h2>Custom Data Manager</h2>
+      <p>Use the data manager to import custom monsters, traps, treasure, and environmental details for your selected system.</p>
+      
+      <div class="wizard-section">
+        <h3>Import Data</h3>
+        <p class="small">Environmental details like lighting, ceilings, mana, sanctity, and nature's strength can now be
+          imported via the <strong>Environment</strong> module using CSV files with <code>name</code>,
+          <code>description</code>, and <code>weight</code> columns. For quick overrides, you can still upload JSON files named
+          <code>custom-lighting.json</code>, <code>custom-ceilings.json</code>,
+          <code>custom-dfrpg-mana-levels.json</code>, <code>custom-dfrpg-sanctity-levels.json</code>, and
+          <code>custom-dfrpg-natures-strength.json</code>.</p>
+        <div class="form-group">
+          <label>Module:</label>
+          <select id="wizard-module">
+            <option value="">Select a module...</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Data Type:</label>
+          <select id="wizard-datatype" disabled>
+            <option value="">Select module first...</option>
+          </select>
+        </div>
+        <div id="datatype-description"></div>
+        
+        <button id="generate-template" disabled>Generate Template</button>
+        <a id="download-template" style="display: none;" class="download-link">Download Template</a>
+        <div id="template-status"></div>
+        
+        <div id="file-upload-area" class="upload-area">
+          <p>Click here or drag and drop your CSV file</p>
+          <input type="file" id="file-input" accept=".csv" style="display: none;">
+        </div>
+        <div id="upload-status"></div>
+        <div id="validation-results"></div>
+        
+        <div class="form-group">
+          <label>Dataset Name (optional):</label>
+          <input type="text" id="dataset-name" placeholder="Custom dataset name">
+        </div>
+        <button id="save-data" disabled>Save Data</button>
+      </div>
+      
+      <div class="data-manager-section">
+        <h3>Data Manager</h3>
+        <div class="data-manager-actions">
+          <button id="export-all-data">Export All Data</button>
+          <button id="import-backup">Import Backup</button>
+          <input type="file" id="backup-file" accept=".json" style="display: none;">
+          <button id="clear-all-data" class="btn-danger">Clear All Data</button>
+        </div>
+        <div id="custom-data-list"></div>
+      </div>
+    </div>
+
+    <div id="plugin-manager-tab" class="tab-pane fade" role="tabpanel" aria-labelledby="plugin-manager-tab-btn">
+      <div id="plugin-manager-container"></div>
+    </div>
+
+    <div id="settings-tab" class="tab-pane fade" role="tabpanel" aria-labelledby="settings-tab-btn">
+      <h2>Settings</h2>
+      <p>Configure application-wide settings and preferences.</p>
+      
+      <div class="wizard-section">
+        <h3>Appearance</h3>
+        <div class="form-group">
+          <label>Theme:</label>
+          <div class="theme-selector">
+            <label class="theme-option">
+              <input type="radio" name="theme" value="auto" checked>
+              <span>🔄 Auto (System)</span>
+            </label>
+            <label class="theme-option">
+              <input type="radio" name="theme" value="light">
+              <span>☀️ Light</span>
+            </label>
+            <label class="theme-option">
+              <input type="radio" name="theme" value="dark">
+              <span>🌙 Dark</span>
+            </label>
+          </div>
+        </div>
+      </div>
+      
+      <div class="wizard-section">
+        <h3>Generator Preferences</h3>
+        <div class="checkbox-group">
+          <input type="checkbox" id="auto-preview" checked>
+          <label for="auto-preview">Enable real-time preview by default</label>
+        </div>
+        <div class="form-group">
+          <label>Default Number of Rooms:</label>
+          <input type="number" id="default-rooms" value="8" min="1">
+        </div>
+        <div class="form-group">
+          <label>Default Map Size:</label>
+          <select id="default-size">
+            <option value="small">Small (30x30)</option>
+            <option value="medium" selected>Medium (50x50)</option>
+            <option value="large">Large (80x80)</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="wizard-section">
+        <h3>Export Settings</h3>
+        <div class="checkbox-group">
+          <input type="checkbox" id="include-metadata" checked>
+          <label for="include-metadata">Include metadata in exports</label>
+        </div>
+        <div class="form-group">
+          <label>Default Export Format:</label>
+          <select id="default-export">
+            <option value="svg" selected>SVG</option>
+            <option value="foundry">FoundryVTT</option>
+            <option value="ascii">ASCII</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="data-manager-actions">
+        <button id="save-settings">Save Settings</button>
+        <button id="reset-settings" class="btn-danger">Reset to Defaults</button>
+      </div>
+    </div>
+    </div>
+  </div>
+
+  <!-- Save Preset Modal -->
+  <div id="save-preset-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Save Configuration Preset</h3>
+        <button class="modal-close" onclick="closeSavePresetModal()">&times;</button>
+      </div>
+      <div class="form-group">
+        <label>Preset Name:</label>
+        <input type="text" id="preset-name" placeholder="Enter preset name" maxlength="50">
+      </div>
+      <div class="form-group">
+        <label>Description:</label>
+        <textarea id="preset-description" rows="3" placeholder="Describe this configuration..." maxlength="200"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Category (optional):</label>
+        <input type="text" id="preset-category" placeholder="e.g., Quick Start, Campaign" maxlength="30">
+      </div>
+      <div id="save-preset-error" class="preset-status-message preset-status-error" style="display: none;"></div>
+      <div class="modal-actions">
+        <button class="modal-btn secondary" onclick="closeSavePresetModal()">Cancel</button>
+        <button class="modal-btn primary" onclick="saveCurrentPreset()">Save Preset</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Manage Presets Modal -->
+  <div id="manage-presets-modal" class="modal">
+    <div class="modal-content" style="max-width: 700px;">
+      <div class="modal-header">
+        <h3>Manage Configuration Presets</h3>
+        <button class="modal-close" onclick="closeManagePresetsModal()">&times;</button>
+      </div>
+      
+      <div class="form-group">
+        <input type="text" id="preset-search" placeholder="Search presets..." style="margin-bottom: 10px;">
+      </div>
+      
+      <div id="preset-list" class="preset-list">
+        <!-- Preset list will be populated by JavaScript -->
+      </div>
+      
+      <div class="modal-actions">
+        <button class="modal-btn secondary" onclick="closeManagePresetsModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Theme management functionality
+    function initializeTheme() {
+      const savedTheme = localStorage.getItem('theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      
+      let currentTheme;
+      if (savedTheme && savedTheme !== 'null') {
+        // User has manually selected a theme
+        currentTheme = savedTheme;
+      } else {
+        // No manual selection, use auto mode
+        currentTheme = 'auto';
+      }
+      
+      // Set the radio button
+      const themeRadio = document.querySelector(`input[name="theme"][value="${currentTheme}"]`);
+      if (themeRadio) {
+        themeRadio.checked = true;
+      }
+      
+      // Apply the actual theme
+      applyTheme(currentTheme, prefersDark);
+    }
+    
+    function applyTheme(themeChoice, prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      let actualTheme;
+      if (themeChoice === 'auto') {
+        actualTheme = prefersDark ? 'dark' : 'light';
+      } else {
+        actualTheme = themeChoice;
+      }
+      
+      document.documentElement.setAttribute('data-theme', actualTheme);
+    }
+    
+    function handleThemeChange(event) {
+      const selectedTheme = event.target.value;
+      
+      if (selectedTheme === 'auto') {
+        localStorage.removeItem('theme');
+      } else {
+        localStorage.setItem('theme', selectedTheme);
+      }
+      
+      applyTheme(selectedTheme);
+    }
+    
+    // Tab functionality is now handled by Bootstrap
+    
+    // Full-screen map functionality
+    function toggleFullScreen() {
+      const mapContainer = document.getElementById('map');
+      const isFullscreen = mapContainer.classList.contains('fullscreen');
+      
+      if (isFullscreen) {
+        // Exit full screen
+        mapContainer.classList.remove('fullscreen');
+        
+        // Remove overlay
+        const overlay = document.querySelector('.fullscreen-overlay');
+        if (overlay) {
+          overlay.remove();
+        }
+        
+        // Update button icon
+        document.getElementById('fullscreen-toggle').innerHTML = '⛶';
+        document.getElementById('fullscreen-toggle').title = 'Toggle Full Screen';
+      } else {
+        // Enter full screen
+        mapContainer.classList.add('fullscreen');
+        
+        // Add overlay
+        const overlay = document.createElement('div');
+        overlay.className = 'fullscreen-overlay';
+        overlay.addEventListener('click', toggleFullScreen);
+        document.body.appendChild(overlay);
+        
+        // Update button icon
+        document.getElementById('fullscreen-toggle').innerHTML = '✕';
+        document.getElementById('fullscreen-toggle').title = 'Exit Full Screen';
+      }
+    }
+    
+    function saveSettings() {
+      // Get all settings values
+      const settings = {
+        autoPreview: document.getElementById('auto-preview').checked,
+        defaultRooms: document.getElementById('default-rooms').value,
+        defaultSize: document.getElementById('default-size').value,
+        includeMetadata: document.getElementById('include-metadata').checked,
+        defaultExport: document.getElementById('default-export').value
+      };
+      
+      localStorage.setItem('appSettings', JSON.stringify(settings));
+      
+      // Show success message
+      const button = document.getElementById('save-settings');
+      const originalText = button.textContent;
+      button.textContent = 'Saved!';
+      button.style.background = 'var(--accent-success)';
+      
+      setTimeout(() => {
+        button.textContent = originalText;
+        button.style.background = '';
+      }, 2000);
+    }
+    
+    function resetSettings() {
+      if (confirm('Are you sure you want to reset all settings to defaults?')) {
+        localStorage.removeItem('appSettings');
+        localStorage.removeItem('theme');
+        
+        // Reset form values
+        document.getElementById('auto-preview').checked = true;
+        document.getElementById('default-rooms').value = '8';
+        document.getElementById('default-size').value = 'medium';
+        document.getElementById('include-metadata').checked = true;
+        document.getElementById('default-export').value = 'svg';
+        document.querySelector('input[name="theme"][value="auto"]').checked = true;
+        
+        // Apply auto theme
+        applyTheme('auto');
+        
+        alert('Settings reset to defaults');
+      }
+    }
+    
+    function loadSettings() {
+      const saved = localStorage.getItem('appSettings');
+      if (saved) {
+        const settings = JSON.parse(saved);
+        document.getElementById('auto-preview').checked = settings.autoPreview ?? true;
+        document.getElementById('default-rooms').value = settings.defaultRooms ?? '8';
+        document.getElementById('default-size').value = settings.defaultSize ?? 'medium';
+        document.getElementById('include-metadata').checked = settings.includeMetadata ?? true;
+        document.getElementById('default-export').value = settings.defaultExport ?? 'svg';
+      }
+    }
+    
+    // Initialize everything when page loads
+    document.addEventListener('DOMContentLoaded', () => {
+      initializeTheme();
+      loadSettings();
+      
+      // Add event listeners for theme radio buttons
+      document.querySelectorAll('input[name="theme"]').forEach(radio => {
+        radio.addEventListener('change', handleThemeChange);
+      });
+      
+      // Add event listeners for settings buttons
+      document.getElementById('save-settings').addEventListener('click', saveSettings);
+      document.getElementById('reset-settings').addEventListener('click', resetSettings);
+      
+      // Add event listener for full-screen toggle
+      document.getElementById('fullscreen-toggle').addEventListener('click', toggleFullScreen);
+      
+      // Add keyboard support for full-screen mode
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && document.getElementById('map').classList.contains('fullscreen')) {
+          toggleFullScreen();
+        }
+      });
+      
+      // Add keyboard support for option group toggles
+      document.querySelectorAll('.option-group h3[role="button"]').forEach(header => {
+        header.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            header.click();
+          }
+        });
+      });
+    });
+    
+    // Listen for system theme changes
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+      const savedTheme = localStorage.getItem('theme');
+      if (!savedTheme) { // Only if on auto mode
+        applyTheme('auto', e.matches);
+      }
+    });
+  </script>
+  
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+  
+  <script type="module" src="/src/main-desktop.ts"></script>
+</body>
+</html>

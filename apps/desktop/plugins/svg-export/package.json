@@ -1,0 +1,14 @@
+{
+  "name": "svg-export",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "doaPlugin": {
+    "id": "svg-export",
+    "version": "1.0.0",
+    "description": "Core SVG export plugin with theme support and visual customization",
+    "author": "DOA Core",
+    "tags": ["export", "svg", "core", "visual"],
+    "type": "export"
+  },
+  "dependencies": {}
+}
