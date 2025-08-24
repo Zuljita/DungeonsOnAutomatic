@@ -276,16 +276,19 @@ class RoomShapeServiceImpl implements RoomShapeService {
    */
   findClosestEdgePoint(room: Room, direction: 'top' | 'bottom' | 'left' | 'right', targetPoint: { x: number; y: number }): { x: number; y: number } {
     if (room.shape === 'rectangular' || !room.shapePoints) {
-      // For rectangular rooms, find a point ON the edge wall
+      // For rectangular rooms, return the grid cell immediately OUTSIDE the wall
+      // Clamp along the edge span to valid interior indices
+      const clampedX = Math.floor(Math.max(room.x, Math.min(room.x + room.w - 1, targetPoint.x)));
+      const clampedY = Math.floor(Math.max(room.y, Math.min(room.y + room.h - 1, targetPoint.y)));
       switch (direction) {
         case 'top':
-          return { x: Math.floor(Math.max(room.x, Math.min(room.x + room.w - 1, targetPoint.x))), y: room.y };
+          return { x: clampedX, y: room.y - 1 };
         case 'bottom':
-          return { x: Math.floor(Math.max(room.x, Math.min(room.x + room.w - 1, targetPoint.x))), y: room.y + room.h };
+          return { x: clampedX, y: room.y + room.h };
         case 'left':
-          return { x: room.x, y: Math.floor(Math.max(room.y, Math.min(room.y + room.h - 1, targetPoint.y))) };
+          return { x: room.x - 1, y: clampedY };
         case 'right':
-          return { x: room.x + room.w, y: Math.floor(Math.max(room.y, Math.min(room.y + room.h - 1, targetPoint.y))) };
+          return { x: room.x + room.w, y: clampedY };
       }
     } else {
       // For shaped rooms, find the actual closest point ON the wall edge

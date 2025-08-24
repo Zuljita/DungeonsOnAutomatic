@@ -7,6 +7,8 @@ import { createSimpleUnionFind } from '../utils/union-find';
 export interface EnhancedPathfindingOptions {
   algorithm: 'astar' | 'jumppoint' | 'dijkstra' | 'manhattan';
   usePathfindingLib: boolean;
+  // Prefer classic single-turn L paths when unobstructed
+  preferLShape?: boolean;
 }
 
 // Load PathFinding.js library
@@ -101,6 +103,84 @@ function calculateDoorConnectionPoints(room1: Room, room2: Room): {
   return { start, end };
 }
 
+// Helper: check if a grid cell is inside any room interior (shape-aware)
+function isInsideAnyRoom(x: number, y: number, rooms: Room[], allowRoomIds: string[] = []): boolean {
+  for (const room of rooms) {
+    if (allowRoomIds.includes(room.id)) continue;
+    if (room.shape !== 'rectangular' && room.shapePoints) {
+      if (roomShapeService.isPointInRoom(room, x, y)) return true;
+    } else {
+      if (x >= room.x && x < room.x + room.w && y >= room.y && y < room.y + room.h) return true;
+    }
+  }
+  return false;
+}
+
+// Build canonical L-shaped paths (HV and VH) between two points
+function buildLPaths(
+  start: { x: number; y: number },
+  end: { x: number; y: number }
+): Array<{ x: number; y: number }[]> {
+  const pathHV: { x: number; y: number }[] = [];
+  const xStep = start.x <= end.x ? 1 : -1;
+  const yStep = start.y <= end.y ? 1 : -1;
+  for (let x = start.x; x !== end.x; x += xStep) pathHV.push({ x, y: start.y });
+  for (let y = start.y; y !== end.y; y += yStep) pathHV.push({ x: end.x, y });
+  pathHV.push({ x: end.x, y: end.y });
+
+  const pathVH: { x: number; y: number }[] = [];
+  for (let y = start.y; y !== end.y; y += yStep) pathVH.push({ x: start.x, y });
+  for (let x = start.x; x !== end.x; x += xStep) pathVH.push({ x, y: end.y });
+  pathVH.push({ x: end.x, y: end.y });
+
+  return [pathHV, pathVH];
+}
+
+// Validate an L-shaped path does not cut through rooms.
+// Allows the first and last points (door cells) even if on room boundary.
+function validateLPath(
+  path: { x: number; y: number }[],
+  rooms: Room[],
+  start: { x: number; y: number },
+  end: { x: number; y: number },
+  allowRoomIds: string[]
+): boolean {
+  for (let i = 0; i < path.length; i++) {
+    const p = path[i];
+    // Allow endpoints regardless (door cells on edges)
+    if ((p.x === start.x && p.y === start.y) || (p.x === end.x && p.y === end.y)) continue;
+    if (isInsideAnyRoom(p.x, p.y, rooms, allowRoomIds)) return false;
+  }
+  return true;
+}
+
+// Snap a door position to the nearest integer grid tile just outside the room
+function normalizeDoorPoint(room: Room, p: { x: number; y: number }): { x: number; y: number } {
+  let rx = Math.round(p.x);
+  let ry = Math.round(p.y);
+  // If rounded point is inside the room, nudge outward from the room center
+  if (roomShapeService.isPointInRoom(room, rx, ry)) {
+    const bounds = roomShapeService.getRoomBounds(room);
+    const cx = (bounds.minX + bounds.maxX) / 2;
+    const cy = (bounds.minY + bounds.maxY) / 2;
+    const dx = Math.sign(p.x - cx) || 1;
+    const dy = Math.sign(p.y - cy) || 1;
+    const candidates = [
+      { x: rx + dx, y: ry },
+      { x: rx, y: ry + dy },
+      { x: rx + dx, y: ry + dy },
+      { x: rx - dx, y: ry },
+      { x: rx, y: ry - dy },
+    ];
+    for (const c of candidates) {
+      if (!roomShapeService.isPointInRoom(room, c.x, c.y)) {
+        rx = c.x; ry = c.y; break;
+      }
+    }
+  }
+  return { x: rx, y: ry };
+}
+
 /**
  * A* pathfinding using the pathfinding library with cost grid support
  * Finds optimal path while avoiding high-cost areas (like room interiors)
@@ -173,14 +253,7 @@ export function connectRooms(
   const corridors: Corridor[] = [];
   
   // Try enhanced pathfinding if available and enabled
-  const useEnhanced = options.usePathfindingLib && PF && options.algorithm !== 'manhattan';
-  if (useEnhanced) {
-    console.log(`🚀 Using enhanced door-to-door pathfinding: ${options.algorithm}`);
-    return connectWithEnhancedPathfinding(rooms, r, options, edges, centers);
-  } else {
-    console.log('📏 Using classic Manhattan pathfinding');
-    return connectWithManhattanPathfinding(rooms, r, edges, centers);
-  }
+  return connectWithEnhancedPathfinding(rooms, r, options, edges, centers);
 }
 
 function manhattanPath(a:{x:number;y:number}, b:{x:number;y:number}, r: () => number) {
@@ -309,35 +382,46 @@ function connectWithEnhancedPathfinding(
       // Calculate optimal door connection points
       const doorPoints = calculateDoorConnectionPoints(rooms[e.a], rooms[e.b]);
       
+      // Normalize door points to integer grid just outside room
+      const normStart = normalizeDoorPoint(rooms[e.a], doorPoints.start);
+      const normEnd = normalizeDoorPoint(rooms[e.b], doorPoints.end);
       // Offset door points for grid coordinates
-      const startPoint = { x: doorPoints.start.x - minX, y: doorPoints.start.y - minY };
-      const endPoint = { x: doorPoints.end.x - minX, y: doorPoints.end.y - minY };
+      const startPoint = { x: normStart.x - minX, y: normStart.y - minY };
+      const endPoint = { x: normEnd.x - minX, y: normEnd.y - minY };
       
-      let path: { x: number; y: number }[];
+      let path: { x: number; y: number }[] = [];
       
-      try {
-        // Use PathFinding.js for enhanced door-to-door pathfinding
-        path = findPathWithPathfindingJS(
-          startPoint,
-          endPoint,
-          offsetRooms,
-          width,
-          height,
-          options.algorithm
-        );
-        
-        // Convert back to original coordinates
-        path = path.map(p => ({ x: p.x + minX, y: p.y + minY }));
-        
-        // Ensure path starts and ends at the door points
-        if (path.length > 0) {
-          path[0] = doorPoints.start;
-          path[path.length - 1] = doorPoints.end;
+      // If requested, try classic L-shape first (never cuts rooms)
+      if (options.preferLShape || options.algorithm === 'manhattan') {
+        const [hv, vh] = buildLPaths(normStart, normEnd);
+        const allowIds = [rooms[e.a].id, rooms[e.b].id];
+        if (validateLPath(hv, rooms, normStart, normEnd, allowIds)) {
+          path = hv;
+        } else if (validateLPath(vh, rooms, normStart, normEnd, allowIds)) {
+          path = vh;
         }
-      } catch (error) {
-        console.warn('PathFinding.js failed, falling back to Manhattan:', (error as Error).message);
-        // Fallback to door-aware Manhattan path
-        path = [doorPoints.start, doorPoints.end];
+      }
+
+      // If L-shape not used or invalid, route with PathFinding.js
+      if (path.length === 0) {
+        try {
+          const routed = findPathWithPathfindingJS(
+            startPoint,
+            endPoint,
+            offsetRooms,
+            width,
+            height,
+            options.algorithm === 'manhattan' ? 'astar' : options.algorithm
+          );
+          path = routed.map(p => ({ x: p.x + minX, y: p.y + minY }));
+          if (path.length > 0) {
+            path[0] = normStart;
+            path[path.length - 1] = normEnd;
+          }
+        } catch (error) {
+          // As a last resort, emit the straight segment; callers may reject or post-process
+          path = [normStart, normEnd];
+        }
       }
       
       corridors.push({ 
@@ -345,8 +429,8 @@ function connectWithEnhancedPathfinding(
         from, 
         to, 
         path,
-        doorStart: doorPoints.start,
-        doorEnd: doorPoints.end
+        doorStart: normStart,
+        doorEnd: normEnd
       });
     }
   }
@@ -354,39 +438,7 @@ function connectWithEnhancedPathfinding(
   return corridors;
 }
 
-/**
- * Connect rooms using classic Manhattan pathfinding
- */
-function connectWithManhattanPathfinding(
-  rooms: Room[], 
-  r: () => number, 
-  edges: Edge[],
-  centers: { x: number; y: number }[]
-): Corridor[] {
-  const unionFind = createSimpleUnionFind(rooms.length);
-  const corridors: Corridor[] = [];
-  
-  for (const e of edges) {
-    if (!unionFind.connected(e.a, e.b)) {
-      unionFind.union(e.a, e.b);
-      const from = rooms[e.a].id;
-      const to = rooms[e.b].id;
-      
-      // Use classic center-to-center Manhattan pathfinding (preserves randomization)
-      let path = manhattanPath(centers[e.a], centers[e.b], r);
-      path = trimPath(path, rooms[e.a], rooms[e.b]);
-      
-      corridors.push({ 
-        id: id('cor', r), 
-        from, 
-        to, 
-        path
-      });
-    }
-  }
-  
-  return corridors;
-}
+// Removed classic center-to-center Manhattan in favor of L-preferred + A* routing
 
 /**
  * Create a cost grid for PathFinding.js (0 = walkable, 1 = blocked)
@@ -394,20 +446,52 @@ function connectWithManhattanPathfinding(
 function createPathfindingGrid(rooms: Room[], width: number, height: number): number[][] {
   // Initialize all as walkable
   const grid: number[][] = Array(height).fill(null).map(() => Array(width).fill(0));
-  
-  // Block room interiors but keep edges walkable for door placement
+
   for (const room of rooms) {
-    // Block room interiors (leave 1-tile border for doors)
-    for (let y = room.y + 1; y < room.y + room.h - 1; y++) {
-      for (let x = room.x + 1; x < room.x + room.w - 1; x++) {
-        if (x >= 0 && x < width && y >= 0 && y < height) {
-          grid[y][x] = 1; // Block interior
+    if (room.shape !== 'rectangular' && room.shapePoints) {
+      // Shape-aware blocking: iterate over room bounds
+      const bounds = roomShapeService.getRoomBounds(room);
+      const minX = Math.max(0, Math.floor(bounds.minX));
+      const maxX = Math.min(width - 1, Math.ceil(bounds.maxX));
+      const minY = Math.max(0, Math.floor(bounds.minY));
+      const maxY = Math.min(height - 1, Math.ceil(bounds.maxY));
+      for (let y = minY; y <= maxY; y++) {
+        for (let x = minX; x <= maxX; x++) {
+          if (roomShapeService.isPointInRoom(room, x, y)) {
+            // Keep border walkable to allow door connection
+            const onBorder = (x === minX || x === maxX || y === minY || y === maxY) ||
+              // Use precise border check for shaped rooms
+              true && isPointOnLineSegmentRoomBorder(room, x, y);
+            if (!onBorder) grid[y][x] = 1;
+          }
+        }
+      }
+    } else {
+      // Rectangular rooms: block interior, leave 1-tile border
+      for (let y = room.y + 1; y < room.y + room.h - 1; y++) {
+        if (y < 0 || y >= height) continue;
+        for (let x = room.x + 1; x < room.x + room.w - 1; x++) {
+          if (x < 0 || x >= width) continue;
+          grid[y][x] = 1;
         }
       }
     }
   }
-  
+
   return grid;
+}
+
+// Precise border detection wrapper for shaped rooms
+function isPointOnLineSegmentRoomBorder(room: Room, x: number, y: number): boolean {
+  // For shaped rooms, consider a point border if any neighbor is outside
+  if (!roomShapeService.isPointInRoom(room, x, y)) return false;
+  const neighbors = [
+    { x: x - 1, y },
+    { x: x + 1, y },
+    { x, y: y - 1 },
+    { x, y: y + 1 },
+  ];
+  return neighbors.some(n => !roomShapeService.isPointInRoom(room, n.x, n.y));
 }
 
 /**
