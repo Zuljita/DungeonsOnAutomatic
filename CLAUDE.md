@@ -234,6 +234,64 @@ This workflow ensures:
 - Automatic issue closure when fixes are merged
 - Consistent documentation of problem-solution relationships
 
+## Code Quality and Architecture Principles
+
+### Fail-Fast Philosophy
+**CRITICAL: Applications should fail with clear errors rather than fall back to legacy code.**
+
+- **No silent fallbacks**: If new code doesn't work, the application should fail loudly
+- **Purge legacy code**: Once replaced, old code paths must be removed completely
+- **Force adoption**: Users and tests should encounter errors when new features break
+- **Backwards compatibility**: ONLY for plugin APIs, never for internal code paths
+
+### Examples of Anti-Patterns to Avoid:
+- ❌ **Silent fallbacks**: `catch (err) { console.warn('Using legacy...'); return legacyFunction(); }`  
+- ❌ **Unused new code**: Writing `corridors.ts` but GUI still uses "classic manhattan"
+- ❌ **Dual code paths**: Both new and old implementations running in parallel
+- ❌ **"Graceful degradation"**: Hiding broken features instead of fixing them
+
+### Examples of Correct Patterns:
+- ✅ **Fail loudly**: `throw new Error('New corridor system failed - fix required')`
+- ✅ **Single code path**: Remove old code once new code is implemented
+- ✅ **Force testing**: Broken features cause test failures, not silent switches
+- ✅ **Plugin compatibility only**: Support old plugin APIs, not old internal logic
+
+### Reusable Code Emphasis
+**CRITICAL: Prioritize reusable, maintainable, and extensible code paths.**
+
+- **Single source of truth**: Each feature implemented once, used everywhere
+- **Shared utilities**: Create reusable functions instead of duplicating logic
+- **Consistent interfaces**: Same patterns across similar functionality
+- **Extensible architecture**: Design for future enhancement, not just current needs
+
+### No Non-Functional Options
+**CRITICAL: Every option, method, and feature must actually work or be removed.**
+
+- **No placeholder options**: If `useWanderingPaths` doesn't change behavior, remove it
+- **No incomplete features**: Don't expose options that aren't fully implemented
+- **No ignored parameters**: Every parameter must affect the output or be deleted
+- **No dead code**: Remove unused methods, options, and configuration immediately
+
+### Examples of Anti-Patterns to Avoid:
+- ❌ **Ignored options**: `{ useAdvancedMode: true }` that does nothing
+- ❌ **Placeholder methods**: Functions that return hardcoded values
+- ❌ **Incomplete features**: Options that only work in some scenarios
+- ❌ **Silent no-ops**: `setCustomTheme()` that silently ignores the theme
+
+### Examples of Correct Patterns:  
+- ✅ **Remove non-working options**: Delete `useWanderingPaths` if it doesn't work
+- ✅ **Implement or remove**: Either make the feature work or delete it entirely
+- ✅ **Fail loudly**: `throw new Error('Advanced mode not yet implemented')`
+- ✅ **Test all options**: Every configuration option must have working tests
+
+### Implementation Guidelines
+1. **Replace, don't add**: When implementing new features, replace old ones entirely
+2. **Remove immediately**: Delete legacy code as soon as replacement is working
+3. **Test the new path**: Ensure tests exercise the new code, not fallbacks
+4. **Document breaking changes**: Be explicit about what changed and why
+5. **Audit options regularly**: Verify every exposed option actually works
+6. **Delete incomplete features**: Remove half-implemented functionality immediately
+
 # important-instruction-reminders
 Do what has been asked; nothing more, nothing less.
 NEVER create files unless they're absolutely necessary for achieving your goal.
