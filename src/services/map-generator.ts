@@ -1,41 +1,12 @@
 import { Dungeon, Room, Corridor, Door, RoomShape } from '../core/types';
 import { rng, id } from './random';
-import Delaunator from 'delaunator';
 import { generateDoor } from './doors';
 import { roomShapeService, ShapePreferences } from './room-shapes';
-import { connectRooms, type EnhancedPathfindingOptions } from './corridors';
-import { createSimpleUnionFind } from '../utils/union-find';
-import { SpatialIndex, roomToSpatialItem, spatialItemsOverlap, pointToSpatialItem } from '../utils/spatial-index';
-import { distance } from '../utils/geometry'; // keep only if used elsewhere
-import * as PF from 'pathfinding';
+import { connectRooms } from './corridors';
+import { SpatialIndex, roomToSpatialItem } from '../utils/spatial-index';
 
 // A* pathfinding node for corridor generation
-interface PathNode {
-  x: number;
-  y: number;
-  g: number; // Cost from start
-  h: number; // Heuristic cost to goal
-  f: number; // Total cost (g + h)
-  parent?: PathNode;
-}
-
-// Priority queue for A* pathfinding
-class PriorityQueue {
-  private items: PathNode[] = [];
-
-  enqueue(node: PathNode): void {
-    this.items.push(node);
-    this.items.sort((a, b) => a.f - b.f);
-  }
-
-  dequeue(): PathNode | undefined {
-    return this.items.shift();
-  }
-
-  isEmpty(): boolean {
-    return this.items.length === 0;
-  }
-}
+// Removed legacy A* node/queue structs (routing handled in corridors.ts)
 
 export interface MapGenerationOptions {
   // Layout Types
@@ -112,8 +83,19 @@ export class MapGenerator {
     // Combine all rooms for corridor generation and clamp to map bounds
     let allRooms = this.clampRooms([...dungeonRooms, ...specialRooms], width, height);
 
-    // Generate corridors based on type (including special rooms) and clamp paths
-    let corridors = this.generateCorridors(allRooms, corridorType, pathfindingAlgorithm, corridorWidth, allowDeadends, width, height);
+    // Generate corridors using shared corridor service (respecting room boundaries)
+    let corridors = connectRooms(allRooms, this.R, {
+      algorithm: (pathfindingAlgorithm as any) || 'astar',
+      usePathfindingLib: (pathfindingAlgorithm as any) !== 'manhattan',
+      preferLShape: true,
+    });
+    // Expand corridors to desired width while avoiding room interiors
+    if (corridorWidth && corridorWidth > 1) {
+      corridors = corridors.map(c => ({
+        ...c,
+        path: this.expandCorridorToWidth(c.path, corridorWidth, allRooms)
+      }));
+    }
     corridors = this.clampCorridors(corridors, width, height);
 
     // Generate doors
@@ -781,36 +763,16 @@ export class MapGenerator {
   /**
    * Generate corridors using graph algorithms
    */
-  private generateCorridors(rooms: Room[], type: string, pathfindingAlgorithm: string, width: number, allowDeadends: boolean, mapWidth: number, mapHeight: number): Corridor[] {
-    // Build room graph with deadend handling
-    const roomConnections = this.buildRoomGraph(rooms, allowDeadends);
-    
-    // Use enhanced corridor generation based on pathfinding algorithm
-    const useEnhanced = pathfindingAlgorithm !== 'manhattan';
-    
-    const pathfindingOptions: EnhancedPathfindingOptions = {
-      algorithm: pathfindingAlgorithm as any,
-      usePathfindingLib: useEnhanced
-    };
-    
-    // Generate corridors using the room connections and unified pathfinding
-    let corridors = this.connectRoomsWithGraph(rooms, roomConnections, pathfindingOptions);
-    
-    // Expand corridors to desired width for battle map compatibility if needed
-    if (width > 1) {
-      corridors = corridors.map(corridor => ({
-        ...corridor,
-        path: this.expandCorridorToWidth(corridor.path, width)
-      }));
-    }
-
-    return corridors;
-  }
+  // Deprecated: local corridor generation method removed — use corridors.ts via connectRooms()
 
   /**
    * Build a graph connecting rooms using Delaunay triangulation and MST
    */
-  private buildRoomGraph(rooms: Room[], allowDeadends: boolean): Array<[number, number]> {
+  /*
+   * Removed legacy corridor graph/pathing helpers in favor of corridors.ts
+   * (buildRoomGraph, connectRoomsWithGraph, manhattanPath, etc.)
+   */
+  /* private buildRoomGraph(rooms: Room[], allowDeadends: boolean): Array<[number, number]> {
     if (rooms.length < 2) return [];
 
     const centers = rooms.map(r => [r.x + Math.floor(r.w / 2), r.y + Math.floor(r.h / 2)] as const);
@@ -910,59 +872,12 @@ export class MapGenerator {
     }
 
     return mst;
-  }
+  } */
 
   /**
    * Connect rooms using pre-calculated room graph and pathfinding options
    */
-  private connectRoomsWithGraph(rooms: Room[], connections: Array<[number, number]>, options: EnhancedPathfindingOptions): Corridor[] {
-    const corridors: Corridor[] = [];
-    
-    for (const [a, b] of connections) {
-      const roomA = rooms[a];
-      const roomB = rooms[b];
-      const from = roomA.id;
-      const to = roomB.id;
-      
-      // Use enhanced pathfinding if available and enabled
-      const useEnhanced = options.usePathfindingLib && options.algorithm !== 'manhattan';
-      
-      if (useEnhanced) {
-        // Try enhanced door-to-door pathfinding
-        const doorPoints = this.calculateDoorConnectionPoints(roomA, roomB);
-        
-        corridors.push({ 
-          id: id('cor', this.R), 
-          from, 
-          to, 
-          path: [doorPoints.start, doorPoints.end],
-          doorStart: doorPoints.start,
-          doorEnd: doorPoints.end
-        });
-      } else {
-        // Use Manhattan pathfinding with trimming (classic behavior)
-        const centerA = { x: roomA.x + Math.floor(roomA.w/2), y: roomA.y + Math.floor(roomA.h/2) };
-        const centerB = { x: roomB.x + Math.floor(roomB.w/2), y: roomB.y + Math.floor(roomB.h/2) };
-        
-        let path = this.manhattanPath(centerA, centerB);
-        path = this.trimPath(path, roomA, roomB);
-        
-        // Calculate door points for door placement
-        const doorPoints = this.calculateDoorConnectionPoints(roomA, roomB);
-        
-        corridors.push({ 
-          id: id('cor', this.R), 
-          from, 
-          to, 
-          path,
-          doorStart: doorPoints.start,
-          doorEnd: doorPoints.end
-        });
-      }
-    }
-    
-    return corridors;
-  }
+  // Removed legacy corridor connector (use corridors.ts)
 
   /**
    * Calculate optimal door connection points between two rooms
@@ -1009,40 +924,12 @@ export class MapGenerator {
   /**
    * Generate Manhattan path between two points
    */
-  private manhattanPath(a: {x: number; y: number}, b: {x: number; y: number}): {x: number; y: number}[] {
-    const path = [] as {x: number; y: number}[];
-    const xStep = a.x < b.x ? 1 : -1;
-    const yStep = a.y < b.y ? 1 : -1;
-    
-    // Randomize whether to move horizontally or vertically first
-    if (this.R() < 0.5) {
-      for (let x = a.x; x !== b.x; x += xStep) path.push({x, y: a.y});
-      for (let y = a.y; y !== b.y; y += yStep) path.push({x: b.x, y});
-    } else {
-      for (let y = a.y; y !== b.y; y += yStep) path.push({x: a.x, y});
-      for (let x = a.x; x !== b.x; x += xStep) path.push({x, y: b.y});
-    }
-    path.push({x: b.x, y: b.y});
-    return path;
-  }
+  // Removed: manhattanPath
 
   /**
    * Trim path to remove points inside rooms and ensure connection at room edges
    */
-  private trimPath(
-    path: { x: number; y: number }[],
-    a: Room,
-    b: Room,
-  ): { x: number; y: number }[] {
-    const inside = (p: { x: number; y: number }, r: Room): boolean =>
-      p.x >= r.x && p.x < r.x + r.w && p.y >= r.y && p.y < r.y + r.h;
-    
-    // Remove points inside rooms
-    while (path.length && inside(path[0], a)) path.shift();
-    while (path.length && inside(path[path.length - 1], b)) path.pop();
-    
-    return path;
-  }
+  // Removed: trimPath
 
   /**
    * Create a path between two rooms based on corridor type
@@ -1077,213 +964,84 @@ export class MapGenerator {
   /**
    * Calculate the best connection points on the edges of two rooms
    */
-  private calculateConnectionPoints(room1: Room, room2: Room): {
-    start: { x: number; y: number };
-    end: { x: number; y: number };
-    doorStart: { x: number; y: number };
-    doorEnd: { x: number; y: number };
-  } {
-    // Handle shaped rooms using room shape service
-    const center1 = this.getRoomCenter(room1);
-    const center2 = this.getRoomCenter(room2);
-    
-    // Determine the best edge for each room based on the direction to the other room
-    const dx = center2.x - center1.x;
-    const dy = center2.y - center1.y;
-    
-    let start: { x: number; y: number };
-    let end: { x: number; y: number };
-    
-    // Find door positions ON the room walls
-    let startDoor: { x: number; y: number };
-    let endDoor: { x: number; y: number };
-    let startDirection: 'top' | 'bottom' | 'left' | 'right';
-    let endDirection: 'top' | 'bottom' | 'left' | 'right';
-    
-
-    if (Math.abs(dx) > Math.abs(dy)) {
-      // Horizontal connection
-      if (dx > 0) {
-        // room2 is to the right of room1
-        startDirection = 'right';
-        endDirection = 'left';
-        startDoor = this.findClosestPointOnRoomEdge(room1, 'right', center2);
-        endDoor = this.findClosestPointOnRoomEdge(room2, 'left', center1);
-      } else {
-        // room2 is to the left of room1
-        startDirection = 'left';
-        endDirection = 'right';
-        startDoor = this.findClosestPointOnRoomEdge(room1, 'left', center2);
-        endDoor = this.findClosestPointOnRoomEdge(room2, 'right', center1);
-      }
-    } else {
-      // Vertical connection
-      if (dy > 0) {
-        // room2 is below room1
-        startDirection = 'bottom';
-        endDirection = 'top';
-        startDoor = this.findClosestPointOnRoomEdge(room1, 'bottom', center2);
-        endDoor = this.findClosestPointOnRoomEdge(room2, 'top', center1);
-      } else {
-        // room2 is above room1
-        startDirection = 'top';
-        endDirection = 'bottom';
-        startDoor = this.findClosestPointOnRoomEdge(room1, 'top', center2);
-        endDoor = this.findClosestPointOnRoomEdge(room2, 'bottom', center1);
-      }
-    }
-    start = startDoor;
-    end = endDoor;
-    
-    return { start, end, doorStart: startDoor, doorEnd: endDoor };
-  }
+  // Removed legacy connection point helpers (handled in corridors.ts)
 
   /**
    * Get the center point of a room, accounting for different shapes
    */
-  private getRoomCenter(room: Room): { x: number; y: number } {
-    if (room.shape === 'rectangular' || !room.shapePoints) {
-      return { x: room.x + room.w / 2, y: room.y + room.h / 2 };
-    } else {
-      // For shaped rooms, use the room bounds center
-      const bounds = roomShapeService.getRoomBounds(room);
-      return { 
-        x: (bounds.minX + bounds.maxX) / 2, 
-        y: (bounds.minY + bounds.maxY) / 2 
-      };
-    }
-  }
+  // Removed: getRoomCenter
 
   /**
    * Find the closest point on a room's edge in the specified direction
    */
-  private findClosestPointOnRoomEdge(room: Room, edge: 'top' | 'bottom' | 'left' | 'right', targetPoint: { x: number; y: number }): { x: number; y: number } {
-    // Use the room shape service to find the actual closest edge point
-    return roomShapeService.findClosestEdgePoint(room, edge, targetPoint);
-  }
+  // Removed: findClosestPointOnRoomEdge
 
 
 
   /**
    * Create a maze-like path between two points
    */
-  private createMazePathBetweenPoints(start: { x: number; y: number }, end: { x: number; y: number }): { x: number; y: number }[] {
-    const path: { x: number; y: number }[] = [];
-    let currentX = start.x;
-    let currentY = start.y;
-    
-    while (currentX !== end.x || currentY !== end.y) {
-      path.push({ x: currentX, y: currentY });
-      
-      if (currentX < end.x) currentX++;
-      else if (currentX > end.x) currentX--;
-      
-      if (currentY < end.y) currentY++;
-      else if (currentY > end.y) currentY--;
-      
-      // Add some randomness for maze-like appearance
-      if (this.R() < 0.3) {
-        const randomX = currentX + (this.R() < 0.5 ? 1 : -1);
-        const randomY = currentY + (this.R() < 0.5 ? 1 : -1);
-        path.push({ x: randomX, y: randomY });
-      }
-    }
-    path.push({ x: end.x, y: end.y });
-    return path;
-  }
+  // Removed: createMazePathBetweenPoints (style now via cost shaping/post-process)
 
   /**
    * Create a winding path between two points
    */
-  private createWindingPathBetweenPoints(start: { x: number; y: number }, end: { x: number; y: number }): { x: number; y: number }[] {
-    const path: { x: number; y: number }[] = [];
-    let currentX = start.x;
-    let currentY = start.y;
-    
-    while (currentX !== end.x || currentY !== end.y) {
-      path.push({ x: currentX, y: currentY });
-      
-      // Add winding movement
-      if (this.R() < 0.7) {
-        if (currentX < end.x) currentX++;
-        else if (currentX > end.x) currentX--;
-      } else {
-        if (currentY < end.y) currentY++;
-        else if (currentY > end.y) currentY--;
-      }
-    }
-    path.push({ x: end.x, y: end.y });
-    return path;
-  }
+  // Removed: createWindingPathBetweenPoints
 
   /**
    * Create a straight path between two points
    */
-  private createStraightPathBetweenPoints(start: { x: number; y: number }, end: { x: number; y: number }): { x: number; y: number }[] {
-    const path: { x: number; y: number }[] = [];
-    let currentX = start.x;
-    let currentY = start.y;
-    
-    while (currentX !== end.x || currentY !== end.y) {
-      path.push({ x: currentX, y: currentY });
-      
-      if (currentX < end.x) currentX++;
-      else if (currentX > end.x) currentX--;
-      
-      if (currentY < end.y) currentY++;
-      else if (currentY > end.y) currentY--;
-    }
-    path.push({ x: end.x, y: end.y });
-    return path;
-  }
+  // Removed: createStraightPathBetweenPoints
 
   /**
    * Create a maze path between two points with collision detection
    */
-  private createMazePathWithCollisionDetection(start: { x: number; y: number }, end: { x: number; y: number }, rooms: Room[], excludeRooms: string[]): { x: number; y: number }[] {
-    // Create spatial index for efficient collision detection
-    const roomSpatialIndex = this.createRoomSpatialIndex(rooms);
-    
-    // First try the original maze path
-    const originalPath = this.createMazePathBetweenPoints(start, end);
-    const allowedEdgePoints = [start, end];
-    const collisions = this.countRoomCollisions(originalPath, rooms, allowedEdgePoints, roomSpatialIndex);
-    
-    if (collisions === 0) {
-      return originalPath; // Use original if no collisions
-    }
-    
-    // If there are collisions, fall back to battle map path which has collision avoidance
-    return this.createBattleMapPath(start, end, rooms, excludeRooms);
-  }
+  // Removed: createMazePathWithCollisionDetection
 
   /**
    * Create a winding path between two points with collision detection
    */
-  private createWindingPathWithCollisionDetection(start: { x: number; y: number }, end: { x: number; y: number }, rooms: Room[], excludeRooms: string[]): { x: number; y: number }[] {
-    // Create spatial index for efficient collision detection
-    const roomSpatialIndex = this.createRoomSpatialIndex(rooms);
-    
-    // First try the original winding path
-    const originalPath = this.createWindingPathBetweenPoints(start, end);
-    const allowedEdgePoints = [start, end];
-    const collisions = this.countRoomCollisions(originalPath, rooms, allowedEdgePoints, roomSpatialIndex);
-    
-    if (collisions === 0) {
-      return originalPath; // Use original if no collisions
-    }
-    
-    // If there are collisions, fall back to battle map path which has collision avoidance
-    return this.createBattleMapPath(start, end, rooms, excludeRooms);
-  }
+  // Removed: createWindingPathWithCollisionDetection
 
   /**
    * Expand a single-width corridor path to the specified width for battle map compatibility
    */
-  private expandCorridorToWidth(path: { x: number; y: number }[], width: number): { x: number; y: number }[] {
+  private expandCorridorToWidth(path: { x: number; y: number }[], width: number, rooms: Room[]): { x: number; y: number }[] {
     if (width === 1 || path.length === 0) return path;
     
     const expandedTiles = new Set<string>();
+
+    const isInterior = (x: number, y: number): boolean => {
+      for (const room of rooms) {
+        const inRoom = room.shape !== 'rectangular' && room.shapePoints
+          ? roomShapeService.isPointInRoom(room, x, y)
+          : (x >= room.x && x < room.x + room.w && y >= room.y && y < room.y + room.h);
+        if (inRoom) {
+          const onEdge = room.shape !== 'rectangular' && room.shapePoints
+            ? roomShapeService.isPointOnRoomEdge(room, x, y)
+            : (
+                (x === room.x || x === room.x + room.w - 1) && y >= room.y && y < room.y + room.h
+              ) || (
+                (y === room.y || y === room.y + room.h - 1) && x >= room.x && x < room.x + room.w
+              );
+          if (!onEdge) return true; // Interior collision
+        }
+      }
+      return false;
+    };
+
+    // Clearance buffer in tiles from room interiors
+    const buffer = 1;
+    const nearInterior = (x: number, y: number): boolean => {
+      // Check Manhattan neighborhood within 'buffer'
+      for (let dy = -buffer; dy <= buffer; dy++) {
+        for (let dx = -buffer; dx <= buffer; dx++) {
+          if (Math.abs(dx) + Math.abs(dy) > buffer) continue;
+          if (isInterior(x + dx, y + dy)) return true;
+        }
+      }
+      return false;
+    };
     
     // Add the original path
     path.forEach(tile => {
@@ -1329,7 +1087,10 @@ export class MapGenerator {
         
         const expandedX = tile.x + expandDirection.x * offset;
         const expandedY = tile.y + expandDirection.y * offset;
-        expandedTiles.add(`${expandedX},${expandedY}`);
+        // Do not add expansion tiles inside or adjacent to room interiors
+        if (!isInterior(expandedX, expandedY) && !nearInterior(expandedX, expandedY)) {
+          expandedTiles.add(`${expandedX},${expandedY}`);
+        }
       }
     });
     
@@ -1343,326 +1104,54 @@ export class MapGenerator {
   /**
    * Check if a point is ON a room wall (edge), not inside the room
    */
-  private isPointOnRoomWall(room: Room, x: number, y: number): boolean {
-    if (room.shape === 'rectangular' || !room.shapePoints) {
-      // For rectangular rooms, check if point is on any of the four walls (within room bounds)
-      const onLeftWall = x === room.x && y >= room.y && y < room.y + room.h;
-      const onRightWall = x === room.x + room.w - 1 && y >= room.y && y < room.y + room.h;
-      const onTopWall = y === room.y && x >= room.x && x < room.x + room.w;
-      const onBottomWall = y === room.y + room.h - 1 && x >= room.x && x < room.x + room.w;
-      
-      return onLeftWall || onRightWall || onTopWall || onBottomWall;
-    } else {
-      // For shaped rooms, use room shape service to check if point is on the edge
-      return roomShapeService.isPointOnRoomEdge(room, x, y);
-    }
-  }
+  // Removed: isPointOnRoomWall
 
   /**
    * Check if a point collides with any room interior (corridors should go around rooms, not through them)
    */
-  private isRoomCollision(x: number, y: number, rooms: Room[], allowedEdgePoints: { x: number; y: number }[] = [], roomSpatialIndex?: SpatialIndex): boolean {
-    // Use spatial indexing if available for O(log n) performance instead of O(n) linear search
-    if (roomSpatialIndex) {
-      const pointQuery = pointToSpatialItem(`point-${x}-${y}`, x, y, 0);
-      const candidateRooms = roomSpatialIndex.search(pointQuery);
-      
-      // Only check rooms that could potentially contain this point
-      for (const spatialItem of candidateRooms) {
-        const room = spatialItem.data as Room;
-        if (!room) continue;
-        
-        // Use room shape service for accurate collision detection
-        const insideRoom = roomShapeService.isPointInRoom(room, x, y);
-        
-        if (insideRoom) {
-          // Allow specific edge points (door connections)
-          const isAllowedEdgePoint = allowedEdgePoints.some(point => point.x === x && point.y === y);
-          if (isAllowedEdgePoint) {
-            return false; // This is an allowed door connection point
-          }
-          
-          // Check if this point is ON a room wall (not inside)
-          if (this.isPointOnRoomWall(room, x, y)) {
-            return false; // Allow corridor points on room walls (door connections)
-          }
-          
-          return true; // Collision detected - corridor should not go through room interior
-        }
-      }
-      return false; // No collision with room interiors
-    }
-    
-    // Fallback to linear search if no spatial index provided
-    for (const room of rooms) {
-      // Use room shape service for accurate collision detection
-      const insideRoom = roomShapeService.isPointInRoom(room, x, y);
-      
-      if (insideRoom) {
-        // Allow specific edge points (door connections)
-        const isAllowedEdgePoint = allowedEdgePoints.some(point => point.x === x && point.y === y);
-        if (isAllowedEdgePoint) {
-          return false; // This is an allowed door connection point
-        }
-        
-        // Check if this point is ON a room wall (not inside)
-        if (this.isPointOnRoomWall(room, x, y)) {
-          return false; // Allow corridor points on room walls (door connections)
-        }
-        
-        return true; // Collision detected - corridor should not go through room interior
-      }
-    }
-    return false; // No collision with room interiors
-  }
+  // Removed: isRoomCollision
 
   /**
    * Create a more battle-map friendly path with proper wall avoidance
    */
-  private createBattleMapPath(start: { x: number; y: number }, end: { x: number; y: number }, rooms?: Room[], excludeRooms?: string[]): { x: number; y: number }[] {
-    // If no rooms provided for collision detection, fall back to simple L-shaped path
-    if (!rooms) {
-      return this.createSimpleLShapedPath(start, end);
-    }
-    
-    // Create spatial index for efficient collision detection
-    const roomSpatialIndex = this.createRoomSpatialIndex(rooms);
-    
-    // Define allowed edge points (start and end door connections)
-    const allowedEdgePoints = [start, end];
-    
-    // Try both horizontal-first and vertical-first approaches
-    const horizontalFirstPath = this.createLShapedPathWithCollisionAvoidance(start, end, true, rooms, allowedEdgePoints);
-    const verticalFirstPath = this.createLShapedPathWithCollisionAvoidance(start, end, false, rooms, allowedEdgePoints);
-    
-    // Choose the path with fewer room collisions
-    const horizontalCollisions = this.countRoomCollisions(horizontalFirstPath, rooms, allowedEdgePoints, roomSpatialIndex);
-    const verticalCollisions = this.countRoomCollisions(verticalFirstPath, rooms, allowedEdgePoints, roomSpatialIndex);
-    
-    if (horizontalCollisions === 0 && verticalCollisions === 0) {
-      // Both paths are clean, choose randomly for variety
-      return this.R() < 0.5 ? horizontalFirstPath : verticalFirstPath;
-    } else if (horizontalCollisions === 0) {
-      return horizontalFirstPath;
-    } else if (verticalCollisions === 0) {
-      return verticalFirstPath;
-    } else {
-      // Both have collisions, choose the one with fewer
-      return horizontalCollisions <= verticalCollisions ? horizontalFirstPath : verticalFirstPath;
-    }
-  }
+  // Removed: createBattleMapPath
 
   /**
    * Create simple L-shaped path without collision detection
    */
-  private createSimpleLShapedPath(start: { x: number; y: number }, end: { x: number; y: number }): { x: number; y: number }[] {
-    const path: { x: number; y: number }[] = [];
-    let currentX = start.x;
-    let currentY = start.y;
-    
-    const horizontalFirst = this.R() < 0.5;
-    
-    if (horizontalFirst) {
-      // Move horizontally first, then vertically
-      while (currentX !== end.x) {
-        path.push({ x: currentX, y: currentY });
-        currentX += currentX < end.x ? 1 : -1;
-      }
-      while (currentY !== end.y) {
-        path.push({ x: currentX, y: currentY });
-        currentY += currentY < end.y ? 1 : -1;
-      }
-    } else {
-      // Move vertically first, then horizontally  
-      while (currentY !== end.y) {
-        path.push({ x: currentX, y: currentY });
-        currentY += currentY < end.y ? 1 : -1;
-      }
-      while (currentX !== end.x) {
-        path.push({ x: currentX, y: currentY });
-        currentX += currentX < end.x ? 1 : -1;
-      }
-    }
-    
-    path.push({ x: end.x, y: end.y });
-    return path;
-  }
+  // Removed: createSimpleLShapedPath
 
   /**
    * Create L-shaped path with collision avoidance
    */
-  private createLShapedPathWithCollisionAvoidance(start: { x: number; y: number }, end: { x: number; y: number }, horizontalFirst: boolean, rooms: Room[], allowedEdgePoints: { x: number; y: number }[]): { x: number; y: number }[] {
-    const path: { x: number; y: number }[] = [];
-    let currentX = start.x;
-    let currentY = start.y;
-    
-    if (horizontalFirst) {
-      // Move horizontally first, then vertically
-      while (currentX !== end.x) {
-        path.push({ x: currentX, y: currentY });
-        currentX += currentX < end.x ? 1 : -1;
-      }
-      while (currentY !== end.y) {
-        path.push({ x: currentX, y: currentY });
-        currentY += currentY < end.y ? 1 : -1;
-      }
-    } else {
-      // Move vertically first, then horizontally  
-      while (currentY !== end.y) {
-        path.push({ x: currentX, y: currentY });
-        currentY += currentY < end.y ? 1 : -1;
-      }
-      while (currentX !== end.x) {
-        path.push({ x: currentX, y: currentY });
-        currentX += currentX < end.x ? 1 : -1;
-      }
-    }
-    
-    path.push({ x: end.x, y: end.y });
-    return path;
-  }
+  // Removed: createLShapedPathWithCollisionAvoidance
 
   /**
    * Count room collisions in a path
    */
-  private countRoomCollisions(path: { x: number; y: number }[], rooms: Room[], allowedEdgePoints: { x: number; y: number }[], roomSpatialIndex?: SpatialIndex): number {
-    let collisions = 0;
-    for (const point of path) {
-      if (this.isRoomCollision(point.x, point.y, rooms, allowedEdgePoints, roomSpatialIndex)) {
-        collisions++;
-      }
-    }
-    return collisions;
-  }
+  // Removed: countRoomCollisions
 
   /**
    * Create a spatial index for rooms to enable O(log n) collision detection
    */
-  private createRoomSpatialIndex(rooms: Room[]): SpatialIndex {
-    const spatialIndex = new SpatialIndex();
-    const spatialItems = rooms.map(room => 
-      roomToSpatialItem(
-        room.id,
-        room.x,
-        room.y,
-        room.w,
-        room.h,
-        0, // No spacing for exact room boundaries
-        room
-      )
-    );
-    spatialIndex.load(spatialItems);
-    return spatialIndex;
-  }
+  // Removed: createRoomSpatialIndex
 
   /**
    * Generate a cost grid for A* pathfinding
    * Higher costs discourage pathfinding through certain areas (like room interiors)
    */
-  private generateCostGrid(rooms: Room[], width: number, height: number, start: { x: number; y: number }, end: { x: number; y: number }): number[][] {
-    // Initialize with base cost of 1 for all tiles
-    const costGrid: number[][] = Array(height).fill(null).map(() => Array(width).fill(1));
-    
-    // Set high cost for room interiors to discourage pathfinding through them
-    for (const room of rooms) {
-      for (let y = room.y; y < room.y + room.h; y++) {
-        for (let x = room.x; x < room.x + room.w; x++) {
-          if (x >= 0 && x < width && y >= 0 && y < height) {
-            // High cost for room interiors (20x normal cost)
-            costGrid[y][x] = 20;
-          }
-        }
-      }
-      
-      // Lower cost for room edges where doors can be placed (still higher than empty space)
-      // This allows corridors to connect to rooms but discourages going through them
-      const edgePositions = this.getRoomEdgePositions(room);
-      for (const pos of edgePositions) {
-        if (pos.x >= 0 && pos.x < width && pos.y >= 0 && pos.y < height) {
-          costGrid[pos.y][pos.x] = 3;
-        }
-      }
-    }
-    
-    // Ensure start and end positions have reasonable cost
-    if (start.x >= 0 && start.x < width && start.y >= 0 && start.y < height) {
-      costGrid[start.y][start.x] = 1;
-    }
-    if (end.x >= 0 && end.x < width && end.y >= 0 && end.y < height) {
-      costGrid[end.y][end.x] = 1;
-    }
-    
-    
-    return costGrid;
-  }
+  // Removed: generateCostGrid
 
   /**
    * Get all edge positions of a room for cost grid calculation
    */
-  private getRoomEdgePositions(room: Room): { x: number; y: number }[] {
-    const edges: { x: number; y: number }[] = [];
-    
-    // Top and bottom edges
-    for (let x = room.x; x < room.x + room.w; x++) {
-      edges.push({ x, y: room.y }); // Top edge
-      edges.push({ x, y: room.y + room.h - 1 }); // Bottom edge
-    }
-    
-    // Left and right edges (excluding corners already added)
-    for (let y = room.y + 1; y < room.y + room.h - 1; y++) {
-      edges.push({ x: room.x, y }); // Left edge
-      edges.push({ x: room.x + room.w - 1, y }); // Right edge
-    }
-    
-    return edges;
-  }
+  // Removed: getRoomEdgePositions
 
   /**
    * A* pathfinding using pathfinding library with cost grid support
    * Finds optimal path while avoiding high-cost areas (like room interiors)
    */
-  private findPathAStar(
-    start: { x: number; y: number },
-    goal: { x: number; y: number },
-    rooms: Room[],
-    width: number,
-    height: number
-  ): { x: number; y: number }[] {
-    // Generate cost grid
-    const costGrid = this.generateCostGrid(rooms, width, height, start, goal);
-    
-    // Convert cost grid to binary walkability grid for pathfinding library
-    const grid = new PF.Grid(width, height);
-    for (let y = 0; y < height; y++) {
-      for (let x = 0; x < width; x++) {
-        const cost = costGrid[y][x];
-        // Block very high cost areas (room interiors), allow room edges and corridors
-        const isBlocked = cost > 15;
-        grid.setWalkableAt(x, y, !isBlocked);
-      }
-    }
-    
-    // Ensure start and goal are walkable
-    grid.setWalkableAt(start.x, start.y, true);
-    grid.setWalkableAt(goal.x, goal.y, true);
-    
-    // Create A* finder with Manhattan heuristic and optimized priority queue
-    const finder = new PF.AStarFinder({
-      allowDiagonal: false,
-      heuristic: PF.Heuristic.manhattan
-    });
-    
-    // Find path using optimized A* implementation
-    const path = finder.findPath(start.x, start.y, goal.x, goal.y, grid);
-    
-    // Convert path format to our expected format
-    if (path.length > 0) {
-      return path.map((point: number[]) => ({ x: point[0], y: point[1] }));
-    }
-    
-    // No path found, fallback to simple L-shaped path
-    return this.createSimpleLShapedPath(start, goal);
-  }
+  // Removed: findPathAStar
 
   /**
    * Add special features like stairs and entrances

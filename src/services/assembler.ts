@@ -64,7 +64,7 @@ export function buildDungeon(opts: BuildDungeonOptions): Dungeon {
     roomSize: opts.roomSize ?? templateOptions.roomSize ?? 'medium',
     roomShape: opts.roomShape ?? templateOptions.roomShape ?? 'rectangular',
     corridorType: opts.corridorType ?? templateOptions.corridorType ?? 'straight',
-    pathfindingAlgorithm: opts.pathfindingAlgorithm ?? 'manhattan',
+    pathfindingAlgorithm: opts.pathfindingAlgorithm ?? 'astar',
     corridorWidth: opts.corridorWidth ?? templateOptions.corridorWidth ?? 1,
     allowDeadends: opts.allowDeadends ?? templateOptions.allowDeadends ?? true,
     stairsUp: opts.stairsUp ?? templateOptions.stairsUp ?? false,
