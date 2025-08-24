@@ -1,0 +1,76 @@
+{
+  "name": "@doa/desktop",
+  "version": "0.1.0",
+  "description": "Dungeons on Automatic Desktop App with Plugin Support",
+  "main": "dist/electron/main.js",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently \"npm run build:electron:watch\" \"npm run dev:renderer\" \"wait-on dist/electron/main.js && electron .\"",
+    "dev:renderer": "vite renderer --port 5174",
+    "build": "npm run build:renderer && npm run build:electron",
+    "build:renderer": "vite build",
+    "build:electron": "tsc -p tsconfig.electron.json",
+    "build:electron:watch": "tsc -p tsconfig.electron.json --watch",
+    "start": "electron .",
+    "package": "electron-builder",
+    "dist": "npm run build && electron-builder --publish=never",
+    "dist:win": "npm run build && electron-builder --win --publish=never",
+    "dist:linux": "npm run build && electron-builder --linux --publish=never",
+    "dist:all": "npm run build && electron-builder --win --linux --publish=never"
+  },
+  "devDependencies": {
+    "@types/node": "^22.5.1",
+    "concurrently": "^8.2.2",
+    "electron": "^28.0.0",
+    "electron-builder": "^25.0.0",
+    "typescript": "^5.5.4",
+    "vite": "^5.0.0",
+    "wait-on": "^8.0.0"
+  },
+  "dependencies": {
+    "bootstrap": "5.3.3"
+  },
+  "build": {
+    "appId": "com.doa.desktop",
+    "productName": "Dungeons on Automatic",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "plugins/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "plugins",
+        "to": "plugins"
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "dir",
+          "arch": ["x64"]
+        }
+      ],
+      "sign": null,
+      "artifactName": "Dungeons-on-Automatic-${version}-win32-${arch}.zip"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": ["x64"]
+        }
+      ],
+      "category": "Game"
+    }
+  }
+}

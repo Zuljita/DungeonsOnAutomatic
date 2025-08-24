@@ -1,0 +1,20 @@
+{
+  "name": "@doa/foundry-export",
+  "version": "1.0.0",
+  "description": "Core FoundryVTT export plugin for Dungeons On Automatic",
+  "main": "index.js",
+  "type": "module",
+  "author": "Dungeons On Automatic",
+  "license": "MIT",
+  "doaPlugin": {
+    "id": "foundry-export",
+    "type": "export",
+    "description": "Export dungeons to FoundryVTT-compatible JSON format",
+    "author": "DOA Core",
+    "tags": ["export", "foundry", "vtt", "core"]
+  },
+  "keywords": ["doa", "plugin", "export", "foundry", "vtt"],
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

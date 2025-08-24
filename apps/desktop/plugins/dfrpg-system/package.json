@@ -1,0 +1,18 @@
+{
+  "name": "dfrpg-system",
+  "version": "1.0.0",
+  "description": "GURPS Dungeon Fantasy RPG system for dungeon generation",
+  "main": "index.js",
+  "doaPlugin": {
+    "id": "dfrpg",
+    "name": "DFRPG System",
+    "type": "system",
+    "version": "1.0.0",
+    "description": "GURPS Dungeon Fantasy RPG system with monsters, traps, and treasure",
+    "compatibility": "^0.1.0",
+    "dependencies": {
+      "systems": [],
+      "plugins": []
+    }
+  }
+}
