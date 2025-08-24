@@ -155,6 +155,54 @@ function validateLPath(
   return true;
 }
 
+// Attempt to find an orthogonal path by sliding the elbow along open space
+function findOrthogonalPath(
+  start: { x: number; y: number },
+  end: { x: number; y: number },
+  rooms: Room[],
+  allowRoomIds: string[],
+  bounds: { minX: number; maxX: number; minY: number; maxY: number }
+): { x: number; y: number }[] | null {
+  const [hv, vh] = buildLPaths(start, end);
+  if (validateLPath(hv, rooms, start, end, allowRoomIds)) return hv;
+  if (validateLPath(vh, rooms, start, end, allowRoomIds)) return vh;
+
+  // Slide along X at start.y
+  const maxScan = Math.max(bounds.maxX - bounds.minX, bounds.maxY - bounds.minY);
+  for (let dx = 1; dx < maxScan; dx++) {
+    for (const nx of [start.x + dx, start.x - dx]) {
+      if (nx < bounds.minX || nx > bounds.maxX) continue;
+      const candidate = [] as {x:number;y:number}[];
+      const xStep = start.x < nx ? 1 : -1;
+      for (let x = start.x; x !== nx; x += xStep) candidate.push({ x, y: start.y });
+      candidate.push({ x: nx, y: start.y });
+      const yStep = start.y < end.y ? 1 : -1;
+      for (let y = start.y; y !== end.y; y += yStep) candidate.push({ x: nx, y });
+      for (let x = nx; x !== end.x; x += (end.x < nx ? -1 : 1)) candidate.push({ x, y: end.y });
+      candidate.push({ x: end.x, y: end.y });
+      if (validateLPath(candidate, rooms, start, end, allowRoomIds)) return candidate;
+    }
+  }
+
+  // Slide along Y at start.x
+  for (let dy = 1; dy < maxScan; dy++) {
+    for (const ny of [start.y + dy, start.y - dy]) {
+      if (ny < bounds.minY || ny > bounds.maxY) continue;
+      const candidate = [] as {x:number;y:number}[];
+      const yStep = start.y < ny ? 1 : -1;
+      for (let y = start.y; y !== ny; y += yStep) candidate.push({ x: start.x, y });
+      candidate.push({ x: start.x, y: ny });
+      const xStep = start.x < end.x ? 1 : -1;
+      for (let x = start.x; x !== end.x; x += xStep) candidate.push({ x, y: ny });
+      for (let y = ny; y !== end.y; y += (end.y < ny ? -1 : 1)) candidate.push({ x: end.x, y });
+      candidate.push({ x: end.x, y: end.y });
+      if (validateLPath(candidate, rooms, start, end, allowRoomIds)) return candidate;
+    }
+  }
+
+  return null;
+}
+
 // Snap a door position to the nearest integer grid tile just outside the room
 function normalizeDoorPoint(room: Room, p: { x: number; y: number }): { x: number; y: number } {
   // For rectangular rooms, the door point should already be just outside.
@@ -471,7 +519,17 @@ function connectWithEnhancedPathfinding(
         }
       }
 
-      // If L-shape not used or invalid, route with PathFinding.js
+      // If L-shape not used or invalid, attempt elbow sliding to keep orthogonal
+      if (path.length === 0) {
+        const bounds = { minX, maxX, minY, maxY };
+        const allowIds = [rooms[e.a].id, rooms[e.b].id];
+        const orth = findOrthogonalPath(normStart, normEnd, rooms, allowIds, bounds);
+        if (orth) {
+          path = orth;
+        }
+      }
+
+      // If still no path, route with PathFinding.js (orthogonal grid), keep endpoints fixed
       if (path.length === 0) {
         try {
           const routed = findPathWithPathfindingJS(
@@ -488,7 +546,7 @@ function connectWithEnhancedPathfinding(
             path[path.length - 1] = normEnd;
           }
         } catch (error) {
-          // As a last resort, emit the straight segment; callers may reject or post-process
+          // As a last resort, emit the straight segment
           path = [normStart, normEnd];
         }
       }
