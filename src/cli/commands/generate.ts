@@ -9,76 +9,94 @@ import { createDefaultPluginLoader } from "../../services/plugin-loader";
 import { isExportPlugin } from "../../core/plugin-types";
 
 export function createGenerateCommand(): Command {
-  return new Command("generate")
-    .description("Generate a dungeon")
-    .option("--list-systems", "List available systems including plugins")
-    .option("--plugin-info <system>", "Show plugin-specific options for a system plugin")
-    .option("--rooms <n>", "number of rooms", (v) => parseInt(v, 10))
-    .option("--width <n>", "map width", (v) => parseInt(v, 10))
-    .option("--height <n>", "map height", (v) => parseInt(v, 10))
-    .option("--seed <seed>", "random seed")
-    .option("--layout-type <type>", "advanced layout type (rectangle, square, box, cross, etc.)")
-    .option("--corridor-type <type>", "corridor generation type (maze, winding, straight, mixed)")
-    .option("--corridor-width <width>", "corridor width in tiles (1, 2, or 3)", (v) =>
-      parseInt(v, 10),
-    )
-    .option("--room-layout <layout>", "room layout style (sparse, scattered, dense, symmetric)")
-    .option(
-      "--room-shape <shape>",
-      "room shape preference (rectangular, diverse, hex-preference, circular-preference, mixed)",
-    )
-    .option(
-      "--template <id>",
-      "apply a dungeon template (use 'doa templates' to see available options)",
-    )
-    .option("--stairs-up", "include stairs up to upper level")
-    .option("--stairs-down", "include stairs down to lower level")
-    .option("--entrance-from-periphery", "include entrance from outside")
-    .option("--system <name>", "system module to use (generic|dfrpg)", "generic")
-    .option("--source <src...>", "sources to include (system-specific)")
-    .option("--theme <id>", "theme id to apply to rooms and encounters")
-    .option(
-      "--monster-tag <tag>",
-      "require monsters to include tag (repeatable)",
-      (v, p) => [...p, v],
-      [] as string[],
-    )
-    .option(
-      "--trap-tag <tag>",
-      "require traps to include tag (repeatable)",
-      (v, p) => [...p, v],
-      [] as string[],
-    )
-    .option(
-      "--treasure-tag <tag>",
-      "require treasure to include tag (repeatable)",
-      (v, p) => [...p, v],
-      [] as string[],
-    )
-    .option("--map-style <style>", "map rendering style (classic, hand-drawn, hex, gridless)", "classic")
-    .option("--sketch-intensity <n>", "hand-drawn sketch intensity", (v) => parseFloat(v), 1)
-    .option("--texture <name>", "background texture (none, paper)", "none")
-    .option("--palette <name>", "color palette (light, dark, sepia)", "light")
-    .option("--lock-percentage <n>", "fraction of doors to lock (0-1)", (v) => parseFloat(v))
-    .option("--magical-locks", "allow magical locks")
-    .option("--treasure-balance", "enable encounter-appropriate treasure balancing")
-    .option("--wealth-level <level>", "campaign wealth level (conservative, standard, generous)", "standard")
-    .option("--boss-room-minimum <n>", "minimum treasure value for boss rooms", (v) => parseInt(v), 1000)
-    .option("--enhanced-treasure", "enable expanded treasure database with 200+ items")
-    .option("--dfrpg-rules", "use DFRPG rules-compliant generation with Cost Factors and enchantments")
-    .option("--treasure-theme <theme>", "treasure theme (default, warrior, wizard, thief, holy, nature, undead)", "default")
-    .option("--treasure-wealth <level>", "treasure wealth level (poor, average, wealthy, rich)", "average")
-    .option("--magic-frequency <n>", "magic item frequency multiplier", (v) => parseFloat(v), 1.0)
-    .option("--ascii", "render an ASCII map instead of JSON output")
-    .option("--debug-ascii", "render a high-resolution debug ASCII map with coordinates and corridor analysis")
-    .option("--debug-scale <n>", "scale factor for debug ASCII (default: 10)", (v) => parseInt(v))
-    .option("--svg", "render an SVG map instead of JSON output")
-    .option("--foundry", "output FoundryVTT-compatible JSON")
-    .option("--export-format <format>", "use an export plugin for the given format")
-    .option("--donjon", "shorthand for --export-format donjon")
-    .option("--export-page-size <size>", "PDF page size (a4|letter|legal)")
-    .option("--export-layout <layout>", "PDF layout (map-only|with-keys|detailed)")
-    .option("--export-color-mode <mode>", "PDF color mode (color|monochrome)")
+  const cmd = new Command("generate")
+    .description("Generate a dungeon");
+
+  // System & Core Options
+  cmd.option("--list-systems", "List available systems including plugins");
+  cmd.option("--plugin-info <system>", "Show plugin-specific options for a system plugin");
+  cmd.option("--source <src...>", "sources to include (system-specific)");
+  cmd.option("--system <name>", "system module to use (generic|dfrpg)", "generic");
+
+  // Layout & Structure Options  
+  cmd.option("--height <n>", "map height", (v) => parseInt(v, 10));
+  cmd.option("--layout-type <type>", "advanced layout type (rectangle, square, box, cross, etc.)");
+  cmd.option("--room-layout <layout>", "room layout style (sparse, scattered, dense, symmetric)");
+  cmd.option(
+    "--room-shape <shape>",
+    "room shape preference (rectangular, diverse, hex-preference, circular-preference, mixed)",
+  );
+  cmd.option("--rooms <n>", "number of rooms", (v) => parseInt(v, 10));
+  cmd.option(
+    "--template <id>",
+    "apply a dungeon template (use 'doa templates' to see available options)",
+  );
+  cmd.option("--width <n>", "map width", (v) => parseInt(v, 10));
+
+  // Generation Features
+  cmd.option("--corridor-type <type>", "corridor generation type (maze, winding, straight, mixed)");
+  cmd.option("--corridor-width <width>", "corridor width in tiles (1, 2, or 3)", (v) =>
+    parseInt(v, 10),
+  );
+  cmd.option("--entrance-from-periphery", "include entrance from outside");
+  cmd.option("--seed <seed>", "random seed");
+  cmd.option("--stairs-down", "include stairs down to lower level");
+  cmd.option("--stairs-up", "include stairs up to upper level");
+
+  // Content & Encounters
+  cmd.option("--lock-percentage <n>", "fraction of doors to lock (0-1)", (v) => parseFloat(v));
+  cmd.option("--magical-locks", "allow magical locks");
+  cmd.option(
+    "--monster-tag <tag>",
+    "require monsters to include tag (repeatable)",
+    (v, p) => [...p, v],
+    [] as string[],
+  );
+  cmd.option("--theme <id>", "theme id to apply to rooms and encounters");
+  cmd.option(
+    "--trap-tag <tag>",
+    "require traps to include tag (repeatable)",
+    (v, p) => [...p, v],
+    [] as string[],
+  );
+  cmd.option(
+    "--treasure-tag <tag>",
+    "require treasure to include tag (repeatable)",
+    (v, p) => [...p, v],
+    [] as string[],
+  );
+
+  // Treasure System
+  cmd.option("--boss-room-minimum <n>", "minimum treasure value for boss rooms", (v) => parseInt(v), 1000);
+  cmd.option("--dfrpg-rules", "use DFRPG rules-compliant generation with Cost Factors and enchantments");
+  cmd.option("--enhanced-treasure", "enable expanded treasure database with 200+ items");
+  cmd.option("--magic-frequency <n>", "magic item frequency multiplier", (v) => parseFloat(v), 1.0);
+  cmd.option("--treasure-balance", "enable encounter-appropriate treasure balancing");
+  cmd.option("--treasure-theme <theme>", "treasure theme (default, warrior, wizard, thief, holy, nature, undead)", "default");
+  cmd.option("--treasure-wealth <level>", "treasure wealth level (poor, average, wealthy, rich)", "average");
+  cmd.option("--wealth-level <level>", "campaign wealth level (conservative, standard, generous)", "standard");
+
+  // Visual & Rendering
+  cmd.option("--debug-scale <n>", "scale factor for debug ASCII (default: 10)", (v) => parseInt(v));
+  cmd.option("--map-style <style>", "map rendering style (classic, hand-drawn, hex, gridless)", "classic");
+  cmd.option("--palette <name>", "color palette (light, dark, sepia)", "light");
+  cmd.option("--sketch-intensity <n>", "hand-drawn sketch intensity", (v) => parseFloat(v), 1);
+  cmd.option("--texture <name>", "background texture (none, paper)", "none");
+
+  // Export Formats
+  cmd.option("--ascii", "render an ASCII map instead of JSON output");
+  cmd.option("--debug-ascii", "render a high-resolution debug ASCII map with coordinates and corridor analysis");
+  cmd.option("--donjon", "shorthand for --export-format donjon");
+  cmd.option("--export-format <format>", "use an export plugin for the given format");
+  cmd.option("--foundry", "output FoundryVTT-compatible JSON");
+  cmd.option("--svg", "render an SVG map instead of JSON output");
+
+  // Export Options
+  cmd.option("--export-color-mode <mode>", "PDF color mode (color|monochrome)");
+  cmd.option("--export-layout <layout>", "PDF layout (map-only|with-keys|detailed)");
+  cmd.option("--export-page-size <size>", "PDF page size (a4|letter|legal)");
+
+  return cmd
     .action(async (opts) => {
       if (opts.listSystems) {
         await handleListSystems();
