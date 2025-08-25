@@ -76,12 +76,15 @@ export class MapGenerator {
     }
     
     // Convert boundaries to actual rooms
-    const dungeonRooms = this.createRooms(roomBoundaries, roomShape);
+    const rawRooms = this.createRooms(roomBoundaries, roomShape);
+    
+    // Clamp base rooms BEFORE placing specials so occupancy matches final positions
+    const dungeonRooms = this.clampRooms(rawRooms, width, height);
     
     // Add special features BEFORE corridor generation so they get connected
     const specialRooms = this.addSpecialFeatures(dungeonRooms, boundaries, stairsUp, stairsDown, entranceFromPeriphery, width, height);
     
-    // Combine all rooms for corridor generation and clamp to map bounds
+    // Combine rooms; specials are placed within bounds; clamp again defensively
     let allRooms = this.clampRooms([...dungeonRooms, ...specialRooms], width, height);
 
     // Generate corridors using shared corridor service (respecting room boundaries)
