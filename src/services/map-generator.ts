@@ -4,6 +4,7 @@ import { generateDoor } from './doors';
 import { roomShapeService, ShapePreferences } from './room-shapes';
 import { connectRooms } from './corridors';
 import { SpatialIndex, roomToSpatialItem } from '../utils/spatial-index';
+import { roomsOverlap } from '../utils/room-utils';
 
 // A* pathfinding node for corridor generation
 // Removed legacy A* node/queue structs (routing handled in corridors.ts)
@@ -1193,10 +1194,15 @@ export class MapGenerator {
         const candidatePref = roomToSpatialItem(id, px, py, w, h, 0);
         if (!index.intersects(candidatePref)) {
           const room: Room = { id, kind: 'special', x: px, y: py, w, h, shape: 'rectangular', tags };
-          specialRooms.push(room);
-          index.insert(roomToSpatialItem(id, px, py, w, h, 0, room));
-          placed = true;
-          break;
+          // Extra robust overlap check (shape-aware) against all rooms and already placed specials
+          const overlapsBase = rooms.some(r => roomsOverlap(r, room));
+          const overlapsSpecial = specialRooms.some(r => roomsOverlap(r, room));
+          if (!overlapsBase && !overlapsSpecial) {
+            specialRooms.push(room);
+            index.insert(roomToSpatialItem(id, px, py, w, h, 0, room));
+            placed = true;
+            break;
+          }
         }
 
         // Random retries inside boundary
@@ -1206,10 +1212,14 @@ export class MapGenerator {
           const candidate = roomToSpatialItem(id, rx, ry, w, h, 0);
           if (!index.intersects(candidate)) {
             const room: Room = { id, kind: 'special', x: rx, y: ry, w, h, shape: 'rectangular', tags };
-            specialRooms.push(room);
-            index.insert(roomToSpatialItem(id, rx, ry, w, h, 0, room));
-            placed = true;
-            break;
+            const overlapsBase = rooms.some(r => roomsOverlap(r, room));
+            const overlapsSpecial = specialRooms.some(r => roomsOverlap(r, room));
+            if (!overlapsBase && !overlapsSpecial) {
+              specialRooms.push(room);
+              index.insert(roomToSpatialItem(id, rx, ry, w, h, 0, room));
+              placed = true;
+              break;
+            }
           }
         }
       }
