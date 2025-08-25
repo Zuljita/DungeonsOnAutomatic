@@ -3,7 +3,7 @@ import { rng, id } from './random';
 import { generateDoor } from './doors';
 import { roomShapeService, ShapePreferences } from './room-shapes';
 import { connectRooms } from './corridors';
-import { SpatialIndex, roomToSpatialItem } from '../utils/spatial-index';
+import { SpatialIndex, roomToSpatialItem, spatialItemsOverlap } from '../utils/spatial-index';
 import { roomsOverlap } from '../utils/room-utils';
 
 // A* pathfinding node for corridor generation
@@ -447,10 +447,10 @@ export class MapGenerator {
         const symmetricCount = Math.floor(roomCount / 2) * 2; // Ensure even number
         while (roomBoundaries.length < symmetricCount && attempts < maxAttempts) {
           attempts += 2; // We're placing two rooms per iteration
-          const boundary = this.selectRandomBoundary(boundaries);
+          const chosenBoundary = this.selectRandomBoundary(boundaries);
           const roomSize = this.getRoomSize(size, 'medium');
-          const centerX = boundary.x + boundary.width / 2;
-          const centerY = boundary.y + boundary.height / 2;
+          const centerX = chosenBoundary.x + chosenBoundary.width / 2;
+          const centerY = chosenBoundary.y + chosenBoundary.height / 2;
           
           // Place two rooms symmetrically
           const offsetX = (this.R() - 0.5) * boundary.width * 0.3;
@@ -473,17 +473,17 @@ export class MapGenerator {
           };
           
           // Check if both rooms can be added without overlap (don't add either if one fails)
-          const room1FitsInBoundary = boundaries.some(boundary => 
-            room1.x >= boundary.x &&
-            room1.y >= boundary.y &&
-            room1.x + room1.width <= boundary.x + boundary.width &&
-            room1.y + room1.height <= boundary.y + boundary.height
+          const room1FitsInBoundary = (
+            room1.x >= chosenBoundary.x &&
+            room1.y >= chosenBoundary.y &&
+            room1.x + room1.width <= chosenBoundary.x + chosenBoundary.width &&
+            room1.y + room1.height <= chosenBoundary.y + chosenBoundary.height
           );
-          const room2FitsInBoundary = boundaries.some(boundary => 
-            room2.x >= boundary.x &&
-            room2.y >= boundary.y &&
-            room2.x + room2.width <= boundary.x + boundary.width &&
-            room2.y + room2.height <= boundary.y + boundary.height
+          const room2FitsInBoundary = (
+            room2.x >= chosenBoundary.x &&
+            room2.y >= chosenBoundary.y &&
+            room2.x + room2.width <= chosenBoundary.x + chosenBoundary.width &&
+            room2.y + room2.height <= chosenBoundary.y + chosenBoundary.height
           );
           
           // Use spatial index for O(log n) collision detection for both rooms
@@ -507,12 +507,14 @@ export class MapGenerator {
           
           const room1NoOverlap = !spatialIndex.intersects(room1SpatialItem);
           const room2NoOverlap = !spatialIndex.intersects(room2SpatialItem);
+          // Ensure the pair does not overlap each other (with spacing)
+          const pairNoOverlap = !spatialItemsOverlap(room1SpatialItem, room2SpatialItem, spacing);
           
           const room1Fits = room1FitsInBoundary && room1NoOverlap;
           const room2Fits = room2FitsInBoundary && room2NoOverlap;
           
           // Only add both if both fit, ensuring symmetry
-          if (room1Fits && room2Fits) {
+          if (room1Fits && room2Fits && pairNoOverlap) {
             roomBoundaries.push(room1);
             roomBoundaries.push(room2);
             
