@@ -306,6 +306,32 @@ function chooseLVariantForDoor(paths: Array<{x:number;y:number}[]>, end: {x:numb
   return best || paths[0];
 }
 
+// Ensure a path is orthogonal and contiguous by expanding any gaps into unit steps
+function enforceOrthContiguous(path: {x:number;y:number}[]): {x:number;y:number}[] {
+  if (path.length === 0) return path;
+  const out: {x:number;y:number}[] = [];
+  out.push({ x: path[0].x, y: path[0].y });
+  for (let i = 1; i < path.length; i++) {
+    const prev = out[out.length - 1];
+    const cur = path[i];
+    let dx = cur.x - prev.x;
+    let dy = cur.y - prev.y;
+    // Horizontal run
+    while (dx !== 0) {
+      const stepX = dx > 0 ? 1 : -1;
+      out.push({ x: out[out.length - 1].x + stepX, y: out[out.length - 1].y });
+      dx -= stepX;
+    }
+    // Vertical run
+    while (dy !== 0) {
+      const stepY = dy > 0 ? 1 : -1;
+      out.push({ x: out[out.length - 1].x, y: out[out.length - 1].y + stepY });
+      dy -= stepY;
+    }
+  }
+  return out;
+}
+
 /**
  * A* pathfinding using the pathfinding library with cost grid support
  * Finds optimal path while avoiding high-cost areas (like room interiors)
@@ -559,6 +585,14 @@ function connectWithEnhancedPathfinding(
           // As a last resort, emit the straight segment
           path = [normStart, normEnd];
         }
+      }
+
+      // Final guard: ensure orthogonal contiguity between successive nodes
+      if (path.length >= 2) {
+        path = enforceOrthContiguous(path);
+        // Re-anchor endpoints (in case of expansion)
+        path[0] = normStart;
+        path[path.length - 1] = normEnd;
       }
       
       corridors.push({ 

@@ -88,7 +88,8 @@ class SVGExportPlugin implements ExportPlugin {
       wobbleIntensity: options.wobbleIntensity as number ?? 1,
       wallThickness: options.wallThickness as number ?? 1,
       hexSize: options.hexSize as number ?? 20,
-      showDebugAnchors: (options as any)?.showDebugAnchors ?? false,
+      // Temporarily always-on for debugging; can be toggled later via GUI/option
+      showDebugAnchors: (options as any)?.showDebugAnchors ?? true,
     };
 
     const svgContent = await this.renderSvg(dungeon, svgOptions);
@@ -226,23 +227,6 @@ class SVGExportPlugin implements ExportPlugin {
       }
     }
 
-    // Debug anchors: draw circles at doorStart/doorEnd if requested
-    if (opts.showDebugAnchors) {
-      const anchorStyle = `fill:none;stroke:red;stroke-width:${Math.max(1, cellSize * 0.1)}`;
-      for (const c of d.corridors) {
-        if (c.doorStart) {
-          const ax = c.doorStart.x * cellSize + cellSize / 2;
-          const ay = c.doorStart.y * cellSize + cellSize / 2;
-          parts.push(`<circle cx="${ax}" cy="${ay}" r="${cellSize * 0.25}" style="${anchorStyle}"/>`);
-        }
-        if (c.doorEnd) {
-          const bx = c.doorEnd.x * cellSize + cellSize / 2;
-          const by = c.doorEnd.y * cellSize + cellSize / 2;
-          parts.push(`<circle cx="${bx}" cy="${by}" r="${cellSize * 0.25}" style="${anchorStyle}"/>`);
-        }
-      }
-    }
-
     // Render rooms
     d.rooms.forEach((r, i) => {
       if (r.shape === "rectangular" || !r.shapePoints) {
@@ -266,6 +250,25 @@ class SVGExportPlugin implements ExportPlugin {
         );
       }
     });
+
+    // Debug anchors: draw circles at doorStart/doorEnd or path endpoints (on top of rooms)
+    if (opts.showDebugAnchors) {
+      const anchorStyle = `fill:none;stroke:red;stroke-width:${Math.max(1, cellSize * 0.1)}`;
+      for (const c of d.corridors) {
+        const a = c.doorStart || c.path[0];
+        if (a) {
+          const ax = a.x * cellSize + cellSize / 2;
+          const ay = a.y * cellSize + cellSize / 2;
+          parts.push(`<circle cx="${ax}" cy="${ay}" r="${cellSize * 0.25}" style="${anchorStyle}"/>`);
+        }
+        const b = c.doorEnd || (c.path.length ? c.path[c.path.length - 1] : undefined);
+        if (b) {
+          const bx = b.x * cellSize + cellSize / 2;
+          const by = b.y * cellSize + cellSize / 2;
+          parts.push(`<circle cx="${bx}" cy="${by}" r="${cellSize * 0.25}" style="${anchorStyle}"/>`);
+        }
+      }
+    }
 
     // Render key items
     (d.keyItems || []).forEach(key => {
@@ -605,6 +608,24 @@ class SVGExportPlugin implements ExportPlugin {
       parts.push(`<polygon class="hex-cell" points="${pts}" fill="${fill}" stroke="${stroke}"/>`);
     }
 
+    // Debug anchors on top
+    const cellSize = opts.hexSize; // approximate scale for marker size
+    const anchorStyle = `fill:none;stroke:red;stroke-width:${Math.max(1, cellSize * 0.05)}`;
+    for (const c of d.corridors) {
+      const a = c.doorStart || c.path[0];
+      const b = c.doorEnd || (c.path.length ? c.path[c.path.length - 1] : undefined);
+      if (a) {
+        const ax = a.x * cellSize + cellSize / 2;
+        const ay = a.y * cellSize + cellSize / 2;
+        parts.push(`<circle cx="${ax}" cy="${ay}" r="${cellSize * 0.25}" style="${anchorStyle}"/>`);
+      }
+      if (b) {
+        const bx = b.x * cellSize + cellSize / 2;
+        const by = b.y * cellSize + cellSize / 2;
+        parts.push(`<circle cx="${bx}" cy="${by}" r="${cellSize * 0.25}" style="${anchorStyle}"/>`);
+      }
+    }
+
     parts.push("</svg>");
     return parts.join("");
   }
@@ -712,6 +733,23 @@ class SVGExportPlugin implements ExportPlugin {
         `<text class="key-icon" data-key="${key.id}" x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" font-size="${cellSize * 0.5}" fill="${theme.textFill}">&#x1F511;</text>`
       );
     });
+
+    // Debug anchors on top
+    const anchorStyle = `fill:none;stroke:red;stroke-width:${Math.max(1, cellSize * 0.1)}`;
+    for (const c of d.corridors) {
+      const a = c.doorStart || c.path[0];
+      const b = c.doorEnd || (c.path.length ? c.path[c.path.length - 1] : undefined);
+      if (a) {
+        const ax = a.x * cellSize + cellSize / 2;
+        const ay = a.y * cellSize + cellSize / 2;
+        parts.push(`<circle cx="${ax}" cy="${ay}" r="${cellSize * 0.25}" style="${anchorStyle}"/>`);
+      }
+      if (b) {
+        const bx = b.x * cellSize + cellSize / 2;
+        const by = b.y * cellSize + cellSize / 2;
+        parts.push(`<circle cx="${bx}" cy="${by}" r="${cellSize * 0.25}" style="${anchorStyle}"/>`);
+      }
+    }
 
     parts.push("</svg>");
     return parts.join("");

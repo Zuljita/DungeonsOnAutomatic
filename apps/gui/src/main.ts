@@ -543,6 +543,15 @@ async function generate(): Promise<void> {
     const svg = result.data as string;
     
     mapContentEl.innerHTML = svg;
+    // Draw debug door anchors directly in GUI (always on for now)
+    try {
+      const svgEl = mapContentEl.querySelector('svg') as unknown as SVGSVGElement | null;
+      if (svgEl) {
+        drawDebugAnchorsOnSvg(svgEl, enriched);
+      }
+    } catch (e) {
+      console.warn('Failed to draw debug anchors:', e);
+    }
     
     // Setup pan and zoom functionality
     setupMapPanZoom(mapEl);
@@ -580,6 +589,62 @@ async function generate(): Promise<void> {
     // Always hide loading state
     hideLoadingState();
   }
+}
+
+// Draw small red circles at corridor doorStart/doorEnd (or path endpoints)
+function drawDebugAnchorsOnSvg(svgEl: SVGSVGElement, dungeon: any): void {
+  const ns = 'http://www.w3.org/2000/svg';
+  const cellSize = inferCellSize(svgEl) || 20;
+  const strokeWidth = Math.max(1, cellSize * 0.1);
+
+  const makeCircle = (cx: number, cy: number) => {
+    const c = document.createElementNS(ns, 'circle');
+    c.setAttribute('cx', String(cx));
+    c.setAttribute('cy', String(cy));
+    c.setAttribute('r', String(cellSize * 0.25));
+    c.setAttribute('fill', 'none');
+    c.setAttribute('stroke', 'red');
+    c.setAttribute('stroke-width', String(strokeWidth));
+    return c;
+  };
+
+  const corridors: Array<{ doorStart?: {x:number;y:number}; doorEnd?: {x:number;y:number}; path: Array<{x:number;y:number}> }>
+    = Array.isArray(dungeon.corridors) ? dungeon.corridors : [];
+  for (const c of corridors) {
+    const a = c.doorStart || (c.path && c.path[0]);
+    const b = c.doorEnd || (c.path && c.path[c.path.length - 1]);
+    if (a) {
+      const ax = a.x * cellSize + cellSize / 2;
+      const ay = a.y * cellSize + cellSize / 2;
+      svgEl.appendChild(makeCircle(ax, ay));
+    }
+    if (b) {
+      const bx = b.x * cellSize + cellSize / 2;
+      const by = b.y * cellSize + cellSize / 2;
+      svgEl.appendChild(makeCircle(bx, by));
+    }
+  }
+}
+
+// Heuristic to infer cell size from the SVG content
+function inferCellSize(svgEl: SVGSVGElement): number | null {
+  // Prefer corridor rects (stroke="none") that are squares
+  const rects = Array.from(svgEl.querySelectorAll('rect')) as SVGRectElement[];
+  for (const r of rects) {
+    const stroke = r.getAttribute('stroke');
+    const w = Number(r.getAttribute('width') || '0');
+    const h = Number(r.getAttribute('height') || '0');
+    if (stroke === 'none' && w === h && w > 0 && w <= 128) {
+      return w;
+    }
+  }
+  // Fallback: attempt to parse first square rect
+  for (const r of rects) {
+    const w = Number(r.getAttribute('width') || '0');
+    const h = Number(r.getAttribute('height') || '0');
+    if (w === h && w > 0 && w <= 128) return w;
+  }
+  return null;
 }
 
 function setupRealTimePreview() {
