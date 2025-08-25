@@ -1159,49 +1159,92 @@ export class MapGenerator {
    */
   private addSpecialFeatures(rooms: Room[], boundaries: LayoutBoundary[], stairsUp: boolean, stairsDown: boolean, entranceFromPeriphery: boolean): Room[] {
     const specialRooms: Room[] = [];
-    
+    const index = new SpatialIndex();
+    // Load existing rooms into spatial index to prevent overlap
+    index.load(
+      rooms.map((r, i) => roomToSpatialItem(`base-${i}`, r.x, r.y, r.w, r.h, 0, r))
+    );
+
+    const tryPlace = (
+      id: string,
+      w: number,
+      h: number,
+      tags: string[],
+      preferredPos: (b: LayoutBoundary) => { x: number; y: number }
+    ): void => {
+      const maxBoundaryTries = Math.max(1, boundaries.length);
+      const maxTriesPerBoundary = 20;
+      // Simple shuffled copy of boundaries for variety
+      const order = boundaries.map((b, i) => i).sort(() => (this.R() < 0.5 ? -1 : 1));
+
+      let placed = false;
+      for (let bi = 0; bi < maxBoundaryTries && !placed; bi++) {
+        const b = boundaries[order[bi]];
+        const minX = Math.floor(b.x);
+        const minY = Math.floor(b.y);
+        const maxX = Math.floor(b.x + b.width - w);
+        const maxY = Math.floor(b.y + b.height - h);
+        if (maxX < minX || maxY < minY) continue; // special doesn't fit this boundary
+
+        // Try preferred spot first
+        const pref = preferredPos(b);
+        const px = Math.max(minX, Math.min(maxX, Math.floor(pref.x)));
+        const py = Math.max(minY, Math.min(maxY, Math.floor(pref.y)));
+        const candidatePref = roomToSpatialItem(id, px, py, w, h, 0);
+        if (!index.intersects(candidatePref)) {
+          const room: Room = { id, kind: 'special', x: px, y: py, w, h, shape: 'rectangular', tags };
+          specialRooms.push(room);
+          index.insert(roomToSpatialItem(id, px, py, w, h, 0, room));
+          placed = true;
+          break;
+        }
+
+        // Random retries inside boundary
+        for (let t = 0; t < maxTriesPerBoundary && !placed; t++) {
+          const rx = Math.floor(minX + this.R() * (maxX - minX + 1));
+          const ry = Math.floor(minY + this.R() * (maxY - minY + 1));
+          const candidate = roomToSpatialItem(id, rx, ry, w, h, 0);
+          if (!index.intersects(candidate)) {
+            const room: Room = { id, kind: 'special', x: rx, y: ry, w, h, shape: 'rectangular', tags };
+            specialRooms.push(room);
+            index.insert(roomToSpatialItem(id, rx, ry, w, h, 0, room));
+            placed = true;
+            break;
+          }
+        }
+      }
+      // If unable to place after all attempts, skip this special
+    };
+
     if (stairsUp) {
-      const boundary = this.selectRandomBoundary(boundaries);
-      specialRooms.push({
-        id: 'stairs-up',
-        kind: 'special',
-        x: Math.floor(boundary.x + boundary.width * 0.3),
-        y: Math.floor(boundary.y + boundary.height * 0.3),
-        w: 2,
-        h: 2,
-        shape: 'rectangular',
-        tags: ['stairs', 'up', 'exit']
-      });
+      tryPlace(
+        'stairs-up',
+        2,
+        2,
+        ['stairs', 'up', 'exit'],
+        (b) => ({ x: b.x + b.width * 0.3, y: b.y + b.height * 0.3 })
+      );
     }
-    
     if (stairsDown) {
-      const boundary = this.selectRandomBoundary(boundaries);
-      specialRooms.push({
-        id: 'stairs-down',
-        kind: 'special',
-        x: Math.floor(boundary.x + boundary.width * 0.6),
-        y: Math.floor(boundary.y + boundary.height * 0.6),
-        w: 2,
-        h: 2,
-        shape: 'rectangular',
-        tags: ['stairs', 'down', 'entrance']
-      });
+      tryPlace(
+        'stairs-down',
+        2,
+        2,
+        ['stairs', 'down', 'entrance'],
+        (b) => ({ x: b.x + b.width * 0.6, y: b.y + b.height * 0.6 })
+      );
     }
-    
     if (entranceFromPeriphery) {
-      const boundary = this.selectRandomBoundary(boundaries);
-      specialRooms.push({
-        id: 'entrance',
-        kind: 'special',
-        x: Math.floor(boundary.x),
-        y: Math.floor(boundary.y),
-        w: 3,
-        h: 3,
-        shape: 'rectangular',
-        tags: ['entrance', 'periphery']
-      });
+      // Prefer near top-left periphery within a boundary; fallback random
+      tryPlace(
+        'entrance',
+        3,
+        3,
+        ['entrance', 'periphery'],
+        (b) => ({ x: b.x, y: b.y })
+      );
     }
-    
+
     return specialRooms;
   }
 
