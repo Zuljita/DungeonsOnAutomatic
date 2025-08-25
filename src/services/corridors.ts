@@ -13,6 +13,7 @@ export interface EnhancedPathfindingOptions {
 
 // Load PathFinding.js library
 import * as PF from 'pathfinding';
+const DEBUG = (typeof process !== 'undefined' && process?.env?.DOA_DEBUG_CORRIDORS === '1');
 import { distanceFromPointToLineSegment } from '../utils/geometry';
 
 type Edge = { a: number; b: number; d: number };
@@ -150,7 +151,13 @@ function validateLPath(
     const p = path[i];
     // Allow endpoints regardless (door cells on edges)
     if ((p.x === start.x && p.y === start.y) || (p.x === end.x && p.y === end.y)) continue;
-    if (isInsideAnyRoom(p.x, p.y, rooms, allowRoomIds)) return false;
+    if (isInsideAnyRoom(p.x, p.y, rooms, allowRoomIds)) {
+      if (DEBUG) {
+        const hit = rooms.find(r => r && isInsideAnyRoom(p.x, p.y, [r], []));
+        console.warn(`[corridors] L-path collision at (${p.x},${p.y}) inside room ${hit?.id ?? 'unknown'}`);
+      }
+      return false;
+    }
   }
   return true;
 }
@@ -249,6 +256,9 @@ function normalizeDoorPoint(room: Room, p: { x: number; y: number }): { x: numbe
     rx = Math.round(rx + nx);
     ry = Math.round(ry + ny);
     steps++;
+  }
+  if (DEBUG && roomShapeService.isPointInRoom(room, rx, ry)) {
+    console.warn(`[corridors] normalizeDoorPoint still inside shaped room ${room.id} at (${rx},${ry}) after ${steps} steps`);
   }
   return { x: rx, y: ry };
 }

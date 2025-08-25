@@ -524,11 +524,12 @@ async function generate(): Promise<void> {
     inputEl.textContent = JSON.stringify(inputParams, null, 2);
 
     // Prepare rendering options
-    const mapStyle = mapStyleInput.value as "classic" | "hand-drawn";
-    const colorTheme = colorThemeInput.value;
-    const showGrid = showGridInput.checked;
-    const wobbleIntensity = parseFloat(wobbleIntensityInput.value) || 1;
-    const wallThickness = parseFloat(wallThicknessInput.value) || 1;
+  const mapStyle = mapStyleInput.value as "classic" | "hand-drawn";
+  const colorTheme = colorThemeInput.value;
+  const showGrid = showGridInput.checked;
+  const wobbleIntensity = parseFloat(wobbleIntensityInput.value) || 1;
+  const wallThickness = parseFloat(wallThicknessInput.value) || 1;
+  const showDebugAnchors = (document.getElementById('show-debug-anchors') as HTMLInputElement)?.checked || false;
 
     // Render the map using SVG export plugin
     const result = await svgExportPlugin.export(enriched, 'svg', {
@@ -536,7 +537,8 @@ async function generate(): Promise<void> {
       style: mapStyle,
       showGrid: showGrid,
       wobbleIntensity: wobbleIntensity,
-      wallThickness: wallThickness
+      wallThickness: wallThickness,
+      showDebugAnchors
     });
     const svg = result.data as string;
     

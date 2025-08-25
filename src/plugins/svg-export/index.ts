@@ -59,6 +59,8 @@ export interface SVGRenderOptions {
   wallThickness?: number;
   /** Radius of a single hex in pixels for hex style */
   hexSize?: number;
+  /** Draw small markers for doorStart/doorEnd to debug anchoring */
+  showDebugAnchors?: boolean;
 }
 
 class SVGExportPlugin implements ExportPlugin {
@@ -86,6 +88,7 @@ class SVGExportPlugin implements ExportPlugin {
       wobbleIntensity: options.wobbleIntensity as number ?? 1,
       wallThickness: options.wallThickness as number ?? 1,
       hexSize: options.hexSize as number ?? 20,
+      showDebugAnchors: (options as any)?.showDebugAnchors ?? false,
     };
 
     const svgContent = await this.renderSvg(dungeon, svgOptions);
@@ -219,6 +222,23 @@ class SVGExportPlugin implements ExportPlugin {
             parts.push(
               `<line class="door-icon" data-door="${c.id}-end" x1="${edge.x1 * cellSize}" y1="${edge.y1 * cellSize}" x2="${edge.x2 * cellSize}" y2="${edge.y2 * cellSize}" stroke="${theme.roomStroke}" stroke-width="${cellSize * 0.2}"/>`,
             );
+        }
+      }
+    }
+
+    // Debug anchors: draw circles at doorStart/doorEnd if requested
+    if (opts.showDebugAnchors) {
+      const anchorStyle = `fill:none;stroke:red;stroke-width:${Math.max(1, cellSize * 0.1)}`;
+      for (const c of d.corridors) {
+        if (c.doorStart) {
+          const ax = c.doorStart.x * cellSize + cellSize / 2;
+          const ay = c.doorStart.y * cellSize + cellSize / 2;
+          parts.push(`<circle cx="${ax}" cy="${ay}" r="${cellSize * 0.25}" style="${anchorStyle}"/>`);
+        }
+        if (c.doorEnd) {
+          const bx = c.doorEnd.x * cellSize + cellSize / 2;
+          const by = c.doorEnd.y * cellSize + cellSize / 2;
+          parts.push(`<circle cx="${bx}" cy="${by}" r="${cellSize * 0.25}" style="${anchorStyle}"/>`);
         }
       }
     }
