@@ -543,6 +543,11 @@ export class MapGenerator {
         }
         break;
     }
+    // Fallback: if symmetric placement failed to produce any rooms, try scattered
+    if (layout === 'symmetric' && roomBoundaries.length === 0) {
+      console.warn('Symmetric layout produced no rooms; falling back to scattered.');
+      return this.generateRoomBoundaries(boundaries, roomCount, 'scattered', size, shape);
+    }
 
     return roomBoundaries;
   }
