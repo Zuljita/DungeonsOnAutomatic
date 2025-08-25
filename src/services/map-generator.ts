@@ -453,8 +453,8 @@ export class MapGenerator {
           const centerY = chosenBoundary.y + chosenBoundary.height / 2;
           
           // Place two rooms symmetrically
-          const offsetX = (this.R() - 0.5) * boundary.width * 0.3;
-          const offsetY = (this.R() - 0.5) * boundary.height * 0.3;
+          const offsetX = (this.R() - 0.5) * chosenBoundary.width * 0.3;
+          const offsetY = (this.R() - 0.5) * chosenBoundary.height * 0.3;
           
           const room1: LayoutBoundary = {
             x: centerX + offsetX - roomSize.width / 2,
