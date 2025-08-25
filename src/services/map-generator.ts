@@ -79,7 +79,7 @@ export class MapGenerator {
     const dungeonRooms = this.createRooms(roomBoundaries, roomShape);
     
     // Add special features BEFORE corridor generation so they get connected
-    const specialRooms = this.addSpecialFeatures(dungeonRooms, boundaries, stairsUp, stairsDown, entranceFromPeriphery);
+    const specialRooms = this.addSpecialFeatures(dungeonRooms, boundaries, stairsUp, stairsDown, entranceFromPeriphery, width, height);
     
     // Combine all rooms for corridor generation and clamp to map bounds
     let allRooms = this.clampRooms([...dungeonRooms, ...specialRooms], width, height);
@@ -1158,13 +1158,50 @@ export class MapGenerator {
   /**
    * Add special features like stairs and entrances
    */
-  private addSpecialFeatures(rooms: Room[], boundaries: LayoutBoundary[], stairsUp: boolean, stairsDown: boolean, entranceFromPeriphery: boolean): Room[] {
+  private addSpecialFeatures(rooms: Room[], boundaries: LayoutBoundary[], stairsUp: boolean, stairsDown: boolean, entranceFromPeriphery: boolean, mapWidth: number, mapHeight: number): Room[] {
     const specialRooms: Room[] = [];
-    const index = new SpatialIndex();
-    // Load existing rooms into spatial index to prevent overlap
-    index.load(
-      rooms.map((r, i) => roomToSpatialItem(`base-${i}`, r.x, r.y, r.w, r.h, 0, r))
-    );
+    
+    // Build an occupancy grid for robust, exact overlap checks
+    const occupied: boolean[][] = Array.from({ length: mapHeight }, () => Array<boolean>(mapWidth).fill(false));
+    const markRect = (x: number, y: number, w: number, h: number) => {
+      for (let yy = y; yy < y + h; yy++) {
+        if (yy < 0 || yy >= mapHeight) continue;
+        for (let xx = x; xx < x + w; xx++) {
+          if (xx < 0 || xx >= mapWidth) continue;
+          occupied[yy][xx] = true;
+        }
+      }
+    };
+    const markRoom = (r: Room) => {
+      // Shape-aware marking
+      const minX = Math.max(0, Math.floor(r.shape === 'rectangular' || !r.shapePoints ? r.x : roomShapeService.getRoomBounds(r).minX));
+      const maxX = Math.min(mapWidth - 1, Math.ceil(r.shape === 'rectangular' || !r.shapePoints ? r.x + r.w - 1 : roomShapeService.getRoomBounds(r).maxX));
+      const minY = Math.max(0, Math.floor(r.shape === 'rectangular' || !r.shapePoints ? r.y : roomShapeService.getRoomBounds(r).minY));
+      const maxY = Math.min(mapHeight - 1, Math.ceil(r.shape === 'rectangular' || !r.shapePoints ? r.y + r.h - 1 : roomShapeService.getRoomBounds(r).maxY));
+      for (let yy = minY; yy <= maxY; yy++) {
+        for (let xx = minX; xx <= maxX; xx++) {
+          if (roomShapeService.isPointInRoom(r, xx, yy)) {
+            occupied[yy][xx] = true;
+          }
+        }
+      }
+    };
+    rooms.forEach(markRoom);
+
+    const canPlace = (x: number, y: number, w: number, h: number): boolean => {
+      if (x < 0 || y < 0 || x + w > mapWidth || y + h > mapHeight) return false;
+      for (let yy = y; yy < y + h; yy++) {
+        for (let xx = x; xx < x + w; xx++) {
+          if (occupied[yy][xx]) return false;
+        }
+      }
+      return true;
+    };
+    const place = (id: string, x: number, y: number, w: number, h: number, tags: string[]) => {
+      const room: Room = { id, kind: 'special', x, y, w, h, shape: 'rectangular', tags };
+      specialRooms.push(room);
+      markRect(x, y, w, h);
+    };
 
     const tryPlace = (
       id: string,
@@ -1191,35 +1228,20 @@ export class MapGenerator {
         const pref = preferredPos(b);
         const px = Math.max(minX, Math.min(maxX, Math.floor(pref.x)));
         const py = Math.max(minY, Math.min(maxY, Math.floor(pref.y)));
-        const candidatePref = roomToSpatialItem(id, px, py, w, h, 0);
-        if (!index.intersects(candidatePref)) {
-          const room: Room = { id, kind: 'special', x: px, y: py, w, h, shape: 'rectangular', tags };
-          // Extra robust overlap check (shape-aware) against all rooms and already placed specials
-          const overlapsBase = rooms.some(r => roomsOverlap(r, room));
-          const overlapsSpecial = specialRooms.some(r => roomsOverlap(r, room));
-          if (!overlapsBase && !overlapsSpecial) {
-            specialRooms.push(room);
-            index.insert(roomToSpatialItem(id, px, py, w, h, 0, room));
-            placed = true;
-            break;
-          }
+        if (canPlace(px, py, w, h)) {
+          place(id, px, py, w, h, tags);
+          placed = true;
+          break;
         }
 
         // Random retries inside boundary
         for (let t = 0; t < maxTriesPerBoundary && !placed; t++) {
           const rx = Math.floor(minX + this.R() * (maxX - minX + 1));
           const ry = Math.floor(minY + this.R() * (maxY - minY + 1));
-          const candidate = roomToSpatialItem(id, rx, ry, w, h, 0);
-          if (!index.intersects(candidate)) {
-            const room: Room = { id, kind: 'special', x: rx, y: ry, w, h, shape: 'rectangular', tags };
-            const overlapsBase = rooms.some(r => roomsOverlap(r, room));
-            const overlapsSpecial = specialRooms.some(r => roomsOverlap(r, room));
-            if (!overlapsBase && !overlapsSpecial) {
-              specialRooms.push(room);
-              index.insert(roomToSpatialItem(id, rx, ry, w, h, 0, room));
-              placed = true;
-              break;
-            }
+          if (canPlace(rx, ry, w, h)) {
+            place(id, rx, ry, w, h, tags);
+            placed = true;
+            break;
           }
         }
       }
