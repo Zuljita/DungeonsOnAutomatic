@@ -1183,14 +1183,17 @@ export class MapGenerator {
       }
     };
     const markRoom = (r: Room) => {
-      // Shape-aware marking
-      const minX = Math.max(0, Math.floor(r.shape === 'rectangular' || !r.shapePoints ? r.x : roomShapeService.getRoomBounds(r).minX));
-      const maxX = Math.min(mapWidth - 1, Math.ceil(r.shape === 'rectangular' || !r.shapePoints ? r.x + r.w - 1 : roomShapeService.getRoomBounds(r).maxX));
-      const minY = Math.max(0, Math.floor(r.shape === 'rectangular' || !r.shapePoints ? r.y : roomShapeService.getRoomBounds(r).minY));
-      const maxY = Math.min(mapHeight - 1, Math.ceil(r.shape === 'rectangular' || !r.shapePoints ? r.y + r.h - 1 : roomShapeService.getRoomBounds(r).maxY));
+      // Shape-aware marking using cell centers to avoid edge-miss under sampling
+      const bounds = roomShapeService.getRoomBounds(r);
+      const minX = Math.max(0, Math.floor(bounds.minX));
+      const maxX = Math.min(mapWidth - 1, Math.ceil(bounds.maxX - 1));
+      const minY = Math.max(0, Math.floor(bounds.minY));
+      const maxY = Math.min(mapHeight - 1, Math.ceil(bounds.maxY - 1));
       for (let yy = minY; yy <= maxY; yy++) {
         for (let xx = minX; xx <= maxX; xx++) {
-          if (roomShapeService.isPointInRoom(r, xx, yy)) {
+          const cx = xx + 0.5;
+          const cy = yy + 0.5;
+          if (roomShapeService.isPointInRoom(r, cx, cy)) {
             occupied[yy][xx] = true;
           }
         }
