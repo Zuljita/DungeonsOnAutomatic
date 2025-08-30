@@ -24,6 +24,7 @@ namespace DungeonsOnAutomatic.GodotGame
 
             // Register plugins
             _pluginManager.RegisterRulesetPlugin(new DungeonMapPlugin());
+            _pluginManager.RegisterEnrichmentPlugin(new FarthestTreasureEnrichmentPlugin());
 
             // Generate the world
             Generate();
@@ -45,10 +46,28 @@ namespace DungeonsOnAutomatic.GodotGame
 
             // Get tileset and seeds
             var tileSet = ruleset.GetTileSet();
-            var seeds = ruleset.GetSeeds();
+            var rawSeeds = ruleset.GetSeeds();
+
+            // Clamp/adjust seeds to current dimensions to avoid OOB when Width/Height < 11, etc.
+            var seeds = rawSeeds
+                .Select(s => (
+                    x: Mathf.Clamp(s.x, 0, Width - 1),
+                    y: Mathf.Clamp(s.y, 0, Height - 1),
+                    tile: s.tile
+                ))
+                // Deduplicate by position to avoid multiple seeds after clamping
+                .GroupBy(s => (s.x, s.y))
+                .Select(g => g.First())
+                .ToArray();
 
             // Generate the map
-            var mapData = _wfcService.Generate(20, 20, tileSet, seeds.ToArray());
+            var mapData = _wfcService.Generate(Width, Height, tileSet, seeds);
+
+            // Enrichment pass
+            foreach (var plugin in _pluginManager.EnrichmentPlugins)
+            {
+                plugin.Enrich(mapData);
+            }
 
             if (MapRenderer != null)
             {
@@ -58,6 +77,24 @@ namespace DungeonsOnAutomatic.GodotGame
             else
             {
                 GD.PrintErr("MapRenderer not set on WorldGenerator.");
+            }
+        }
+
+        [Export]
+        public int Width { get; set; } = 20;
+
+        [Export]
+        public int Height { get; set; } = 20;
+
+        public override void _UnhandledInput(InputEvent @event)
+        {
+            if (@event is InputEventKey k && k.Pressed && !k.Echo)
+            {
+                // R to regenerate
+                if (k.Keycode == Key.R)
+                {
+                    Generate();
+                }
             }
         }
     }
