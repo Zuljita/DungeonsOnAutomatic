@@ -71,7 +71,7 @@ public class MapTile : ITaggable
     /// <summary>
     /// All tags associated with this tile.
     /// </summary>
-    public IReadOnlyCollection<Tag> Tags => _tags;
+    public IReadOnlyCollection<Tag> Tags => new HashSet<Tag>(_tags);
 
     public MapTile(Tag primaryTag)
     {
