@@ -126,7 +126,7 @@ Developer as Editor: The workflow is not to "ask an LLM to build a feature" but 
 Agent Working Agreement (MANDATORY)
 These are hard rules, not guidelines.
 
-Read First: Before starting any task, an agent must consult the latest versions of plan.md (this file), DECISIONS.md, and TASKS.md.
+Read First: Before starting any task, an agent must consult the latest versions of AGENTS.md, plan.md (this file), DECISIONS.md, and TASKS.md.
 
 Git Workflow:
 
