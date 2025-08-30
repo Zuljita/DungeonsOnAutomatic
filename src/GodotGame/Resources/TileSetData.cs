@@ -127,7 +127,7 @@ public partial class TileSetData : Resource
     /// </summary>
     public IEnumerable<TileData> GetTilesWithTag(Tag tag)
     {
-        return Tiles.Where(tile => tile.HasTag(tag));
+        return Tiles.Where(tile => tile != null && tile.HasTag(tag));
     }
 
     /// <summary>
@@ -135,7 +135,7 @@ public partial class TileSetData : Resource
     /// </summary>
     public IEnumerable<TileData> GetTilesWithAnyTag(IEnumerable<Tag> tags)
     {
-        return Tiles.Where(tile => tile.HasAnyTag(tags));
+        return Tiles.Where(tile => tile != null && tile.HasAnyTag(tags));
     }
 
     /// <summary>
@@ -143,7 +143,7 @@ public partial class TileSetData : Resource
     /// </summary>
     public IEnumerable<TileData> GetSeedTiles()
     {
-        return Tiles.Where(tile => tile.CanBeSeed);
+        return Tiles.Where(tile => tile != null && tile.CanBeSeed);
     }
 
     /// <summary>
@@ -151,7 +151,7 @@ public partial class TileSetData : Resource
     /// </summary>
     public IEnumerable<Tag> GetAllTags()
     {
-        return Tiles.SelectMany(tile => tile.Tags).Distinct();
+        return Tiles.Where(tile => tile != null).SelectMany(tile => tile.Tags).Distinct();
     }
 
     /// <summary>
@@ -159,7 +159,7 @@ public partial class TileSetData : Resource
     /// </summary>
     public bool HasTagInSet(string tagName)
     {
-        return Tag.TryCreate(tagName, out var tag) && Tiles.Any(tile => tile.HasTag(tag));
+        return Tag.TryCreate(tagName, out var tag) && Tiles.Any(tile => tile != null && tile.HasTag(tag));
     }
 
     /// <summary>
@@ -173,16 +173,21 @@ public partial class TileSetData : Resource
         random ??= new System.Random();
 
         // Simple weighted selection
-        var totalWeight = candidates.Sum(t => t.Weight);
+        var totalWeight = candidates.Sum(t => t?.Weight ?? 0);
+        if (totalWeight <= 0) return candidates.FirstOrDefault();
+
         var randomValue = (float)random.NextDouble() * totalWeight;
 
         float currentWeight = 0;
         foreach (var tile in candidates)
         {
-            currentWeight += tile.Weight;
-            if (randomValue <= currentWeight)
+            if (tile != null)
             {
-                return tile;
+                currentWeight += tile.Weight;
+                if (randomValue <= currentWeight)
+                {
+                    return tile;
+                }
             }
         }
 
@@ -207,16 +212,24 @@ public partial class TileSetData : Resource
             issues.Add("TileSet contains no tiles");
         }
 
-        var tilesWithoutTags = Tiles.Where(t => !t.Tags.Any()).ToList();
+        var nullTileCount = Tiles.Count(t => t == null);
+        if (nullTileCount > 0)
+        {
+            issues.Add($"{nullTileCount} null tile entries found");
+        }
+
+        var validTiles = Tiles.Where(t => t != null).ToList();
+        
+        var tilesWithoutTags = validTiles.Where(t => !t.Tags.Any()).ToList();
         if (tilesWithoutTags.Any())
         {
             issues.Add($"{tilesWithoutTags.Count} tile(s) have no tags");
         }
 
-        var duplicateNames = Tiles.GroupBy(t => t.Name)
-                                  .Where(g => g.Count() > 1)
-                                  .Select(g => g.Key)
-                                  .ToList();
+        var duplicateNames = validTiles.GroupBy(t => t.Name)
+                                      .Where(g => g.Count() > 1)
+                                      .Select(g => g.Key)
+                                      .ToList();
         if (duplicateNames.Any())
         {
             issues.Add($"Duplicate tile names: {string.Join(", ", duplicateNames)}");

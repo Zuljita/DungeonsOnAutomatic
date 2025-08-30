@@ -13,6 +13,7 @@ namespace DungeonsOnAutomatic.GodotGame.Resources;
 public partial class TileData : Resource, ITaggable
 {
     private readonly HashSet<Tag> _tags = new();
+    private Tag _primaryTag = new("undefined");
 
     [Export]
     public string Name { get; set; } = string.Empty;
@@ -28,23 +29,37 @@ public partial class TileData : Resource, ITaggable
 
     /// <summary>
     /// String array for editor compatibility. Use Tags property in code.
+    /// First tag in array becomes the primary tag.
     /// </summary>
     [Export]
     public string[] TagNames
     {
-        get => _tags.Select(t => t.Name).ToArray();
+        get => new[] { _primaryTag.Name }.Concat(_tags.Where(t => !t.Equals(_primaryTag)).Select(t => t.Name)).ToArray();
         set
         {
             _tags.Clear();
-            if (value != null)
+            if (value != null && value.Length > 0)
             {
-                foreach (var tagName in value)
+                // First tag becomes primary
+                if (Tag.TryCreate(value[0], out var primaryTag))
                 {
-                    if (Tag.TryCreate(tagName, out var tag))
+                    _primaryTag = primaryTag;
+                    _tags.Add(primaryTag);
+                }
+
+                // Add remaining tags
+                for (int i = 1; i < value.Length; i++)
+                {
+                    if (Tag.TryCreate(value[i], out var tag))
                     {
                         _tags.Add(tag);
                     }
                 }
+            }
+            else
+            {
+                _primaryTag = new Tag("undefined");
+                _tags.Add(_primaryTag);
             }
         }
     }
@@ -69,14 +84,20 @@ public partial class TileData : Resource, ITaggable
     public TileData()
     {
         Name = "Unnamed Tile";
+        _tags.Add(_primaryTag);
     }
 
     public TileData(string name, params Tag[] tags) : this()
     {
         Name = name;
-        foreach (var tag in tags)
+        if (tags.Length > 0)
         {
-            _tags.Add(tag);
+            _primaryTag = tags[0];
+            _tags.Clear();
+            foreach (var tag in tags)
+            {
+                _tags.Add(tag);
+            }
         }
     }
 
@@ -104,19 +125,14 @@ public partial class TileData : Resource, ITaggable
 
     /// <summary>
     /// Creates a MapTile instance from this tile definition.
+    /// Primary tag is always deterministic.
     /// </summary>
     public CoreLogic.Map.MapTile CreateMapTile()
     {
-        var primaryTag = _tags.FirstOrDefault();
-        if (string.IsNullOrEmpty(primaryTag.Name))
-        {
-            primaryTag = new Tag("undefined");
-        }
-
-        var mapTile = new CoreLogic.Map.MapTile(primaryTag);
+        var mapTile = new CoreLogic.Map.MapTile(_primaryTag);
         
-        // Add all additional tags
-        foreach (var tag in _tags.Skip(1))
+        // Add all additional tags (excluding primary)
+        foreach (var tag in _tags.Where(t => !t.Equals(_primaryTag)))
         {
             mapTile.AddTag(tag);
         }
