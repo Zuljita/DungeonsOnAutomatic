@@ -15,12 +15,14 @@ namespace DungeonsOnAutomatic.GodotGame.Plugins
         private readonly Tag _floor = new("Floor");
         private readonly Tag _entrance = new("Entrance");
         private readonly Tag _treasure = new("Treasure");
+        private readonly Tag _exit = new("Exit");
 
         // Keep single instances so seeds reference the same TileData objects present in the tileset
         private TileData? _floorTile;
         private TileData? _wallTile;
         private TileData? _entranceTile;
         private TileData? _treasureTile;
+        private TileData? _exitTile;
 
         public void RegisterTags(TagService tagService)
         {
@@ -30,6 +32,7 @@ namespace DungeonsOnAutomatic.GodotGame.Plugins
             // Affinities: special tiles prefer to be on floor
             tagService.AddAffinity(_entrance, _floor);
             tagService.AddAffinity(_treasure, _floor);
+            tagService.AddAffinity(_exit, _floor);
         }
 
         public TileSetData GetTileSet()
@@ -46,13 +49,19 @@ namespace DungeonsOnAutomatic.GodotGame.Plugins
                 Weight = 0.1f,
                 CanBeSeed = true
             };
+            _exitTile ??= new TileData("Exit", _exit, _floor)
+            {
+                Weight = 0.0f,
+                CanBeSeed = false
+            };
 
             var tiles = new List<TileData>
             {
                 _floorTile,
                 _wallTile,
                 _entranceTile,
-                _treasureTile
+                _treasureTile,
+                _exitTile
             };
 
             var tileSet = new TileSetData("Dungeon")

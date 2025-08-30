@@ -17,6 +17,7 @@ namespace DungeonsOnAutomatic.GodotGame.Godot
         private const int FloorTileId = 1;
         private const int EntranceTileId = 2;
         private const int TreasureTileId = 3;
+        private const int ExitTileId = 4;
 
         public void Render(MapData map)
         {
@@ -39,6 +40,10 @@ namespace DungeonsOnAutomatic.GodotGame.Godot
                         else if (tile.HasTag(TreasureTag))
                         {
                             tileId = TreasureTileId;
+                        }
+                        else if (tile.HasTag(new Tag("Exit")))
+                        {
+                            tileId = ExitTileId;
                         }
                         else if (tile.HasTag(WallTag))
                         {
