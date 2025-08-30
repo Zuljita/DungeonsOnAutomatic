@@ -48,6 +48,7 @@ Open the project in the Godot editor. The main scene should run without errors.
 🤝 How to Contribute
 All development must follow the detailed specifications and workflows outlined in the official project plan.
 
+➡️ Review [DECISIONS.md](DECISIONS.md) for logged decisions and [TASKS.md](TASKS.md) for active work.
 ➡️ Read the plan.md and AGENTS.md files before making any changes.
 
 Key Development Rules (MANDATORY)
