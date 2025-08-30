@@ -30,16 +30,16 @@ public class WfcService
         // Initialize the WFC grid
         var grid = new WfcGrid(width, height, tileSet.Tiles, _random);
 
-        // Add tag adjacency constraint
-        var tagConstraint = new TagAdjacencyConstraint(_tagService);
-        grid.AddConstraint(tagConstraint);
-
         // Add seed constraint if seeds provided
         if (seedTiles.Any())
         {
             var seedConstraint = new SeedConstraint(seedTiles);
             grid.AddConstraint(seedConstraint);
         }
+
+        // Add tag adjacency constraint
+        var tagConstraint = new TagAdjacencyConstraint(_tagService);
+        grid.AddConstraint(tagConstraint);
 
         // Generate the map
         var success = grid.Generate();

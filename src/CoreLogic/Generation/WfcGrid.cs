@@ -151,7 +151,7 @@ public class WfcGrid
             {
                 return false; // Failed completely
             }
-            return Step(); // Retry after backtracking
+            return true; // Retry after backtracking
         }
 
         return true;

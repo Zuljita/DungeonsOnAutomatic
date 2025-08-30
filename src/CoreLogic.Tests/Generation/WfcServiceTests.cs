@@ -48,6 +48,37 @@ public class WfcServiceTests
     }
 
     [Fact]
+    public void Generate_ThrowsException_WhenSeedsAreAntagonistic()
+    {
+        // Arrange
+        var tagService = new TagService();
+        var wfcService = new WfcService(tagService);
+        var wallTag = new Tag("Wall");
+        var floorTag = new Tag("Floor");
+
+        tagService.AddAntagonism(wallTag, floorTag);
+
+        var wallTile = new DungeonsOnAutomatic.CoreLogic.Resources.TileData("Wall", wallTag);
+        var floorTile = new DungeonsOnAutomatic.CoreLogic.Resources.TileData("Floor", floorTag);
+
+        var tileSet = new DungeonsOnAutomatic.CoreLogic.Resources.TileSetData("TestSet");
+        tileSet.AddTile(wallTile);
+        tileSet.AddTile(floorTile);
+
+        var seedTiles = new (int x, int y, DungeonsOnAutomatic.CoreLogic.Resources.TileData tile)[]
+        {
+            (0, 0, wallTile),
+            (1, 0, floorTile)
+        };
+
+        // Act & Assert
+        var exception = Assert.Throws<System.InvalidOperationException>(() => 
+            wfcService.Generate(10, 10, tileSet, seedTiles)
+        );
+        Assert.Contains("Initial state is contradictory", exception.Message);
+    }
+
+    [Fact]
     public void GenerateSimple_DoesNotPlaceAntagonisticTilesAdjacently()
     {
         var tagService = new TagService();

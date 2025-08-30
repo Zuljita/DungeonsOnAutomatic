@@ -21,51 +21,68 @@ public class TagAdjacencyConstraint : IWFCConstraint
 
     public void Initialize(WfcGrid grid)
     {
-        // No initial constraints needed - adjacency is enforced during propagation
+        // Propagate constraints from any pre-collapsed (e.g. seeded) cells.
+        for (int x = 0; x < grid.Width; x++)
+        {
+            for (int y = 0; y < grid.Height; y++)
+            {
+                var cell = grid.GetCell(x, y);
+                if (cell?.IsCollapsed == true)
+                {
+                    if (!Propagate(grid, x, y))
+                    {
+                        // This would mean the seeds themselves are contradictory, which is an invalid starting state.
+                        throw new System.InvalidOperationException($"Initial state is contradictory due to seed at ({x},{y}).");
+                    }
+                }
+            }
+        }
     }
 
-    public bool Propagate(WfcGrid grid, int lastCollapsedX, int lastCollapsedY)
+    public bool Propagate(WfcGrid grid, int startX, int startY)
     {
-        var collapsedCell = grid.GetCell(lastCollapsedX, lastCollapsedY);
-        if (collapsedCell?.CollapsedTile == null)
-            return true; // Nothing to propagate
+        var queue = new System.Collections.Generic.Queue<(int x, int y)>();
+        queue.Enqueue((startX, startY));
 
-        var collapsedTile = collapsedCell.CollapsedTile;
-
-        // Get all tags from the collapsed tile
-        var collapsedTags = collapsedTile.Tags.ToList();
-
-        // For each neighbor, remove tiles that are antagonistic to any of the collapsed tile's tags
-        foreach (var neighbor in grid.GetNeighbors(lastCollapsedX, lastCollapsedY))
+        while (queue.Count > 0)
         {
-            if (neighbor.IsCollapsed)
-                continue; // Skip already collapsed neighbors
+            var (x, y) = queue.Dequeue();
+            var cell = grid.GetCell(x, y);
+            if (cell?.CollapsedTile == null) continue;
 
-            var tilesToRemove = neighbor.PossibleTiles
-                .Where(tile => HasAntagonisticTags(collapsedTags, tile.Tags.ToList()))
-                .ToList();
+            var collapsedTags = cell.CollapsedTile.Tags.ToList();
 
-            if (tilesToRemove.Any())
+            foreach (var neighbor in grid.GetNeighbors(x, y))
             {
-                var removed = neighbor.RemovePossibleTiles(tilesToRemove);
-                
-                // Check if this created a contradiction
-                if (neighbor.IsContradiction)
+                if (neighbor.IsCollapsed)
                 {
-                    return false; // Propagation failed
+                    if (neighbor.CollapsedTile != null && HasAntagonisticTags(collapsedTags, neighbor.CollapsedTile.Tags.ToList()))
+                    {
+                        return false; // Contradiction
+                    }
+                    continue;
                 }
 
-                // If we removed tiles, recursively propagate from this neighbor
-                if (removed && neighbor.Entropy == 1)
+                var tilesToRemove = neighbor.PossibleTiles
+                    .Where(tile => HasAntagonisticTags(collapsedTags, tile.Tags.ToList()))
+                    .ToList();
+
+                if (tilesToRemove.Any())
                 {
-                    // This neighbor now has only one option - collapse it
-                    var remainingTile = neighbor.PossibleTiles.First();
-                    neighbor.Collapse(remainingTile);
-                    
-                    // Recursively propagate from the newly collapsed neighbor
-                    if (!Propagate(grid, neighbor.X, neighbor.Y))
+                    if (!neighbor.RemovePossibleTiles(tilesToRemove))
                     {
-                        return false;
+                        continue; // No change
+                    }
+
+                    if (neighbor.IsContradiction)
+                    {
+                        return false; // Contradiction
+                    }
+
+                    if (neighbor.Entropy == 1)
+                    {
+                        neighbor.Collapse(neighbor.PossibleTiles.First());
+                        queue.Enqueue((neighbor.X, neighbor.Y));
                     }
                 }
             }
