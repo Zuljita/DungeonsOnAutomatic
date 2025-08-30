@@ -12,13 +12,12 @@ namespace DungeonsOnAutomatic.GodotGame.Godot
         private static readonly Tag ExitTag = new("Exit");
         private static readonly Tag TreasureTag = new("Treasure");
 
-        // For now, we'll use hardcoded tile IDs.
-        // In the future, this would be driven by the TileSet resource.
-        private const int WallTileId = 0;
-        private const int FloorTileId = 1;
-        private const int EntranceTileId = 2;
-        private const int TreasureTileId = 3;
-        private const int ExitTileId = 4;
+        // Configurable atlas tile IDs (defaults provided).
+        [Export] public int WallTileId { get; set; } = 0;
+        [Export] public int FloorTileId { get; set; } = 1;
+        [Export] public int EntranceTileId { get; set; } = 2;
+        [Export] public int TreasureTileId { get; set; } = 3;
+        [Export] public int ExitTileId { get; set; } = 4;
 
         public void Render(MapData map)
         {
