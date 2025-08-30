@@ -15,6 +15,25 @@ public readonly struct Tag : IEquatable<Tag>
         Name = name ?? throw new ArgumentNullException(nameof(name));
     }
 
+    /// <summary>
+    /// Creates a new Tag from a string name. Explicit alternative to implicit conversion.
+    /// </summary>
+    public static Tag Create(string name) => new(name);
+
+    /// <summary>
+    /// Attempts to create a Tag from a string, returning false if name is null or empty.
+    /// </summary>
+    public static bool TryCreate(string? name, out Tag tag)
+    {
+        if (string.IsNullOrEmpty(name))
+        {
+            tag = default;
+            return false;
+        }
+        tag = new Tag(name);
+        return true;
+    }
+
     public bool Equals(Tag other) => Name == other.Name;
 
     public override bool Equals(object? obj) => obj is Tag other && Equals(other);

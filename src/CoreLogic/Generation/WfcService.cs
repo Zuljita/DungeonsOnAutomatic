@@ -1,5 +1,6 @@
 using System;
 using DungeonsOnAutomatic.CoreLogic.Map;
+using DungeonsOnAutomatic.CoreLogic.Tagging;
 
 namespace DungeonsOnAutomatic.CoreLogic.Generation;
 
@@ -10,6 +11,8 @@ namespace DungeonsOnAutomatic.CoreLogic.Generation;
 public class WfcService
 {
     private readonly Random _random = new();
+    private static readonly Tag FloorTag = new("Floor");
+    private static readonly Tag WallTag = new("Wall");
 
     /// <summary>
     /// Generates a new map based on the provided dimensions.
@@ -23,7 +26,8 @@ public class WfcService
         {
             for (int x = 0; x < width; x++)
             {
-                map[x, y] = new MapTile { Tag = _random.Next(2) == 0 ? "Floor" : "Wall" };
+                var tag = _random.Next(2) == 0 ? FloorTag : WallTag;
+                map[x, y] = new MapTile(tag);
             }
         }
 

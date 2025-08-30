@@ -53,7 +53,7 @@ public class TagService
     public IReadOnlySet<Tag> GetAffinities(Tag tag)
     {
         return _affinities.TryGetValue(tag, out var affinities) 
-            ? affinities 
+            ? new HashSet<Tag>(affinities) 
             : new HashSet<Tag>();
     }
 
@@ -63,27 +63,27 @@ public class TagService
     public IReadOnlySet<Tag> GetAntagonisms(Tag tag)
     {
         return _antagonisms.TryGetValue(tag, out var antagonisms) 
-            ? antagonisms 
+            ? new HashSet<Tag>(antagonisms) 
             : new HashSet<Tag>();
+    }
+
+    private void AddRelationshipOneWay(Tag from, Tag to, Dictionary<Tag, HashSet<Tag>> relationships)
+    {
+        if (!relationships.TryGetValue(from, out var set))
+        {
+            set = new HashSet<Tag>();
+            relationships[from] = set;
+        }
+        set.Add(to);
     }
 
     private void AddAffinityOneWay(Tag from, Tag to)
     {
-        if (!_affinities.TryGetValue(from, out var set))
-        {
-            set = new HashSet<Tag>();
-            _affinities[from] = set;
-        }
-        set.Add(to);
+        AddRelationshipOneWay(from, to, _affinities);
     }
 
     private void AddAntagonismOneWay(Tag from, Tag to)
     {
-        if (!_antagonisms.TryGetValue(from, out var set))
-        {
-            set = new HashSet<Tag>();
-            _antagonisms[from] = set;
-        }
-        set.Add(to);
+        AddRelationshipOneWay(from, to, _antagonisms);
     }
 }
