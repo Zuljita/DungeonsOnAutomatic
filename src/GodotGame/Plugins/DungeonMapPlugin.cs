@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+#nullable enable
 using DungeonsOnAutomatic.CoreLogic.Plugins;
 using DungeonsOnAutomatic.CoreLogic.Resources;
 using DungeonsOnAutomatic.CoreLogic.Tagging;
@@ -15,6 +16,12 @@ namespace DungeonsOnAutomatic.GodotGame.Plugins
         private readonly Tag _entrance = new("Entrance");
         private readonly Tag _treasure = new("Treasure");
 
+        // Keep single instances so seeds reference the same TileData objects present in the tileset
+        private TileData? _floorTile;
+        private TileData? _wallTile;
+        private TileData? _entranceTile;
+        private TileData? _treasureTile;
+
         public void RegisterTags(TagService tagService)
         {
             // Core antagonism
@@ -27,25 +34,26 @@ namespace DungeonsOnAutomatic.GodotGame.Plugins
 
         public TileSetData GetTileSet()
         {
-            var tiles = new List<TileData>();
-
-            var floor = new TileData("Floor", _floor) { Weight = 4.0f };
-            var wall = new TileData("Wall", _wall) { Weight = 1.0f };
-            var entrance = new TileData("Entrance", _entrance, _floor)
+            _floorTile ??= new TileData("Floor", _floor) { Weight = 4.0f };
+            _wallTile ??= new TileData("Wall", _wall) { Weight = 1.0f };
+            _entranceTile ??= new TileData("Entrance", _entrance, _floor)
             {
                 Weight = 0.2f,
                 CanBeSeed = true
             };
-            var treasure = new TileData("Treasure", _treasure, _floor)
+            _treasureTile ??= new TileData("Treasure", _treasure, _floor)
             {
                 Weight = 0.1f,
                 CanBeSeed = true
             };
 
-            tiles.Add(floor);
-            tiles.Add(wall);
-            tiles.Add(entrance);
-            tiles.Add(treasure);
+            var tiles = new List<TileData>
+            {
+                _floorTile,
+                _wallTile,
+                _entranceTile,
+                _treasureTile
+            };
 
             var tileSet = new TileSetData("Dungeon")
             {
@@ -60,9 +68,10 @@ namespace DungeonsOnAutomatic.GodotGame.Plugins
         public IEnumerable<(int x, int y, TileData tile)> GetSeeds()
         {
             // Seed a single Entrance; coordinates assume a 20x20 default (center).
-            var entrance = new TileData("Entrance", _entrance, _floor) { CanBeSeed = true };
-            yield return (10, 10, entrance);
+            if (_entranceTile != null)
+            {
+                yield return (10, 10, _entranceTile);
+            }
         }
     }
 }
-

@@ -2,6 +2,7 @@ using Godot;
 using DungeonsOnAutomatic.CoreLogic.Generation;
 using DungeonsOnAutomatic.CoreLogic.Tagging;
 using DungeonsOnAutomatic.GodotGame.Plugins;
+using DungeonsOnAutomatic.GodotGame.Godot;
 using System.Linq;
 
 namespace DungeonsOnAutomatic.GodotGame
@@ -9,7 +10,7 @@ namespace DungeonsOnAutomatic.GodotGame
     public partial class WorldGenerator : Node
     {
         [Export]
-        public Godot.MapRenderer MapRenderer { get; set; }
+        public MapRenderer MapRenderer { get; set; }
 
         private PluginManager _pluginManager;
         private WfcService _wfcService;
