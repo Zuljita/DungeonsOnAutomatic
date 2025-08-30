@@ -46,10 +46,22 @@ namespace DungeonsOnAutomatic.GodotGame
 
             // Get tileset and seeds
             var tileSet = ruleset.GetTileSet();
-            var seeds = ruleset.GetSeeds();
+            var rawSeeds = ruleset.GetSeeds();
+
+            // Clamp/adjust seeds to current dimensions to avoid OOB when Width/Height < 11, etc.
+            var seeds = rawSeeds
+                .Select(s => (
+                    x: Mathf.Clamp(s.x, 0, Width - 1),
+                    y: Mathf.Clamp(s.y, 0, Height - 1),
+                    tile: s.tile
+                ))
+                // Deduplicate by position to avoid multiple seeds after clamping
+                .GroupBy(s => (s.x, s.y))
+                .Select(g => g.First())
+                .ToArray();
 
             // Generate the map
-            var mapData = _wfcService.Generate(Width, Height, tileSet, seeds.ToArray());
+            var mapData = _wfcService.Generate(Width, Height, tileSet, seeds);
 
             // Enrichment pass
             foreach (var plugin in _pluginManager.EnrichmentPlugins)
