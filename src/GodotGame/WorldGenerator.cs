@@ -25,6 +25,7 @@ namespace DungeonsOnAutomatic.GodotGame
             // Register plugins
             _pluginManager.RegisterRulesetPlugin(new DungeonMapPlugin());
             _pluginManager.RegisterEnrichmentPlugin(new FarthestTreasureEnrichmentPlugin());
+            _pluginManager.RegisterEnrichmentPlugin(new ExitPlacementEnrichmentPlugin());
 
             // Generate the world
             Generate();
