@@ -151,7 +151,12 @@ public class WfcGrid
             {
                 return false; // Failed completely
             }
-            return true; // Retry after backtracking
+
+            // After backtracking, remove the chosen tile from the possibilities
+            // to avoid getting stuck in a loop.
+            cellToCollapse.RemovePossibleTile(chosenTile);
+
+            return true; // Indicate that a step (a backtrack) was taken.
         }
 
         return true;

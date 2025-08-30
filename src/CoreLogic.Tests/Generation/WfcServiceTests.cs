@@ -114,4 +114,26 @@ public class WfcServiceTests
             }
         }
     }
+
+    [Fact]
+    public void Generate_FailsGracefully_WithSelfAntagonisticTile()
+    {
+        // Arrange
+        var tagService = new TagService();
+        var wfcService = new WfcService(tagService);
+        var poisonTag = new Tag("Poison");
+
+        tagService.AddAntagonism(poisonTag, poisonTag);
+
+        var poisonTile = new DungeonsOnAutomatic.CoreLogic.Resources.TileData("Poison", poisonTag);
+
+        var tileSet = new DungeonsOnAutomatic.CoreLogic.Resources.TileSetData("PoisonSet");
+        tileSet.AddTile(poisonTile);
+
+        // Act & Assert
+        var exception = Assert.Throws<System.InvalidOperationException>(() => 
+            wfcService.Generate(5, 5, tileSet)
+        );
+        Assert.Equal("WFC generation failed - could not satisfy all constraints", exception.Message);
+    }
 }
