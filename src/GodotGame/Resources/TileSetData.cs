@@ -1,4 +1,5 @@
 using Godot;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using DungeonsOnAutomatic.CoreLogic.Tagging;
@@ -28,7 +29,7 @@ public partial class TileSetData : Resource
     /// All tile definitions in this set.
     /// </summary>
     [Export]
-    public Godot.Collections.Array<TileData> Tiles { get; set; } = new();
+    public TileData[] Tiles { get; set; } = System.Array.Empty<TileData>();
 
     /// <summary>
     /// TagService for managing relationships between tags in this tileset.
@@ -99,7 +100,10 @@ public partial class TileSetData : Resource
     {
         if (tile != null && !Tiles.Contains(tile))
         {
-            Tiles.Add(tile);
+            var newArray = new TileData[Tiles.Length + 1];
+            Array.Copy(Tiles, newArray, Tiles.Length);
+            newArray[Tiles.Length] = tile;
+            Tiles = newArray;
         }
     }
 
@@ -108,7 +112,14 @@ public partial class TileSetData : Resource
     /// </summary>
     public void RemoveTile(TileData tile)
     {
-        Tiles.Remove(tile);
+        var index = Array.IndexOf(Tiles, tile);
+        if (index >= 0)
+        {
+            var newArray = new TileData[Tiles.Length - 1];
+            Array.Copy(Tiles, 0, newArray, 0, index);
+            Array.Copy(Tiles, index + 1, newArray, index, Tiles.Length - index - 1);
+            Tiles = newArray;
+        }
     }
 
     /// <summary>
@@ -214,5 +225,5 @@ public partial class TileSetData : Resource
         return issues;
     }
 
-    public override string ToString() => $"TileSetData: {Name} ({Tiles.Count} tiles)";
+    public override string ToString() => $"TileSetData: {Name} ({Tiles.Length} tiles)";
 }
