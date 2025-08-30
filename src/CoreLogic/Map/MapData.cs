@@ -50,17 +50,19 @@ public class MapData
 public class MapTile : ITaggable
 {
     private readonly HashSet<Tag> _tags = new();
+    private Tag _primaryTag;
 
     /// <summary>
-    /// Primary tag for the tile (for backwards compatibility).
+    /// Primary tag for the tile. Always deterministic regardless of additional tags.
     /// Setting this will replace all existing tags with this single tag.
     /// </summary>
     public Tag PrimaryTag 
     { 
-        get => _tags.FirstOrDefault(); 
+        get => _primaryTag;
         set 
         {
             _tags.Clear();
+            _primaryTag = value;
             if (!string.IsNullOrEmpty(value.Name))
             {
                 _tags.Add(value);
@@ -75,7 +77,11 @@ public class MapTile : ITaggable
 
     public MapTile(Tag primaryTag)
     {
-        PrimaryTag = primaryTag;
+        _primaryTag = primaryTag;
+        if (!string.IsNullOrEmpty(primaryTag.Name))
+        {
+            _tags.Add(primaryTag);
+        }
     }
 
     public MapTile() : this(new Tag("empty")) { }
@@ -86,7 +92,17 @@ public class MapTile : ITaggable
 
     public bool HasAllTags(IEnumerable<Tag> tags) => tags.All(tag => _tags.Contains(tag));
 
-    public void AddTag(Tag tag) => _tags.Add(tag);
+    public void AddTag(Tag tag)
+    {
+        _tags.Add(tag);
+    }
 
-    public void RemoveTag(Tag tag) => _tags.Remove(tag);
+    public void RemoveTag(Tag tag) 
+    {
+        if (tag.Equals(_primaryTag))
+        {
+            throw new InvalidOperationException("Cannot remove the primary tag. Set a new PrimaryTag instead.");
+        }
+        _tags.Remove(tag);
+    }
 }
