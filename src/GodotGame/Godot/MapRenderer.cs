@@ -9,6 +9,7 @@ namespace DungeonsOnAutomatic.GodotGame.Godot
         private static readonly Tag WallTag = new("Wall");
         private static readonly Tag FloorTag = new("Floor");
         private static readonly Tag EntranceTag = new("Entrance");
+        private static readonly Tag ExitTag = new("Exit");
         private static readonly Tag TreasureTag = new("Treasure");
 
         // For now, we'll use hardcoded tile IDs.
@@ -16,8 +17,8 @@ namespace DungeonsOnAutomatic.GodotGame.Godot
         private const int WallTileId = 0;
         private const int FloorTileId = 1;
         private const int EntranceTileId = 2;
-        private const int TreasureTileId = 3;
-        private const int ExitTileId = 4;
+        private const int ExitTileId = 3;
+        private const int TreasureTileId = 4;
 
         public void Render(MapData map)
         {
@@ -31,19 +32,19 @@ namespace DungeonsOnAutomatic.GodotGame.Godot
                     if (tile != null)
                     {
                         int tileId = -1;
-                        // Check specific tags first so multi-tag tiles (Entrance/Treasure + Floor)
+                        // Check specific tags first so multi-tag tiles (Entrance/Exit/Treasure + Floor)
                         // render with their special appearance.
                         if (tile.HasTag(EntranceTag))
                         {
                             tileId = EntranceTileId;
                         }
+                        else if (tile.HasTag(ExitTag))
+                        {
+                            tileId = ExitTileId;
+                        }
                         else if (tile.HasTag(TreasureTag))
                         {
                             tileId = TreasureTileId;
-                        }
-                        else if (tile.HasTag(new Tag("Exit")))
-                        {
-                            tileId = ExitTileId;
                         }
                         else if (tile.HasTag(WallTag))
                         {
