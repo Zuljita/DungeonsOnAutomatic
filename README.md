@@ -2,7 +2,7 @@ Dungeons on Automatic
 📖 Overview
 This project is a procedural map generator built with Godot 4.x and C# (.NET). The core of the engine is a Wave Function Collapse (WFC) algorithm driven by a flexible tagging system. The entire architecture is designed to be highly modular and extensible through a static plugin system, allowing for the easy addition of new content, generation rules, and game logic.
 
-This repository is developed with the assistance of multiple AI agents, and all contributors (human or AI) are expected to adhere to the guidelines outlined in the plan.md document.
+This repository is developed with the assistance of multiple AI agents, and all contributors (human or AI) are expected to adhere to the guidelines outlined in the plan.md and AGENTS.md documents.
 
 🏛️ Core Architectural Pillars
 The project is built on several key architectural decisions that ensure scalability, testability, and a clean separation of concerns.
@@ -48,7 +48,7 @@ Open the project in the Godot editor. The main scene should run without errors.
 🤝 How to Contribute
 All development must follow the detailed specifications and workflows outlined in the official project plan.
 
-➡️ Read the plan.md file before making any changes.
+➡️ Read the plan.md and AGENTS.md files before making any changes.
 
 Key Development Rules (MANDATORY)
 The Single Path Rule: Never create a parallel system for something that already exists. Extend, modify, or replace—do not duplicate.
