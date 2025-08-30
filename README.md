@@ -57,3 +57,12 @@ The Single Path Rule: Never create a parallel system for something that already 
 Aggressive Cleanup: Immediately delete all unused code, commented-out blocks, and dead files.
 
 Git Workflow: All work must be done on feature branches. Commit messages must be descriptive. Never commit directly to main.
+
+📚 Documentation
+- Architecture: docs/Architecture-Overview.md
+- WFC Engine: docs/Generation-WFC.md
+- Tagging: docs/Tagging-System.md
+- Tiles & TileSets: docs/Resources-Tiles.md
+- Map & Rendering: docs/Map-and-Rendering.md
+- Plugins (overview): docs/Plugins.md
+- Plugin Author Guide: docs/Plugin-Author-Guide.md
