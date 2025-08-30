@@ -22,7 +22,7 @@ namespace DungeonsOnAutomatic.GodotGame
             _wfcService = new WfcService(_tagService);
 
             // Register plugins
-            _pluginManager.RegisterRulesetPlugin(new DummyRulesetPlugin());
+            _pluginManager.RegisterRulesetPlugin(new DungeonMapPlugin());
 
             // Generate the world
             Generate();
