@@ -6,6 +6,8 @@
 .import/
 export.cfg
 export_credentials.cfg
+export_presets.cfg
+*.tmp
 
 # Imported translations (automatically generated from CSV files)
 *.translation
@@ -14,3 +16,45 @@ export_credentials.cfg
 .mono/
 data_*/
 mono_crash.*.json
+
+# C# / .NET specific
+[Bb]in/
+[Oo]bj/
+[Ll]ogs/
+.vs/
+.vscode/
+*.user
+*.suo
+*.sln.docstates
+*.userprefs
+
+# NuGet
+packages/
+*.nupkg
+*.snupkg
+
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+
+# JetBrains Rider
+.idea/
+*.sln.iml
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.temp
+*~
+
+# Log files
+*.log
