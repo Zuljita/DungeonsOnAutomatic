@@ -56,5 +56,3 @@ The Single Path Rule: Never create a parallel system for something that already 
 Aggressive Cleanup: Immediately delete all unused code, commented-out blocks, and dead files.
 
 Git Workflow: All work must be done on feature branches. Commit messages must be descriptive. Never commit directly to main.
-
-AI Agent Workflow: Follow the "Developer as Editor" and "40/20/40" frameworks when using AI assistance. The human developer is the final quality gate.
