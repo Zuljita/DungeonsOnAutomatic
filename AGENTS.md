@@ -46,3 +46,17 @@ Update Relevant Files: If your changes necessitate updates to other parts of the
 Self-Correction: Review your generated code. Does it adhere to all the rules in this document? Is it simple? Did you remove all the old code?
 
 Commit with Clarity: Write a clear and concise commit message that explains what you did and why.
+
+5. PR and Merge Policy
+
+Pull Request Creation Only: Agents may open a PR but must never merge it. After opening a PR, pause and wait for human code review and approval.
+
+No Branch Deletions: Agents must not delete branches (local or remote). Branch cleanup is performed by a human after merge.
+
+No Force Pushes or History Rewrites: Do not use force push or any history‑rewriting operations on shared branches.
+
+Respond to Review Incrementally: Address code review comments with focused commits on the same feature branch. Do not mix unrelated changes.
+
+Status Updates, Not Actions: Post clear status in the PR description or comments, but do not execute merges, rebases, or release steps.
+
+CI/Tests Before PR: Ensure the solution builds and tests pass locally before opening a PR to reduce churn during review.
