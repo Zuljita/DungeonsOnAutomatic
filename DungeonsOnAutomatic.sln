@@ -8,6 +8,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CoreLogic", "src\CoreLogic\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GodotGame", "src\GodotGame\GodotGame.csproj", "{666FA8DD-59A0-4B5F-8F03-E8F2E5C04020}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CoreLogic.Tests", "src\CoreLogic.Tests\CoreLogic.Tests.csproj", "{A1B2C3D4-E5F6-7890-1234-567890ABCDEF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -22,6 +24,10 @@ Global
 		{666FA8DD-59A0-4B5F-8F03-E8F2E5C04020}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{666FA8DD-59A0-4B5F-8F03-E8F2E5C04020}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{666FA8DD-59A0-4B5F-8F03-E8F2E5C04020}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A1B2C3D4-E5F6-7890-1234-567890ABCDEF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A1B2C3D4-E5F6-7890-1234-567890ABCDEF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A1B2C3D4-E5F6-7890-1234-567890ABCDEF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A1B2C3D4-E5F6-7890-1234-567890ABCDEF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -29,6 +35,7 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{F5398CD3-5B39-4064-BBFD-936DA7E492BF} = {2A983C2C-BB4F-44F2-8C74-9EC79AB5AC84}
 		{666FA8DD-59A0-4B5F-8F03-E8F2E5C04020} = {2A983C2C-BB4F-44F2-8C74-9EC79AB5AC84}
+		{A1B2C3D4-E5F6-7890-1234-567890ABCDEF} = {2A983C2C-BB4F-44F2-8C74-9EC79AB5AC84}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = preSolution
 		SolutionGuid = {C3D4E5F6-A7B8-9012-CDEF-345678901234}
