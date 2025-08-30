@@ -17,8 +17,8 @@ namespace DungeonsOnAutomatic.GodotGame.Godot
         private const int WallTileId = 0;
         private const int FloorTileId = 1;
         private const int EntranceTileId = 2;
-        private const int ExitTileId = 3;
-        private const int TreasureTileId = 4;
+        private const int TreasureTileId = 3;
+        private const int ExitTileId = 4;
 
         public void Render(MapData map)
         {
