@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace DungeonsOnAutomatic.CoreLogic.Tagging;
@@ -14,9 +15,13 @@ public class TagService
     /// <summary>
     /// Registers a symmetric affinity between two tags.
     /// Both tags will have affinity with each other.
+    /// Throws InvalidOperationException if the tags are already antagonistic.
     /// </summary>
     public void AddAffinity(Tag tag1, Tag tag2)
     {
+        if (HaveAntagonism(tag1, tag2))
+            throw new InvalidOperationException($"Cannot add affinity between '{tag1}' and '{tag2}' - they are already antagonistic.");
+
         AddAffinityOneWay(tag1, tag2);
         AddAffinityOneWay(tag2, tag1);
     }
@@ -24,9 +29,13 @@ public class TagService
     /// <summary>
     /// Registers a symmetric antagonism between two tags.
     /// Both tags will be antagonistic with each other.
+    /// Throws InvalidOperationException if the tags already have affinity.
     /// </summary>
     public void AddAntagonism(Tag tag1, Tag tag2)
     {
+        if (HaveAffinity(tag1, tag2))
+            throw new InvalidOperationException($"Cannot add antagonism between '{tag1}' and '{tag2}' - they already have affinity.");
+
         AddAntagonismOneWay(tag1, tag2);
         AddAntagonismOneWay(tag2, tag1);
     }
@@ -45,6 +54,14 @@ public class TagService
     public bool HaveAffinity(Tag tag1, Tag tag2)
     {
         return _affinities.TryGetValue(tag1, out var affinities) && affinities.Contains(tag2);
+    }
+
+    /// <summary>
+    /// Checks if two tags have an antagonistic relationship.
+    /// </summary>
+    public bool HaveAntagonism(Tag tag1, Tag tag2)
+    {
+        return _antagonisms.TryGetValue(tag1, out var antagonisms) && antagonisms.Contains(tag2);
     }
 
     /// <summary>

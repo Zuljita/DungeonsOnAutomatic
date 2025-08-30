@@ -124,4 +124,45 @@ public class TagServiceTests
         Assert.Contains(floor, service.GetAntagonisms(wall));
         Assert.Contains(wall, service.GetAntagonisms(floor));
     }
+
+    [Fact]
+    public void AddAntagonism_ThrowsWhenTagsAlreadyHaveAffinity()
+    {
+        var service = new TagService();
+        var fire = new Tag("fire");
+        var heat = new Tag("heat");
+
+        service.AddAffinity(fire, heat);
+
+        var exception = Assert.Throws<InvalidOperationException>(() => service.AddAntagonism(fire, heat));
+        Assert.Contains("already have affinity", exception.Message);
+    }
+
+    [Fact]
+    public void AddAffinity_ThrowsWhenTagsAlreadyHaveAntagonism()
+    {
+        var service = new TagService();
+        var fire = new Tag("fire");
+        var water = new Tag("water");
+
+        service.AddAntagonism(fire, water);
+
+        var exception = Assert.Throws<InvalidOperationException>(() => service.AddAffinity(fire, water));
+        Assert.Contains("already antagonistic", exception.Message);
+    }
+
+    [Fact]
+    public void HaveAntagonism_ReturnsCorrectValue()
+    {
+        var service = new TagService();
+        var fire = new Tag("fire");
+        var water = new Tag("water");
+        var earth = new Tag("earth");
+
+        service.AddAntagonism(fire, water);
+
+        Assert.True(service.HaveAntagonism(fire, water));
+        Assert.True(service.HaveAntagonism(water, fire));
+        Assert.False(service.HaveAntagonism(fire, earth));
+    }
 }

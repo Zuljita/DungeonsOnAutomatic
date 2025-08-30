@@ -12,7 +12,10 @@ public readonly struct Tag : IEquatable<Tag>
 
     public Tag(string name)
     {
-        Name = name ?? throw new ArgumentNullException(nameof(name));
+        if (string.IsNullOrWhiteSpace(name))
+            throw new ArgumentException("Tag name cannot be null, empty, or whitespace.", nameof(name));
+        
+        Name = name.Trim();
     }
 
     /// <summary>
@@ -21,11 +24,11 @@ public readonly struct Tag : IEquatable<Tag>
     public static Tag Create(string name) => new(name);
 
     /// <summary>
-    /// Attempts to create a Tag from a string, returning false if name is null or empty.
+    /// Attempts to create a Tag from a string, returning false if name is null, empty, or whitespace.
     /// </summary>
     public static bool TryCreate(string? name, out Tag tag)
     {
-        if (string.IsNullOrEmpty(name))
+        if (string.IsNullOrWhiteSpace(name))
         {
             tag = default;
             return false;
