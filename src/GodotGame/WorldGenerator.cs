@@ -3,6 +3,7 @@ using DungeonsOnAutomatic.CoreLogic.Generation;
 using DungeonsOnAutomatic.CoreLogic.Tagging;
 using DungeonsOnAutomatic.GodotGame.Plugins;
 using DungeonsOnAutomatic.GodotGame.Godot;
+using System;
 using System.Linq;
 
 namespace DungeonsOnAutomatic.GodotGame
@@ -15,12 +16,14 @@ namespace DungeonsOnAutomatic.GodotGame
         private PluginManager _pluginManager;
         private WfcService _wfcService;
         private TagService _tagService;
+        private Random _random;
 
         public override void _Ready()
         {
             _pluginManager = new PluginManager();
             _tagService = new TagService();
-            _wfcService = new WfcService(_tagService);
+            _random = Seed > 0 ? new Random(Seed) : new Random();
+            _wfcService = new WfcService(_tagService, _random);
 
             // Register plugins
             _pluginManager.RegisterRulesetPlugin(new DungeonMapPlugin());
@@ -62,6 +65,13 @@ namespace DungeonsOnAutomatic.GodotGame
                 .ToArray();
 
             // Generate the map
+            // Refresh RNG if Seed == 0 to produce new layouts on each regenerate
+            if (Seed == 0)
+            {
+                _random = new Random();
+                _wfcService = new WfcService(_tagService, _random);
+            }
+
             var mapData = _wfcService.Generate(Width, Height, tileSet, seeds);
 
             // Enrichment pass
@@ -86,6 +96,9 @@ namespace DungeonsOnAutomatic.GodotGame
 
         [Export]
         public int Height { get; set; } = 20;
+
+        [Export]
+        public int Seed { get; set; } = 0; // 0 = random each run
 
         public override void _UnhandledInput(InputEvent @event)
         {
