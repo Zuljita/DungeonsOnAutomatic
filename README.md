@@ -49,6 +49,7 @@ Open the project in the Godot editor. The main scene should run without errors.
 All development must follow the detailed specifications and workflows outlined in the official project plan.
 
 ➡️ Read the plan.md file before making any changes.
+➡️ Review [DECISIONS.md](DECISIONS.md) for logged decisions and [TASKS.md](TASKS.md) for active work.
 
 Key Development Rules (MANDATORY)
 The Single Path Rule: Never create a parallel system for something that already exists. Extend, modify, or replace—do not duplicate.
