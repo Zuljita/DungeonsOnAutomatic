@@ -30,21 +30,23 @@ namespace DungeonsOnAutomatic.GodotGame.Godot
                     if (tile != null)
                     {
                         int tileId = -1;
-                        if (tile.HasTag(WallTag))
-                        {
-                            tileId = WallTileId;
-                        }
-                        else if (tile.HasTag(FloorTag))
-                        {
-                            tileId = FloorTileId;
-                        }
-                        else if (tile.HasTag(EntranceTag))
+                        // Check specific tags first so multi-tag tiles (Entrance/Treasure + Floor)
+                        // render with their special appearance.
+                        if (tile.HasTag(EntranceTag))
                         {
                             tileId = EntranceTileId;
                         }
                         else if (tile.HasTag(TreasureTag))
                         {
                             tileId = TreasureTileId;
+                        }
+                        else if (tile.HasTag(WallTag))
+                        {
+                            tileId = WallTileId;
+                        }
+                        else if (tile.HasTag(FloorTag))
+                        {
+                            tileId = FloorTileId;
                         }
 
                         if (tileId != -1)
