@@ -24,6 +24,7 @@ namespace DungeonsOnAutomatic.GodotGame
 
             // Register plugins
             _pluginManager.RegisterRulesetPlugin(new DungeonMapPlugin());
+            _pluginManager.RegisterEnrichmentPlugin(new FarthestTreasureEnrichmentPlugin());
 
             // Generate the world
             Generate();
@@ -48,7 +49,13 @@ namespace DungeonsOnAutomatic.GodotGame
             var seeds = ruleset.GetSeeds();
 
             // Generate the map
-            var mapData = _wfcService.Generate(20, 20, tileSet, seeds.ToArray());
+            var mapData = _wfcService.Generate(Width, Height, tileSet, seeds.ToArray());
+
+            // Enrichment pass
+            foreach (var plugin in _pluginManager.EnrichmentPlugins)
+            {
+                plugin.Enrich(mapData);
+            }
 
             if (MapRenderer != null)
             {
@@ -58,6 +65,24 @@ namespace DungeonsOnAutomatic.GodotGame
             else
             {
                 GD.PrintErr("MapRenderer not set on WorldGenerator.");
+            }
+        }
+
+        [Export]
+        public int Width { get; set; } = 20;
+
+        [Export]
+        public int Height { get; set; } = 20;
+
+        public override void _UnhandledInput(InputEvent @event)
+        {
+            if (@event is InputEventKey k && k.Pressed && !k.Echo)
+            {
+                // R to regenerate
+                if (k.Keycode == Key.R)
+                {
+                    Generate();
+                }
             }
         }
     }
