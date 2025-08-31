@@ -11,12 +11,12 @@ namespace DungeonsOnAutomatic.GodotGame
     public partial class WorldGenerator : Node
     {
         [Export]
-        public MapRenderer MapRenderer { get; set; }
+        public MapRenderer MapRenderer { get; set; } = null!;
 
-        private PluginManager _pluginManager;
-        private WfcService _wfcService;
-        private TagService _tagService;
-        private Random _random;
+        private PluginManager _pluginManager = null!;
+        private WfcService _wfcService = null!;
+        private TagService _tagService = null!;
+        private Random _random = null!;
 
         public override void _Ready()
         {
